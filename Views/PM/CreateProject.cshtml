@@ -1,0 +1,151 @@
+﻿@model Jobick.Models.Project
+
+@{
+    Layout = "~/Views/Shared/_LayoutJobick.cshtml";
+    ViewData["Title"] = "Add Project";
+}
+
+<div class="content-body">
+    <div class="container-fluid">
+        <div class="row page-titles">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Jobick")">Projects</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">Add Project</a></li>
+            </ol>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Add Project</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-validation">
+                            <form asp-action="Create" method="post" class="needs-validation" novalidate>
+                                <div class="row">
+
+                                    <div class="col-xl-6">
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Name</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="Name" class="form-control" placeholder="Project Name" required />
+                                                <div class="invalid-feedback">Please enter project name.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Name (AR)</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="NameAr" class="form-control" placeholder="Project Name (Arabic)" required />
+                                                <div class="invalid-feedback">Please enter project name (AR).</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Description</label>
+                                            <div class="col-lg-6">
+                                                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Description" required></textarea>
+                                                <div class="invalid-feedback">Please enter description.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Description (AR)</label>
+                                            <div class="col-lg-6">
+                                                <textarea asp-for="DescriptionAr" class="form-control" rows="3" placeholder="Description (Arabic)" required></textarea>
+                                                <div class="invalid-feedback">Please enter description (AR).</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Responsible For Implementing</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="Responsible" required />
+                                                <div class="invalid-feedback">Please enter responsible person.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">System Owner</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="SystemOwner" class="form-control" placeholder="System Owner" required />
+                                                <div class="invalid-feedback">Please enter system owner.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Project Goal</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="ProjectGoal" class="form-control" placeholder="Project Goal" required />
+                                                <div class="invalid-feedback">Please enter project goal.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-xl-6">
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Start Date</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="StartSate" type="date" class="form-control" required />
+                                                <div class="invalid-feedback">Please select start date.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">End Date</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="EndDate" type="date" class="form-control" required />
+                                                <div class="invalid-feedback">Please select end date.</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">Total Cost</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="TotalCost" type="number" step="0.01" class="form-control" placeholder="Total Cost" required />
+                                                <div class="invalid-feedback">Please enter total cost.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3 row">
+                                            <div class="col-lg-8 ms-auto">
+                                                <button type="submit" class="btn btn-primary">Submit</button>
+                                                <a href="@Url.Action("Index", "Jobick")" class="btn btn-danger">Cancel</a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Jobick_style
+{
+    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
+}
+
+@section Jobick_script
+{
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+    <script>
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+}
