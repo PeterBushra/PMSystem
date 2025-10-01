@@ -1,5 +1,4 @@
-﻿@model Jobick.Models.Project
-
+﻿@model Jobick.ViewModels.ProjectDetailsVM
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = "Project Details";
@@ -30,10 +29,10 @@
                                 <p><strong>Description:</strong> @Model.Description</p>
                                 <p><strong>Description (AR):</strong> @Model.DescriptionAr</p>
                                 <p><strong>Responsible:</strong> @Model.ResponsibleForImplementing</p>
-                                <p><strong>System Owner:</strong> @Model.SystemOwner</p>
-                                <p><strong>Project Goal:</strong> @Model.ProjectGoal</p>
                             </div>
                             <div class="col-xl-6">
+                                <p><strong>System Owner:</strong> @Model.SystemOwner</p>
+                                <p><strong>Project Goal:</strong> @Model.ProjectGoal</p>
                                 <p><strong>Start Date:</strong> @Model.StartSate.ToShortDateString()</p>
                                 <p><strong>End Date:</strong> @Model.EndDate.ToShortDateString()</p>
                                 <p><strong>Total Cost:</strong> @Model.TotalCost?.ToString("C")</p>
@@ -44,27 +43,177 @@
             </div>
         </div>
 
-        <!-- KPI Dashboard -->
+        <!-- KPI Summary Statistics -->
         <div class="row">
-            <div class="col-lg-12">
+            <div class="col-xl-12">
                 <div class="card">
-                    <div class="card-header"><h4 class="card-title">Project KPIs</h4></div>
-                    <div class="card-body pb-2">
-                        <div class="row sp10">
-                            @* Example donut chart *@
-                            <div class="col-xl-3 col-md-3 col-6 mb-4 text-center">
-                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale me-4">
-                                    <span class="donut" data-peity='{ "fill": ["var(--primary)", "var(--light)"], "innerRadius": 38, "radius": 10}'>6/9</span>
-                                    <h4 class="mb-0 pie-label">66%</h4>
+                    <div class="card-body">
+                        <div class="row shapreter-row">
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-tasks"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
+                                    <p class="mb-0">Total Tasks</p>
                                 </div>
-                                <h5 class="mb-1">Engineer</h5>
-                                <p class="mb-0">5,050 Vacancy</p>
                             </div>
-                            @* Add more KPI charts as needed *@
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-check-circle text-success"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
+                                    <p class="mb-0">Completed</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-spinner text-info"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.InProgressTasks</h3>
+                                    <p class="mb-0">In Progress</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-clock text-warning"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
+                                    <p class="mb-0">Not Started</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
+                                    <p class="mb-0">Overdue</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
+                                <div class="static-icon">
+                                    <span><i class="fas fa-calendar-alt"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
+                                    <p class="mb-0">Days Remaining</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- KPI Charts -->
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Project KPIs</h4>
+                    </div>
+                    <div class="card-body pb-2">
+                        <div class="row sp10">
+
+                            <!-- Task Completion Chart -->
+                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
+                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
+                                    <span class="donut" data-peity='{ "fill": ["#35c556", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetTaskStatusChartData()</span>
+                                    <h4 class="mb-0 pie-label">@Model.KPIs.CompletionPercentage%</h4>
+                                </div>
+                                <h5 class="mb-1">Task Completion</h5>
+                                <p class="mb-0">@Model.KPIs.CompletedTasks of @Model.KPIs.TotalTasks Tasks</p>
+                            </div>
+
+                            <!-- Project Timeline Progress -->
+                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
+                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
+                                    <span class="donut" data-peity='{ "fill": ["#3f4cfe", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetProjectProgressChartData()</span>
+                                    <h4 class="mb-0 pie-label">@Model.KPIs.ProjectProgressPercentage%</h4>
+                                </div>
+                                <h5 class="mb-1">Timeline Progress</h5>
+                                <p class="mb-0">@Model.KPIs.DaysRemaining Days Remaining</p>
+                            </div>
+
+                            <!-- Average Task Completion -->
+                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
+                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
+                                    <span class="donut" data-peity='{ "fill": ["#f73a0b", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.AverageTaskCompletion/100</span>
+                                    <h4 class="mb-0 pie-label">@Model.KPIs.AverageTaskCompletion%</h4>
+                                </div>
+                                <h5 class="mb-1">Avg. Completion</h5>
+                                <p class="mb-0">Average Task Progress</p>
+                            </div>
+
+                            <!-- In Progress vs Remaining -->
+                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
+                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
+                                    <span class="donut" data-peity='{ "fill": ["#ffc107", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.InProgressTasks/@(Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks)</span>
+                                    <h4 class="mb-0 pie-label">
+                                        @((Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) > 0 ?
+                                                                                Math.Round((decimal)Model.KPIs.InProgressTasks / (Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) * 100, 0) : 0)%
+                                    </h4>
+                                </div>
+                                <h5 class="mb-1">Active Tasks</h5>
+                                <p class="mb-0">@Model.KPIs.InProgressTasks In Progress</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department & Stage Distribution -->
+        <div class="row">
+            @if (Model.KPIs.TasksByDepartment.Any())
+            {
+                <div class="col-xl-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Tasks by Department</h4>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var dept in Model.KPIs.TasksByDepartment.OrderByDescending(d => d.Value))
+                            {
+                                var percentage = Math.Round((decimal)dept.Value / Model.KPIs.TotalTasks * 100, 0);
+                                <div class="progress default-progress mb-3">
+                                    <div class="progress-bar bg-primary progress-animated"
+                                         style="width: @percentage%; height:8px;" role="progressbar">
+                                        <span class="sr-only">@percentage% Complete</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
+                                    <span class="font-w500">@dept.Key</span>
+                                    <h6 class="mb-0">@dept.Value Tasks (@percentage%)</h6>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.KPIs.TasksByStage.Any())
+            {
+                <div class="col-xl-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Tasks by Stage</h4>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var stage in Model.KPIs.TasksByStage.OrderByDescending(s => s.Value))
+                            {
+                                var percentage = Math.Round((decimal)stage.Value / Model.KPIs.TotalTasks * 100, 0);
+                                var colors = new[] { "bg-success", "bg-info", "bg-warning", "bg-danger", "bg-primary" };
+                                var colorIndex = Math.Abs(stage.Key.GetHashCode()) % colors.Length;
+
+                                <div class="progress default-progress mb-3">
+                                    <div class="progress-bar @colors[colorIndex] progress-animated"
+                                         style="width: @percentage%; height:8px;" role="progressbar">
+                                        <span class="sr-only">@percentage% Complete</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
+                                    <span class="font-w500">@stage.Key</span>
+                                    <h6 class="mb-0">@stage.Value Tasks (@percentage%)</h6>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- Tasks Grid -->
@@ -76,32 +225,43 @@
                         <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">Add Task</a>
                     </div>
                     <div class="card-body">
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Stage Name</th>
-                                    <th>Task</th>
-                                    <th>Department</th>
-                                    <th>Expected End</th>
-                                    <th>Done %</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var task in Model.Tasks)
-                                {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
                                     <tr>
-                                        <td>@task.Id</td>
-                                        <td>@task.StageName</td>
-                                        <td>@task.Task1</td>
-                                        <td>@task.ImplementorDepartment</td>
-                                        <td>@task.ExpectedEndDate.ToShortDateString()</td>
-                                        <td>@task.DoneRatio?.ToString("P0")</td>
+                                        <th>#</th>
+                                        <th>Stage Name</th>
+                                        <th>Task</th>
+                                        <th>Department</th>
+                                        <th>Expected End</th>
+                                        <th>Done %</th>
+                                        <th>Status</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach (var task in Model.Tasks)
+                                    {
+                                        var statusClass = task.DoneRatio >= 1.0m ? "badge-success" :
+                                        task.ExpectedEndDate < DateTime.Today ? "badge-danger" :
+                                        task.DoneRatio > 0 ? "badge-info" : "badge-warning";
+
+                                        var statusText = task.DoneRatio >= 1.0m ? "Completed" :
+                                        task.ExpectedEndDate < DateTime.Today ? "Overdue" :
+                                        task.DoneRatio > 0 ? "In Progress" : "Not Started";
+
+                                        <tr>
+                                            <td>@task.Id</td>
+                                            <td>@task.StageName</td>
+                                            <td>@task.Task1</td>
+                                            <td>@task.ImplementorDepartment</td>
+                                            <td>@task.ExpectedEndDate.ToShortDateString()</td>
+                                            <td>@task.DoneRatio?.ToString("P0")</td>
+                                            <td><span class="badge @statusClass">@statusText</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,13 +270,58 @@
     </div>
 </div>
 
-@section Jobick_script
-{
+@section Jobick_script {
     <script src="~/Jobick/vendor/global/global.min.js"></script>
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
     <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
+
+    <!-- Required vendors -->
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <!-- Apex Chart -->
+    <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+
+    <!-- Chart piety plugin files -->
+    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
+
+    <!-- Dashboard 1 -->
+    <script src="~/Jobick/js/dashboard/dashboard-1.js"></script>
+
+    <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
+
+
     <script>
-        $(".donut").peity("donut");
+        $(document).ready(function() {
+            // Initialize donut charts
+            $(".donut").peity("donut");
+
+            // Animate counters
+            var counters = $(".count");
+            var countersQuantity = counters.length;
+            var counter = [];
+
+            for (var i = 0; i < countersQuantity; i++) {
+                counter[i] = parseInt(counters[i].innerHTML);
+            }
+
+            var count = function(start, value, id) {
+                var localStart = start;
+                var interval = setInterval(function() {
+                    if (localStart < value) {
+                        localStart++;
+                        counters[id].innerHTML = localStart;
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 40);
+            };
+
+            for (var j = 0; j < countersQuantity; j++) {
+                count(0, counter[j], j);
+            }
+        });
     </script>
 }
