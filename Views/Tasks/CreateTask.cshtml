@@ -9,9 +9,9 @@
     <div class="container-fluid">
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">Projects</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects", new { area = "ADHMMC" })">Projects</a></li>
                 <li class="breadcrumb-item">
-                    <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId })">Project Details</a>
+                    <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId, area = "ADHMMC" })">Project Details</a>
                 </li>
                 <li class="breadcrumb-item active"><a href="javascript:void(0)">Add Task</a></li>
             </ol>
@@ -22,67 +22,90 @@
                 <div class="card">
                     <div class="card-header"><h4 class="card-title">Add Task</h4></div>
                     <div class="card-body">
-                        <div class="form-validation">
-                            <form asp-action="PostTask" method="post" class="needs-validation" novalidate>
-                                <input type="hidden" asp-for="ProjectId" />
+                        <form asp-action="PostTask" method="post" class="needs-validation" novalidate>
+                            <input type="hidden" asp-for="ProjectId" />
 
-                                <div class="row">
-                                    <div class="col-xl-6">
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Stage Name</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="StageName" class="form-control" required />
-                                                <div class="invalid-feedback">Please enter stage name.</div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Task Name</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="Task1" class="form-control" required />
-                                                <div class="invalid-feedback">Please enter task name.</div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Implementor Department</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="ImplementorDepartment" class="form-control" required />
-                                                <div class="invalid-feedback">Please enter department.</div>
-                                            </div>
+                            <div class="row">
+                                <div class="col-xl-6">
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label required">Stage Name</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="StageName" class="form-control" required />
+                                            <div class="invalid-feedback">Enter stage name.</div>
                                         </div>
                                     </div>
 
-                                    <div class="col-xl-6">
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Expected Start Date</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="ExpectedStartDate" type="date" class="form-control" required />
-                                                <div class="invalid-feedback">Select start date.</div>
-                                            </div>
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label required">Stage Name (AR)</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="StageNameAr" class="form-control" required />
+                                            <div class="invalid-feedback">Enter stage name (AR).</div>
                                         </div>
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Expected End Date</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="ExpectedEndDate" type="date" class="form-control" required />
-                                                <div class="invalid-feedback">Select end date.</div>
-                                            </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label required">Task</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="Task1" class="form-control" required />
+                                            <div class="invalid-feedback">Enter task.</div>
                                         </div>
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label">Done Ratio (%)</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="DoneRatio" type="number" step="0.01" class="form-control" />
-                                            </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label required">Task (AR)</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="TaskAr" class="form-control" required />
+                                            <div class="invalid-feedback">Enter task (AR).</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="mb-3 row">
-                                    <div class="col-lg-8 ms-auto">
-                                        <button type="submit" class="btn btn-primary">Save</button>
-                                        <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId })" class="btn btn-danger">Cancel</a>
+                                <div class="col-xl-6">
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label required">Implementor Department</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="ImplementorDepartment" class="form-control" required />
+                                            <div class="invalid-feedback">Enter department.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label">Department Responsible</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="DepartmentResponsible" class="form-control" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label">Expected Start Date</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="ExpectedStartDate" type="date" class="form-control" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label">Expected End Date</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="ExpectedEndDate" type="date" class="form-control" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label class="col-lg-4 col-form-label form-label">Done Ratio (%)</label>
+                                        <div class="col-lg-6">
+                                            <input asp-for="DoneRatio" type="number" step="0.01" class="form-control" />
+                                        </div>
                                     </div>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+
+                            <div class="mb-3 row">
+                                <div class="col-lg-8 ms-auto">
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                    <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId, area = "ADHMMC" })" class="btn btn-danger">Cancel</a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -92,6 +115,12 @@
 
 @section Jobick_script
 {
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
     <script>
         (function () {
             'use strict'

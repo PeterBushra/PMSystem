@@ -17,8 +17,9 @@
 
         <!-- Add Button -->
         <div class="row mb-3">
-            <div class="col-12">
-                <a class="btn btn-success" href="@Url.Action("CreateProject", "Projects")">
+            <div class="col-12 text-end">
+                <a class="btn btn-sm btn-primary"
+                   href="@Url.Action("CreateProject", "Projects")">
                     <i class="fa fa-plus"></i> Add Project
                 </a>
             </div>
@@ -33,9 +34,10 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="projectsTable" class="display" style="min-width: 1000px">
+                            <table id="projectsTable" class="table table-hover table-striped" style="min-width: 1000px">
                                 <thead>
                                     <tr>
+                                        <th>Status</th>
                                         <th>Name</th>
                                         <th>Name (AR)</th>
                                         <th>Description</th>
@@ -46,13 +48,14 @@
                                         <th>Start Date</th>
                                         <th>End Date</th>
                                         <th>Total Cost</th>
-                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var project in Model)
                                     {
-                                        <tr>
+                                        <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
+                                            style="cursor:pointer;">
+                                            <td><span class="badge light badge-warning">In Progress</span></td>
                                             <td>@project.Name</td>
                                             <td>@project.NameAr</td>
                                             <td>@project.Description</td>
@@ -63,12 +66,6 @@
                                             <td>@project.StartSate.ToString("yyyy/MM/dd")</td>
                                             <td>@project.EndDate.ToString("yyyy/MM/dd")</td>
                                             <td>@project.TotalCost?.ToString("C")</td>
-                                            <td>
-                                                <a class="btn btn-sm btn-primary"
-                                                   href="@Url.Action("ProjectDetails", "Projects", new { id = project.Id })">
-                                                    Details
-                                                </a>
-                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -87,7 +84,7 @@
     <!-- Datatable -->
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet">
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet">
-    <!-- Datepicker -->
+    <!-- Custom Stylesheet -->
     <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
 }
 
@@ -96,25 +93,19 @@
     <!-- Required vendors -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
     <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+    <!-- Apex Chart -->
     <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
 
     <!-- Datatable -->
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#projectsTable').DataTable({
-                responsive: true,
-                "pageLength": 25
-            });
-        });
-    </script>
+    <script src="~/Jobick/js/plugins-init/datatables.init.js"></script>
 
-    <!-- Bootstrap & Datepicker -->
     <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
     <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
 
-    <!-- Custom scripts -->
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+
 }

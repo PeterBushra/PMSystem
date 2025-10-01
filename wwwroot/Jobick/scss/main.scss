@@ -62,7 +62,7 @@
 
 
 //Importing the RTL-specific variables file//
-//@import "bs_rtl.scss";
+@import "bs_rtl.scss";
 
 //bootstrap library scss files
 @import "./../vendor/bootstrap/scss/bootstrap.scss";
@@ -103,4 +103,4 @@
 ////////////////////
 // RTL
 ////////////////////
-//@import "./layout/rtl/rtl";
+@import "./layout/rtl/rtl";
