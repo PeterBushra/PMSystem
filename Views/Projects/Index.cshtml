@@ -18,7 +18,7 @@
         <!-- Add Button -->
         <div class="row mb-3">
             <div class="col-12">
-                <a class="btn btn-success" href="@Url.Action("CreateProject", "PM")">
+                <a class="btn btn-success" href="@Url.Action("CreateProject", "Projects")">
                     <i class="fa fa-plus"></i> Add Project
                 </a>
             </div>
@@ -65,7 +65,7 @@
                                             <td>@project.TotalCost?.ToString("C")</td>
                                             <td>
                                                 <a class="btn btn-sm btn-primary"
-                                                   href="@Url.Action("ProjectDetails", "PM", new { id = project.Id })">
+                                                   href="@Url.Action("ProjectDetails", "Projects", new { id = project.Id })">
                                                     Details
                                                 </a>
                                             </td>

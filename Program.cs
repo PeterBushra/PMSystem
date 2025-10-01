@@ -12,8 +12,8 @@ builder.Services.AddScoped<ProjectService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/PM/Login"; // Redirect if not authenticated
-        options.AccessDeniedPath = "/PM/Error403"; 
+        options.LoginPath = "/ADHMMC/Login"; // Redirect if not authenticated
+        options.AccessDeniedPath = "/ADHMMC/Error403"; 
     });
 
 builder.Services.AddAuthorization();
@@ -36,7 +36,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Jobick}/{action=Index}/{id?}");
+    pattern: "{controller=ADHMMC}/{action=Index}/{id?}");
     //pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
