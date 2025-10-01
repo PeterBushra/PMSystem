@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Jobick.Models;
+﻿namespace Jobick.Models;
 
 public partial class Task
 {

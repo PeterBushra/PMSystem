@@ -13,7 +13,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie(options =>
     {
         options.LoginPath = "/ADHMMC/Login"; // Redirect if not authenticated
-        options.AccessDeniedPath = "/ADHMMC/Error403"; 
+        options.AccessDeniedPath = "/ADHMMC/Error403";
     });
 
 builder.Services.AddAuthorization();
@@ -37,6 +37,6 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=ADHMMC}/{action=Index}/{id?}");
-    //pattern: "{controller=Home}/{action=Index}/{id?}");
+//pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

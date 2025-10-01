@@ -1,16 +1,13 @@
-﻿using Jobick.Models;
-using Jobick.Services;
-using Jobick.ViewModels;
+﻿using Jobick.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Controllers;
-public class TasksController (ProjectService _pservice) : Controller
+public class TasksController(ProjectService _pservice) : Controller
 {
     public IActionResult CreateTask(int projectId)
     {
         var model = new Models.Task { ProjectId = projectId };
-        return View(model); 
+        return View(model);
     }
 
     [HttpPost]

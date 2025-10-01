@@ -2,16 +2,16 @@
 
 namespace Jobick.Controllers
 {
-	public class AjaxController : Controller
-	{
-		public IActionResult FeaturedCompanies()
-		{
-			return View();
-		}
-		
-		public IActionResult RecentActivity()
-		{
-			return View();
-		}
-	}
+    public class AjaxController : Controller
+    {
+        public IActionResult FeaturedCompanies()
+        {
+            return View();
+        }
+
+        public IActionResult RecentActivity()
+        {
+            return View();
+        }
+    }
 }

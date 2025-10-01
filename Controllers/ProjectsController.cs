@@ -1,16 +1,12 @@
 ﻿using Jobick.Models;
 using Jobick.Services;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace Jobick.Controllers;
 
-[Authorize] 
-public class ProjectsController (ProjectService _pservice) : Controller
+[Authorize]
+public class ProjectsController(ProjectService _pservice) : Controller
 {
     public IActionResult Index()
     {
@@ -23,7 +19,7 @@ public class ProjectsController (ProjectService _pservice) : Controller
     {
         return View();
     }
-        
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult PostProject(Project project)
@@ -37,11 +33,11 @@ public class ProjectsController (ProjectService _pservice) : Controller
         if (ModelState.IsValid)
         {
             project.CreatedDate = DateTime.Now;
-            _pservice.AddProject(project); 
-            return RedirectToAction(nameof(Index)); 
+            _pservice.AddProject(project);
+            return RedirectToAction(nameof(Index));
         }
 
-        return View("CreateProject",project);
+        return View("CreateProject", project);
     }
 
 
