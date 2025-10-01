@@ -8,7 +8,7 @@
                 <div class="card mb-0 h-auto">
                     <div class="card-body">
                         <div class="text-center mb-3">
-                            <a href="@Url.Action("Index","Jobick")"><img class="logo-auth" src="images/logo-full.png" alt=""></a>
+                            <a href="@Url.Action("Index","Jobick")"><img class="logo-auth" src="~/Jobick/images/SmallLogo.png" alt=""></a>
                         </div>
                         <h4 class="text-center mb-4">Sign in your account</h4>
                         <form action="@Url.Action("Index","Jobick")">
@@ -24,7 +24,7 @@
                                     <i class="fa fa-eye"></i>
                                 </span>
                             </div>
-                            <div class="form-row d-flex flex-wrap justify-content-between mb-2">
+                           @*  <div class="form-row d-flex flex-wrap justify-content-between mb-2">
                                 <div class="form-group mb-sm-4 mb-1">
                                     <div class="form-check custom-checkbox ms-1">
                                         <input type="checkbox" class="form-check-input" id="basic_checkbox_1">
@@ -34,14 +34,14 @@
                                 <div class="form-group ms-2">
                                     <a class="text-hover" href="@Url.Action("ForgotPassword","Jobick")">Forgot Password?</a>
                                 </div>
-                            </div>
+                            </div> *@
                             <div class="text-center">
                                 <button type="submit" class="btn btn-primary btn-block">Sign In</button>
                             </div>
                         </form>
-                        <div class="new-account mt-3">
+                    @*     <div class="new-account mt-3">
                             <p>Don't have an account? <a class="text-primary" href="@Url.Action("Register","Jobick")">Sign up</a></p>
-                        </div>
+                        </div> *@
                     </div>
                 </div>
             </div>
