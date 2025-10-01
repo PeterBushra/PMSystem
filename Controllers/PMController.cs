@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Jobick.Controllers;
@@ -57,12 +58,16 @@ public class PMController (ProjectService _pservice) : Controller
         return View(projects);
     }
 
-    public IActionResult ProjectDetails()
+    public IActionResult ProjectDetails(int id)
     {
-        var projects = _pservice.GetProjectList();
-        return View(projects);
-    }
+        var project = _pservice.GetProjectList()
+            .FirstOrDefault(p => p.Id == id);
 
+        if (project == null)
+            return NotFound();
+
+        return View(project);
+    }
 
     [HttpPost]
     public async Task<IActionResult> Login(string username, string password)

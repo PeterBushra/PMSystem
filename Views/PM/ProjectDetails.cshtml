@@ -1,79 +1,110 @@
-﻿@model IEnumerable<Jobick.Models.Project>
+﻿@model Jobick.Models.Project
 
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Projects";
+    ViewData["Title"] = "Project Details";
 }
 
 <div class="content-body">
     <div class="container-fluid">
-
         <!-- Breadcrumb -->
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Projects</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Jobick")">Projects</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">Project Details</a></li>
             </ol>
         </div>
 
-        <!-- Add Button -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <a class="btn btn-success" href="@Url.Action("CreateProject", "PM")">
-                    <i class="fa fa-plus"></i> Add Project
-                </a>
+        <!-- Project Information -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Project Information</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-xl-6">
+                                <p><strong>Name:</strong> @Model.Name</p>
+                                <p><strong>Name (AR):</strong> @Model.NameAr</p>
+                                <p><strong>Description:</strong> @Model.Description</p>
+                                <p><strong>Description (AR):</strong> @Model.DescriptionAr</p>
+                                <p><strong>Responsible:</strong> @Model.ResponsibleForImplementing</p>
+                                <p><strong>System Owner:</strong> @Model.SystemOwner</p>
+                                <p><strong>Project Goal:</strong> @Model.ProjectGoal</p>
+                            </div>
+                            <div class="col-xl-6">
+                                <p><strong>Start Date:</strong> @Model.StartSate.ToShortDateString()</p>
+                                <p><strong>End Date:</strong> @Model.EndDate.ToShortDateString()</p>
+                                <p><strong>Total Cost:</strong> @Model.TotalCost?.ToString("C")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Projects Table -->
+        <!-- KPI Dashboard -->
         <div class="row">
-            <div class="col-12">
+            <div class="col-lg-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Projects List</h4>
+                    <div class="card-header"><h4 class="card-title">Project KPIs</h4></div>
+                    <div class="card-body pb-2">
+                        <div class="row sp10">
+                            @* Example donut chart *@
+                            <div class="col-xl-3 col-md-3 col-6 mb-4 text-center">
+                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale me-4">
+                                    <span class="donut" data-peity='{ "fill": ["var(--primary)", "var(--light)"], "innerRadius": 38, "radius": 10}'>6/9</span>
+                                    <h4 class="mb-0 pie-label">66%</h4>
+                                </div>
+                                <h5 class="mb-1">Engineer</h5>
+                                <p class="mb-0">5,050 Vacancy</p>
+                            </div>
+                            @* Add more KPI charts as needed *@
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Grid -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title">Project Tasks</h4>
+                        <a href="@Url.Action("CreateTask", "Task", new { projectId = Model.Id })" class="btn btn-primary btn-sm">Add Task</a>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table id="projectsTable" class="display" style="min-width: 1000px">
-                                <thead>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Stage Name</th>
+                                    <th>Task</th>
+                                    <th>Department</th>
+                                    <th>Expected End</th>
+                                    <th>Done %</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in Model.Tasks)
+                                {
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Name (AR)</th>
-                                        <th>Description</th>
-                                        <th>Description (AR)</th>
-                                        <th>Responsible</th>
-                                        <th>System Owner</th>
-                                        <th>Project Goal</th>
-                                        <th>Start Date</th>
-                                        <th>End Date</th>
-                                        <th>Total Cost</th>
-                                        <th>Action</th>
+                                        <td>@task.Id</td>
+                                        <td>@task.StageName</td>
+                                        <td>@task.Task1</td>
+                                        <td>@task.ImplementorDepartment</td>
+                                        <td>@task.ExpectedEndDate.ToShortDateString()</td>
+                                        <td>@task.DoneRatio?.ToString("P0")</td>
+                                        <td>
+                                            <a href="@Url.Action("TaskDetails", "Task", new { id = task.Id })" class="btn btn-info btn-sm">View / Edit</a>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var project in Model)
-                                    {
-                                        <tr>
-                                            <td>@project.Name</td>
-                                            <td>@project.NameAr</td>
-                                            <td>@project.Description</td>
-                                            <td>@project.DescriptionAr</td>
-                                            <td>@project.ResponsibleForImplementing</td>
-                                            <td>@project.SystemOwner</td>
-                                            <td>@project.ProjectGoal</td>
-                                            <td>@project.StartSate.ToString("yyyy/MM/dd")</td>
-                                            <td>@project.EndDate.ToString("yyyy/MM/dd")</td>
-                                            <td>@project.TotalCost?.ToString("C")</td>
-                                            <td>
-                                                <a class="btn btn-sm btn-primary"
-                                                   href="@Url.Action("ProjectDetails", "PM", new { id = project.Id })">
-                                                    Details
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -82,39 +113,13 @@
     </div>
 </div>
 
-@section Jobick_style
-{
-    <!-- Datatable -->
-    <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet">
-    <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet">
-    <!-- Datepicker -->
-    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
-}
-
 @section Jobick_script
 {
-    <!-- Required vendors -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
-    <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
-
-    <!-- Datatable -->
-    <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#projectsTable').DataTable({
-                responsive: true,
-                "pageLength": 25
-            });
-        });
-    </script>
-
-    <!-- Bootstrap & Datepicker -->
-    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
-    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
-
-    <!-- Custom scripts -->
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
+    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
+    <script>
+        $(".donut").peity("donut");
+    </script>
 }
