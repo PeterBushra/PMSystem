@@ -6,7 +6,7 @@ public class TasksController(ProjectService _pservice) : Controller
 {
     public IActionResult CreateTask(int projectId)
     {
-        var model = new Models.Task { ProjectId = projectId };
+        var model = new Models.Task { ProjectId = projectId, ExpectedStartDate=DateTime.Now, ExpectedEndDate=DateTime.Now };
         return View(model);
     }
 
