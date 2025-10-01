@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Jobick.Controllers;
@@ -16,8 +15,10 @@ namespace Jobick.Controllers;
 public class PMController (ProjectService _pservice) : Controller
 {
 
-    public IActionResult Login()
+    public async Task<IActionResult> LoginAsync()
     {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
         return View();
     }
 
@@ -66,6 +67,7 @@ public class PMController (ProjectService _pservice) : Controller
     [HttpPost]
     public async Task<IActionResult> Login(string username, string password)
     {
+
         // TODO: Replace with your user validation logic
         if (username == "admin" && password == "1234")
         {
@@ -98,10 +100,5 @@ public class PMController (ProjectService _pservice) : Controller
         return View();
     }
 
-    // Logout
-    public async Task<IActionResult> Logout()
-    {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return RedirectToAction("Login");
-    }
+    
 }
