@@ -1,15 +1,19 @@
 ﻿using Jobick.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jobick.Controllers;
 public class TasksController(ProjectService _pservice) : Controller
 {
+    [Authorize(Roles = "Admin")]
+
     public IActionResult CreateTask(int projectId)
     {
         var model = new Models.Task { ProjectId = projectId, ExpectedStartDate=DateTime.Now, ExpectedEndDate=DateTime.Now };
         return View(model);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public IActionResult PostTask(Models.Task model)
     {

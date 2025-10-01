@@ -16,12 +16,14 @@ public class ProjectsController(ProjectService _pservice) : Controller
         return View(projects);
     }
 
+    [Authorize(Roles = "Admin")]
 
     public IActionResult CreateProject()
     {
         return View();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult PostProject(Project project)

@@ -15,7 +15,7 @@ public class ADHMMCController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login(string username, string password)
+    public async Task<IActionResult> Login(string username, string password, bool isRemeberLogin=false)
     {
 
         // TODO: Replace with your user validation logic
@@ -33,7 +33,7 @@ public class ADHMMCController : Controller
 
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = true // Remember login
+                IsPersistent = isRemeberLogin // Remember login
             };
 
             // Sign in the user
@@ -52,6 +52,11 @@ public class ADHMMCController : Controller
 
     [Authorize] // Only logged-in users
     public IActionResult Index()
+    {
+        return View();
+    }
+
+    public IActionResult Error403()
     {
         return View();
     }
