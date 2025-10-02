@@ -23,14 +23,14 @@ function getUrlParams(dParam)
 	
 	"use strict"
 	
-	/* var direction =  getUrlParams('dir');
+	// var direction =  getUrlParams('dir');
 	
-	if(direction == 'rtl')
-	{
-        direction = 'rtl'; 
-    }else{
-        direction = 'ltr'; 
-    } */
+	//if(direction == 'rtl')
+	//{
+ //       direction = 'rtl'; 
+ //   }else{
+ //       direction = 'ltr'; 
+ //   } 
 	
 	dlabSettingsOptions = {
 			typography: "poppins",
@@ -44,7 +44,7 @@ function getUrlParams(dParam)
 			sidebarPosition: "fixed",
 			headerPosition: "fixed",
 			containerLayout: "full",
-			direction: 'ltr',
+			direction: 'rtl',
 		};
 
 	

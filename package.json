@@ -4,9 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sass:rtl": "node-sass --watch wwwroot/Jobick/scss/main.scss wwwroot/Jobick/css/style-rtl.css --source-map css/style-rtl.css.map",
+    "sass:ltr": "node-sass --watch wwwroot/Jobick/scss/main.scss wwwroot/Jobick/css/style.css --source-map css/style.css.map",
+    "build:rtl": "node-sass --output-style expanded --source-map true wwwroot/Jobick/scss/main.scss wwwroot/Jobick/css/style-rtl.css",
+    "build:ltr": "node-sass --output-style expanded --source-map true wwwroot/Jobick/scss/main.scss wwwroot/Jobick/css/style.css",
+    "build:all": "npm run build:ltr && npm run build:rtl",
+    "watch:all": "npm-run-all --parallel sass:ltr sass:rtl",
+    "clean:css": "rimraf wwwroot/Jobick/css/*.css wwwroot/Jobick/css/*.map"
   },
   "author": "",
   "license": "ISC",
-  "devDependencies": {}
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^6.0.1"
+  }
 }
