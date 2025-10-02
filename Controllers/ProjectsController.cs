@@ -47,6 +47,10 @@ public class ProjectsController(ProjectService _pservice, UserService _userservi
         ModelState.Remove(nameof(Project.CreatedBy));
         ModelState.Remove(nameof(Project.CreatedByNavigation));
         ModelState.Remove(nameof(Project.Tasks));
+        ModelState.Remove(nameof(Project.NameAr));
+        ModelState.Remove(nameof(Project.DescriptionAr));
+        project.NameAr = project.Name;
+        project.DescriptionAr = project.Description;
 
         if (ModelState.IsValid)
         {
