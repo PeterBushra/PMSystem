@@ -56,12 +56,12 @@
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedStartDate" class="form-label">تاريخ البدء المتوقع</label>
-                                <input asp-for="ExpectedStartDate" type="date" class="form-control" required />
+                                <input asp-for="ExpectedStartDate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
                                 <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedEndDate" class="form-label">تاريخ الانتهاء المتوقع</label>
-                                <input asp-for="ExpectedEndDate" type="date" class="form-control" required />
+                                <input asp-for="ExpectedEndDate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
                                 <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
@@ -73,7 +73,7 @@
                                 </div>
                                 <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
                                     <label asp-for="ActualEndDate" class="form-label">تاريخ الانتهاء الفعلي</label>
-                                    <input asp-for="ActualEndDate" type="date" class="form-control" />
+                                    <input asp-for="ActualEndDate" type="date" class="form-control" dir="rtl" style="text-align:right;" />
                                     <span asp-validation-for="ActualEndDate" class="text-danger"></span>
                                     <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
                                 </div>
