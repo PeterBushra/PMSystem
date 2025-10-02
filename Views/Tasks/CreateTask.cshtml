@@ -38,27 +38,27 @@
                             </div>
                             <div class="mb-3">
                                 <label asp-for="StageName" class="form-label">اسم المرحلة</label>
-                                <input asp-for="StageName" class="form-control" />
+                                <input asp-for="StageName" class="form-control" required />
                                 <span asp-validation-for="StageName" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ImplementorDepartment" class="form-label">القسم المنفذ</label>
-                                <input asp-for="ImplementorDepartment" class="form-control" />
+                                <input asp-for="ImplementorDepartment" class="form-control" required />
                                 <span asp-validation-for="ImplementorDepartment" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="DepartmentResponsible" class="form-label">القسم المسؤول</label>
-                                <input asp-for="DepartmentResponsible" class="form-control" />
+                                <input asp-for="DepartmentResponsible" class="form-control" required />
                                 <span asp-validation-for="DepartmentResponsible" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedStartDate" class="form-label">تاريخ البدء المتوقع</label>
-                                <input asp-for="ExpectedStartDate" type="text" class="form-control" value="@(Model.ExpectedStartDate.ToString("dd/MM/yyyy"))" required />
+                                <input asp-for="ExpectedStartDate" type="text" class="form-control datepicker" value="@(Model.ExpectedStartDate.ToString("dd/MM/yyyy"))" required />
                                 <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedEndDate" class="form-label">تاريخ الانتهاء المتوقع</label>
-                                <input asp-for="ExpectedEndDate" type="text" class="form-control" value="@(Model.ExpectedEndDate.ToString("dd/MM/yyyy"))" required />
+                                <input asp-for="ExpectedEndDate" type="text" class="form-control datepicker" value="@(Model.ExpectedEndDate.ToString("dd/MM/yyyy"))" required />
                                 <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
@@ -70,14 +70,14 @@
                                 </div>
                                 <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
                                     <label asp-for="ActualEndDate" class="form-label">تاريخ الانتهاء الفعلي</label>
-                                    <input asp-for="ActualEndDate" type="text" class="form-control" value="@(Model.ActualEndDate == DateTime.MinValue ? "" : Model.ActualEndDate?.ToString("dd/MM/yyyy"))" />
+                                    <input asp-for="ActualEndDate" type="text" class="form-control datepicker" value="@(Model.ActualEndDate == DateTime.MinValue ? "" : Model.ActualEndDate?.ToString("dd/MM/yyyy"))" />
                                     <span asp-validation-for="ActualEndDate" class="text-danger"></span>
                                     <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="DoneRatio" class="form-label">نسبة الإنجاز</label>
-                                <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" />
+                                <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                 <span asp-validation-for="DoneRatio" class="text-danger"></span>
                                 <small class="form-text text-muted">أدخل قيمة بين 0 و 100. 100 تعني مكتملة.</small>
                             </div>
@@ -99,12 +99,12 @@
                             </div>
                             <div class="mb-3">
                                 <label asp-for="DefinationOfDone" class="form-label">تعريف الإنجاز</label>
-                                <textarea asp-for="DefinationOfDone" class="form-control"></textarea>
+                                <textarea asp-for="DefinationOfDone" class="form-control" required></textarea>
                                 <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ManyDaysToComplete" class="form-label">عدد الأيام لإكمال المهمة</label>
-                                <input asp-for="ManyDaysToComplete" type="number" class="form-control" />
+                                <input asp-for="ManyDaysToComplete" type="number" class="form-control" required />
                                 <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
                             </div>
                             <button type="submit" class="btn btn-primary">حفظ</button>
@@ -175,7 +175,7 @@
             }
 
             // تهيئة منتقي التاريخ بصيغة dd/mm/yyyy
-            $('input[type="text"][asp-for="ExpectedStartDate"], input[type="text"][asp-for="ExpectedEndDate"], input[type="text"][asp-for="ActualEndDate"]').datepicker({
+            $('.datepicker').datepicker({
                 format: 'dd/mm/yyyy',
                 autoclose: true,
                 todayHighlight: true
