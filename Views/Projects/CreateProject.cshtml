@@ -2,17 +2,17 @@
 
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Add Project";
+    ViewData["Title"] = "إضافة مشروع";
 }
 
-<div class="content-body">
+<div class="content-body" dir="rtl" style="text-align:right;">
     <div class="container-fluid">
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">Projects</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">المشاريع</a></li>
                 <li class="breadcrumb-item active">
                     <a href="javascript:void(0)">
-                        @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                        @(Model.Id == 0 ? "إضافة مشروع" : "تعديل مشروع")
                     </a>
                 </li>
             </ol>
@@ -23,7 +23,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h4 class="card-title">
-                            @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                            @(Model.Id == 0 ? "إضافة مشروع" : "تعديل مشروع")
                         </h4>
                     </div>
                     <div class="card-body">
@@ -31,7 +31,7 @@
                             <form asp-action="PostProject" method="post" class="needs-validation" novalidate>
                                 <div class="row">
 
-                                    <!-- Hidden fields for non-editable/non-existent attributes -->
+                                    <!-- حقول مخفية للسمات غير القابلة للتحرير -->
                                     <input type="hidden" asp-for="Id" />
                                     <input type="hidden" asp-for="CreatedDate" />
                                     <input type="hidden" asp-for="CreatedBy" />
@@ -40,83 +40,83 @@
 
                                     <div class="col-xl-6">
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Name</label>
+                                            <label class="col-lg-4 col-form-label form-label required">الاسم</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="Name" class="form-control" placeholder="Project Name" required />
-                                                <div class="invalid-feedback">Please enter project name.</div>
+                                                <input asp-for="Name" class="form-control" placeholder="اسم المشروع" required />
+                                                <div class="invalid-feedback">يرجى إدخال اسم المشروع.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Name (AR)</label>
+                                            <label class="col-lg-4 col-form-label form-label required">الاسم (عربي)</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="NameAr" class="form-control" placeholder="Project Name (Arabic)" required />
-                                                <div class="invalid-feedback">Please enter project name (AR).</div>
+                                                <input asp-for="NameAr" class="form-control" placeholder="اسم المشروع (عربي)" required />
+                                                <div class="invalid-feedback">يرجى إدخال اسم المشروع (عربي).</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Description</label>
+                                            <label class="col-lg-4 col-form-label form-label required">الوصف</label>
                                             <div class="col-lg-6">
-                                                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Description" required></textarea>
-                                                <div class="invalid-feedback">Please enter description.</div>
+                                                <textarea asp-for="Description" class="form-control" rows="3" placeholder="الوصف" required></textarea>
+                                                <div class="invalid-feedback">يرجى إدخال الوصف.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Description (AR)</label>
+                                            <label class="col-lg-4 col-form-label form-label required">الوصف (عربي)</label>
                                             <div class="col-lg-6">
-                                                <textarea asp-for="DescriptionAr" class="form-control" rows="3" placeholder="Description (Arabic)" required></textarea>
-                                                <div class="invalid-feedback">Please enter description (AR).</div>
+                                                <textarea asp-for="DescriptionAr" class="form-control" rows="3" placeholder="الوصف (عربي)" required></textarea>
+                                                <div class="invalid-feedback">يرجى إدخال الوصف (عربي).</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Responsible For Implementing</label>
+                                            <label class="col-lg-4 col-form-label form-label required">المسؤول عن التنفيذ</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="Responsible" required />
-                                                <div class="invalid-feedback">Please enter responsible person.</div>
+                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="اسم المسؤول" required />
+                                                <div class="invalid-feedback">يرجى إدخال اسم المسؤول عن التنفيذ.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">System Owner</label>
+                                            <label class="col-lg-4 col-form-label form-label required">مالك النظام</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="SystemOwner" class="form-control" placeholder="System Owner" required />
-                                                <div class="invalid-feedback">Please enter system owner.</div>
+                                                <input asp-for="SystemOwner" class="form-control" placeholder="مالك النظام" required />
+                                                <div class="invalid-feedback">يرجى إدخال مالك النظام.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Project Goal</label>
+                                            <label class="col-lg-4 col-form-label form-label required">هدف المشروع</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="ProjectGoal" class="form-control" placeholder="Project Goal" required />
-                                                <div class="invalid-feedback">Please enter project goal.</div>
+                                                <input asp-for="ProjectGoal" class="form-control" placeholder="هدف المشروع" required />
+                                                <div class="invalid-feedback">يرجى إدخال هدف المشروع.</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="col-xl-6">
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Start Date</label>
+                                            <label class="col-lg-4 col-form-label form-label required">تاريخ البدء</label>
                                             <div class="col-lg-6">
                                                 <input asp-for="StartSate" type="date" class="form-control" required />
-                                                <div class="invalid-feedback">Please select start date.</div>
+                                                <div class="invalid-feedback">يرجى اختيار تاريخ البدء.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">End Date</label>
+                                            <label class="col-lg-4 col-form-label form-label required">تاريخ الانتهاء</label>
                                             <div class="col-lg-6">
                                                 <input asp-for="EndDate" type="date" class="form-control" required />
-                                                <div class="invalid-feedback">Please select end date.</div>
+                                                <div class="invalid-feedback">يرجى اختيار تاريخ الانتهاء.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">Total Cost</label>
+                                            <label class="col-lg-4 col-form-label form-label required">التكلفة الإجمالية</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="TotalCost" type="number" step="0.01" class="form-control" placeholder="Total Cost" required />
-                                                <div class="invalid-feedback">Please enter total cost.</div>
+                                                <input asp-for="TotalCost" type="number" step="0.01" class="form-control" placeholder="التكلفة الإجمالية" required />
+                                                <div class="invalid-feedback">يرجى إدخال التكلفة الإجمالية.</div>
                                             </div>
                                         </div>
 
                                         <div class="mb-3 row">
                                             <div class="col-lg-8 ms-auto">
-                                                <button type="submit" class="btn btn-primary">Submit</button>
-                                                <a href="@Url.Action("Index", "Projects")" class="btn btn-danger">Cancel</a>
+                                                <button type="submit" class="btn btn-primary">حفظ</button>
+                                                <a href="@Url.Action("Index", "Projects")" class="btn btn-danger">إلغاء</a>
                                             </div>
                                         </div>
                                     </div>

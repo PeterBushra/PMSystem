@@ -1,31 +1,31 @@
 ﻿@{
     Layout = "~/Views/Shared/_LayoutJobickBlank.cshtml";
 }
-<div class="fix-wrapper">
+<div class="fix-wrapper" dir="rtl" style="text-align:right;">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-6">
                 <div class="card mb-0 h-auto">
                     <div class="card-body">
                         <div class="text-center mb-3">
-                            <img class="logo-auth" src="~/Jobick/images/SmallLogo.png" alt="">
+                            <img class="logo-auth" src="~/Jobick/images/SmallLogo.png" alt="االادارة الاستراتيجية لادارة المواد الخطرة في أبو ظبي">
                         </div>
-                        <h4 class="text-center mb-4">Sign in your account</h4>
-                        <form aasp-action="Login" method="post">
+                        <h4 class="text-center mb-4">تسجيل الدخول إلى حسابك</h4>
+                        <form asp-action="Login" method="post">
                             <div class="form-group mb-4">
-                                <label class="form-label" for="username">Username</label>
-                                <input type="text" class="form-control" placeholder="Enter username" id="username" name="username" required>
+                                <label class="form-label" for="username">اسم المستخدم</label>
+                                <input type="text" class="form-control" placeholder="أدخل اسم المستخدم" id="username" name="username" required>
                             </div>
                             <div class="mb-sm-4 mb-3 position-relative">
-                                <label class="form-label" for="password">Password</label>
-                                <input type="password" id="password" class="form-control" name="password" placeholder="Enter password" required>
+                                <label class="form-label" for="password">كلمة المرور</label>
+                                <input type="password" id="password" class="form-control" name="password" placeholder="أدخل كلمة المرور" required>
                                 <span class="show-pass eye">
                                     <i class="fa fa-eye-slash"></i>
                                     <i class="fa fa-eye"></i>
                                 </span>
                             </div>
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                                <button type="submit" class="btn btn-primary btn-block">تسجيل الدخول</button>
                             </div>
                         </form>
 
@@ -40,3 +40,25 @@
         </div>
     </div>
 </div>
+
+@section Jobick_script
+{
+    <!-- Required vendors -->
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+    <!-- Apex Chart -->
+    <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
+
+    <!-- Datatable -->
+    <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
+    <script src="~/Jobick/js/plugins-init/datatables.init.js"></script>
+
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+
+}

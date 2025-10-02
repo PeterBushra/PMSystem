@@ -1,16 +1,16 @@
 ﻿@model Jobick.ViewModels.ProjectDetailsVM
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Project Details";
+    ViewData["Title"] = "تفاصيل المشروع";
 }
 
-<div class="content-body">
+<div class="content-body" dir="rtl" style="text-align:right;">
     <div class="container-fluid">
         <!-- Breadcrumb -->
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">Projects</a></li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Project Details</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">المشاريع</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">تفاصيل المشروع</a></li>
             </ol>
         </div>
 
@@ -19,23 +19,23 @@
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Project Information</h4>
+                        <h4 class="card-title">معلومات المشروع</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-xl-6">
-                                <p><strong>Name:</strong> @Model.Name</p>
-                                <p><strong>Name (AR):</strong> @Model.NameAr</p>
-                                <p><strong>Description:</strong> @Model.Description</p>
-                                <p><strong>Description (AR):</strong> @Model.DescriptionAr</p>
-                                <p><strong>Responsible:</strong> @Model.ResponsibleForImplementing</p>
+                                <p><strong>الاسم:</strong> @Model.Name</p>
+                                <p><strong>الاسم (عربي):</strong> @Model.NameAr</p>
+                                <p><strong>الوصف:</strong> @Model.Description</p>
+                                <p><strong>الوصف (عربي):</strong> @Model.DescriptionAr</p>
+                                <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
                             </div>
                             <div class="col-xl-6">
-                                <p><strong>System Owner:</strong> @Model.SystemOwner</p>
-                                <p><strong>Project Goal:</strong> @Model.ProjectGoal</p>
-                                <p><strong>Start Date:</strong> @Model.StartSate.ToShortDateString()</p>
-                                <p><strong>End Date:</strong> @Model.EndDate.ToShortDateString()</p>
-                                <p><strong>Total Cost:</strong> @Model.TotalCost?.ToString("C")</p>
+                                <p><strong>مالك النظام:</strong> @Model.SystemOwner</p>
+                                <p><strong>هدف المشروع:</strong> @Model.ProjectGoal</p>
+                                <p><strong>تاريخ البدء:</strong> @Model.StartSate.ToShortDateString()</p>
+                                <p><strong>تاريخ الانتهاء:</strong> @Model.EndDate.ToShortDateString()</p>
+                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("C")</p>
                             </div>
                         </div>
                     </div>
@@ -53,42 +53,42 @@
                                 <div class="static-icon">
                                     <span><i class="fas fa-tasks"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
-                                    <p class="mb-0">Total Tasks</p>
+                                    <p class="mb-0">إجمالي المهام</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
                                 <div class="static-icon">
                                     <span><i class="fas fa-check-circle text-success"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
-                                    <p class="mb-0">Completed</p>
+                                    <p class="mb-0">المهام المكتملة</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
                                 <div class="static-icon">
                                     <span><i class="fas fa-spinner text-info"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.InProgressTasks</h3>
-                                    <p class="mb-0">In Progress</p>
+                                    <p class="mb-0">قيد التنفيذ</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
                                 <div class="static-icon">
                                     <span><i class="fas fa-clock text-warning"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
-                                    <p class="mb-0">Not Started</p>
+                                    <p class="mb-0">لم تبدأ</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
                                 <div class="static-icon">
                                     <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
-                                    <p class="mb-0">Overdue</p>
+                                    <p class="mb-0">متأخرة</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
                                 <div class="static-icon">
                                     <span><i class="fas fa-calendar-alt"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
-                                    <p class="mb-0">Days Remaining</p>
+                                    <p class="mb-0">الأيام المتبقية</p>
                                 </div>
                             </div>
                         </div>
@@ -102,7 +102,7 @@
             <div class="col-xl-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Project KPIs</h4>
+                        <h4 class="card-title">مؤشرات الأداء للمشروع</h4>
                     </div>
                     <div class="card-body pb-2">
                         <div class="row sp10">
@@ -113,8 +113,8 @@
                                     <span class="donut" data-peity='{ "fill": ["#35c556", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetTaskStatusChartData()</span>
                                     <h4 class="mb-0 pie-label">@Model.KPIs.CompletionPercentage%</h4>
                                 </div>
-                                <h5 class="mb-1">Task Completion</h5>
-                                <p class="mb-0">@Model.KPIs.CompletedTasks of @Model.KPIs.TotalTasks Tasks</p>
+                                <h5 class="mb-1">نسبة إنجاز المهام</h5>
+                                <p class="mb-0">@Model.KPIs.CompletedTasks من @Model.KPIs.TotalTasks مهمة</p>
                             </div>
 
                             <!-- Project Timeline Progress -->
@@ -123,8 +123,8 @@
                                     <span class="donut" data-peity='{ "fill": ["#3f4cfe", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetProjectProgressChartData()</span>
                                     <h4 class="mb-0 pie-label">@Model.KPIs.ProjectProgressPercentage%</h4>
                                 </div>
-                                <h5 class="mb-1">Timeline Progress</h5>
-                                <p class="mb-0">@Model.KPIs.DaysRemaining Days Remaining</p>
+                                <h5 class="mb-1">تقدم الجدول الزمني</h5>
+                                <p class="mb-0">@Model.KPIs.DaysRemaining يوم متبقي</p>
                             </div>
 
                             <!-- Average Task Completion -->
@@ -133,8 +133,8 @@
                                     <span class="donut" data-peity='{ "fill": ["#f73a0b", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.AverageTaskCompletion/100</span>
                                     <h4 class="mb-0 pie-label">@Model.KPIs.AverageTaskCompletion%</h4>
                                 </div>
-                                <h5 class="mb-1">Avg. Completion</h5>
-                                <p class="mb-0">Average Task Progress</p>
+                                <h5 class="mb-1">متوسط الإنجاز</h5>
+                                <p class="mb-0">متوسط تقدم المهام</p>
                             </div>
 
                             <!-- In Progress vs Remaining -->
@@ -143,11 +143,11 @@
                                     <span class="donut" data-peity='{ "fill": ["#ffc107", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.InProgressTasks/@(Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks)</span>
                                     <h4 class="mb-0 pie-label">
                                         @((Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) > 0 ?
-                                                                                Math.Round((decimal)Model.KPIs.InProgressTasks / (Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) * 100, 0) : 0)%
+                                            Math.Round((decimal)Model.KPIs.InProgressTasks / (Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) * 100, 0) : 0)%
                                     </h4>
                                 </div>
-                                <h5 class="mb-1">Active Tasks</h5>
-                                <p class="mb-0">@Model.KPIs.InProgressTasks In Progress</p>
+                                <h5 class="mb-1">المهام النشطة</h5>
+                                <p class="mb-0">@Model.KPIs.InProgressTasks قيد التنفيذ</p>
                             </div>
 
                         </div>
@@ -163,7 +163,7 @@
                 <div class="col-xl-6">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Tasks by Department</h4>
+                            <h4 class="card-title">المهام حسب القسم</h4>
                         </div>
                         <div class="card-body">
                             @foreach (var dept in Model.KPIs.TasksByDepartment.OrderByDescending(d => d.Value))
@@ -172,12 +172,12 @@
                                 <div class="progress default-progress mb-3">
                                     <div class="progress-bar bg-primary progress-animated"
                                          style="width: @percentage%; height:8px;" role="progressbar">
-                                        <span class="sr-only">@percentage% Complete</span>
+                                        <span class="sr-only">@percentage% مكتملة</span>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
                                     <span class="font-w500">@dept.Key</span>
-                                    <h6 class="mb-0">@dept.Value Tasks (@percentage%)</h6>
+                                    <h6 class="mb-0">@dept.Value مهمة (@percentage%)</h6>
                                 </div>
                             }
                         </div>
@@ -190,7 +190,7 @@
                 <div class="col-xl-6">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Tasks by Stage</h4>
+                            <h4 class="card-title">المهام حسب المرحلة</h4>
                         </div>
                         <div class="card-body">
                             @foreach (var stage in Model.KPIs.TasksByStage.OrderByDescending(s => s.Value))
@@ -202,12 +202,12 @@
                                 <div class="progress default-progress mb-3">
                                     <div class="progress-bar @colors[colorIndex] progress-animated"
                                          style="width: @percentage%; height:8px;" role="progressbar">
-                                        <span class="sr-only">@percentage% Complete</span>
+                                        <span class="sr-only">@percentage% مكتملة</span>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
                                     <span class="font-w500">@stage.Key</span>
-                                    <h6 class="mb-0">@stage.Value Tasks (@percentage%)</h6>
+                                    <h6 class="mb-0">@stage.Value مهمة (@percentage%)</h6>
                                 </div>
                             }
                         </div>
@@ -221,22 +221,22 @@
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">Project Tasks</h4>
-                        <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">Add Task</a>
+                        <h4 class="card-title">مهام المشروع</h4>
+                        <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Status</th>
-                                        <th>#</th>
-                                        <th>Stage Name</th>
-                                        <th>Task</th>
-                                        <th>Department</th>
-                                        <th>Expected End</th>
-                                        <th>Done %</th>
-                                        <th>Actions</th>
+                                        <th>الحالة</th>
+                                        <th>رقم</th>
+                                        <th>اسم المرحلة</th>
+                                        <th>المهمة</th>
+                                        <th>القسم</th>
+                                        <th>تاريخ الانتهاء المتوقع</th>
+                                        <th>نسبة الإنجاز</th>
+                                        <th>الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -246,9 +246,9 @@
                                             task.ExpectedEndDate < DateTime.Today ? "badge-danger" :
                                             task.DoneRatio > 0 ? "badge-info" : "badge-warning";
 
-                                        var statusText = task.DoneRatio >= 1.0m ? "Completed" :
-                                            task.ExpectedEndDate < DateTime.Today ? "Overdue" :
-                                            task.DoneRatio > 0 ? "In Progress" : "Not Started";
+                                        var statusText = task.DoneRatio >= 1.0m ? "مكتملة" :
+                                            task.ExpectedEndDate < DateTime.Today ? "متأخرة" :
+                                            task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
 
                                         <tr>
                                             <td><span class="badge @statusClass">@statusText</span></td>

@@ -1,8 +1,8 @@
-@model Jobick.Models.Project
+﻿@model Jobick.Models.Project
 
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Delete Project";
+    ViewData["Title"] = "حذف المشروع";
 }
 
 <div class="content-body">
@@ -11,8 +11,8 @@
         <!-- Breadcrumb -->
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Projects</a></li>
-                <li class="breadcrumb-item"><a href="javascript:void(0)">Delete</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">المشاريع</a></li>
+                <li class="breadcrumb-item"><a href="javascript:void(0)">حذف</a></li>
             </ol>
         </div>
 
@@ -20,28 +20,28 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title text-danger">Delete Project</h4>
+                        <h4 class="card-title text-danger">حذف المشروع</h4>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-danger mb-4">
-                            Are you sure you want to delete this project?
+                            هل أنت متأكد أنك تريد حذف هذا المشروع؟
                         </div>
                         <dl class="row mb-4">
-                            <dt class="col-sm-2">Name</dt>
+                            <dt class="col-sm-2">الاسم</dt>
                             <dd class="col-sm-10">@Model.Name</dd>
-                            <dt class="col-sm-2">Description</dt>
+                            <dt class="col-sm-2">الوصف</dt>
                             <dd class="col-sm-10">@Model.Description</dd>
-                            <dt class="col-sm-2">Start Date</dt>
+                            <dt class="col-sm-2">تاريخ البدء</dt>
                             <dd class="col-sm-10">@Model.StartSate.ToString("yyyy/MM/dd")</dd>
-                            <dt class="col-sm-2">End Date</dt>
+                            <dt class="col-sm-2">تاريخ الانتهاء</dt>
                             <dd class="col-sm-10">@Model.EndDate.ToString("yyyy/MM/dd")</dd>
-                            <dt class="col-sm-2">Total Cost</dt>
+                            <dt class="col-sm-2">التكلفة الإجمالية</dt>
                             <dd class="col-sm-10">@Model.TotalCost?.ToString("C")</dd>
                         </dl>
                         <form asp-action="PostDelete" method="post">
                             <input type="hidden" asp-for="Id" />
-                            <button type="submit" class="btn btn-danger me-2">Delete</button>
-                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger me-2">حذف</button>
+                            <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
                         </form>
                     </div>
                 </div>

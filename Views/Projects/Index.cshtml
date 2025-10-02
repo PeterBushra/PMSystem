@@ -2,7 +2,7 @@
 
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Projects";
+    ViewData["Title"] = "المشاريع";
 }
 
 <div class="content-body">
@@ -11,7 +11,7 @@
         <!-- Breadcrumb -->
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Projects</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">المشاريع</a></li>
             </ol>
         </div>
 
@@ -20,7 +20,7 @@
             <div class="col-12 text-end">
                 <a class="btn btn-sm btn-primary"
                    href="@Url.Action("CreateProject", "Projects")">
-                    <i class="fa fa-plus"></i> Add Project
+                    <i class="fa fa-plus"></i> إضافة مشروع
                 </a>
             </div>
         </div>
@@ -30,25 +30,25 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Projects List</h4>
+                        <h4 class="card-title">قائمة المشاريع</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table id="projectsTable" class="table table-hover table-striped" style="min-width: 1000px">
                                 <thead>
                                     <tr>
-                                        <th>Status</th>
-                                        <th>Name</th>
-                                        <th>Name (AR)</th>
-                                        <th>Description</th>
-                                        <th>Description (AR)</th>
-                                        <th>Responsible</th>
-                                        <th>System Owner</th>
-                                        <th>Project Goal</th>
-                                        <th>Start Date</th>
-                                        <th>End Date</th>
-                                        <th>Total Cost</th>
-                                        <th>Actions</th>
+                                        <th>الحالة</th>
+                                        <th>الاسم</th>
+                                        <th>الاسم (عربي)</th>
+                                        <th>الوصف</th>
+                                        <th>الوصف (عربي)</th>
+                                        <th>المسؤول</th>
+                                        <th>مالك النظام</th>
+                                        <th>هدف المشروع</th>
+                                        <th>تاريخ البدء</th>
+                                        <th>تاريخ الانتهاء</th>
+                                        <th>التكلفة الإجمالية</th>
+                                        <th>الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -56,7 +56,7 @@
                                     {
                                         <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
                                             style="cursor:pointer;">
-                                            <td><span class="badge light badge-warning">In Progress</span></td>
+                                            <td><span class="badge light badge-warning">قيد التنفيذ</span></td>
                                             <td>@project.Name</td>
                                             <td>@project.NameAr</td>
                                             <td>@project.Description</td>
