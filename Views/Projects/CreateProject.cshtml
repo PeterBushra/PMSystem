@@ -10,7 +10,11 @@
         <div class="row page-titles">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">Projects</a></li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Add Project</a></li>
+                <li class="breadcrumb-item active">
+                    <a href="javascript:void(0)">
+                        @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                    </a>
+                </li>
             </ol>
         </div>
 
@@ -18,7 +22,9 @@
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">@ViewData["Title"]</h4>
+                        <h4 class="card-title">
+                            @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                        </h4>
                     </div>
                     <div class="card-body">
                         <div class="form-validation">

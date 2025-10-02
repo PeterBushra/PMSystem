@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
-public class TasksController( TaskService _tservice) : Controller
+public class TasksController(TaskService _tservice) : Controller
 {
     [Authorize(Roles = "Admin")]
     public IActionResult CreateTask(int projectId)
@@ -17,18 +17,22 @@ public class TasksController( TaskService _tservice) : Controller
     [HttpPost]
     public async Task<IActionResult> PostTask(Models.Task model)
     {
-        // remove validation for properties not posted
-        ModelState.Remove("ProjectId");
-        ModelState.Remove("CreatedDate");
-        ModelState.Remove("CreatedBy");
-        ModelState.Remove("Project");
-        ModelState.Remove("CreatedByNavigation");
-        ModelState.Remove("ActualEndDate");
-        ModelState.Remove("ManyDaysToComplete");
-        ModelState.Remove("DefinationOfDone");
+        // Remove validation for properties not posted in the form
+        ModelState.Remove(nameof(Models.Task.Project));
+        ModelState.Remove(nameof(Models.Task.CreatedByNavigation));
+        ModelState.Remove(nameof(Models.Task.ManyDaysToComplete));
+        ModelState.Remove(nameof(Models.Task.DefinationOfDone));
+        ModelState.Remove(nameof(Models.Task.DoneRatio));
+        ModelState.Remove(nameof(Models.Task.DepartmentResponsible));
+        ModelState.Remove(nameof(Models.Task.ActualEndDate));
 
         if (!ModelState.IsValid)
             return View("CreateTask", model);
+
+        // Convert DoneRatio from percentage to fraction
+        if (model.DoneRatio > 100) model.DoneRatio = 100;
+        if (model.DoneRatio < 0) model.DoneRatio = 0;
+        model.DoneRatio = model.DoneRatio / 100m;
 
         if (model.Id == 0)
         {
@@ -41,13 +45,54 @@ public class TasksController( TaskService _tservice) : Controller
             await _tservice.UpdateTaskAsync(model);
         }
 
-        // Redirect to ProjectDetails using the ProjectId
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpGet]
     public async Task<IActionResult> EditTask(int id)
+    {
+        var task = await _tservice.GetTaskAsync(id);
+        if (task == null)
+            return NotFound();
+
+        // Convert DoneRatio from fraction to percentage for the form
+        if (task.DoneRatio.HasValue)
+            task.DoneRatio = task.DoneRatio.Value * 100m;
+
+        ViewData["Title"] = "Edit Task";
+        return View("CreateTask", task);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditTask(int id, Models.Task model)
+    {
+        if (id != model.Id)
+            return BadRequest();
+
+        // Remove validation for properties not posted in the form
+        ModelState.Remove(nameof(Models.Task.Project));
+        ModelState.Remove(nameof(Models.Task.CreatedByNavigation));
+        ModelState.Remove(nameof(Models.Task.ManyDaysToComplete));
+        ModelState.Remove(nameof(Models.Task.DefinationOfDone));
+        ModelState.Remove(nameof(Models.Task.DoneRatio));
+        ModelState.Remove(nameof(Models.Task.DepartmentResponsible));
+
+        if (!ModelState.IsValid)
+            return View("CreateTask", model);
+
+        // Convert DoneRatio from percentage to fraction
+        if (model.DoneRatio > 100) model.DoneRatio = 100;
+        if (model.DoneRatio < 0) model.DoneRatio = 0;
+        model.DoneRatio = model.DoneRatio / 100m;
+
+        await _tservice.UpdateTaskAsync(model);
+        return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteTask(int id, int projectId)
     {
         var task = await _tservice.GetTaskAsync(id);
         if (task == null)
@@ -57,18 +102,8 @@ public class TasksController( TaskService _tservice) : Controller
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
-    public async Task<IActionResult> EditTask(Models.Task model)
-    {
-        if (!ModelState.IsValid)
-            return View(model);
-
-        await _tservice.UpdateTaskAsync(model);
-        return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
-    }
-
-    [Authorize(Roles = "Admin")]
-    [HttpPost]
-    public async Task<IActionResult> DeleteTask(int id, int projectId)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PostDeleteTask(int id, int projectId)
     {
         await _tservice.DeleteTaskAsync(id);
         return RedirectToAction("ProjectDetails", "Projects", new { id = projectId });
