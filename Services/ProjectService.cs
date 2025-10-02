@@ -70,9 +70,14 @@ public class ProjectService
     // Delete (Async)
     public async System.Threading.Tasks.Task DeleteProjectAsync(int id)
     {
-        var project = await _context.Projects.FindAsync(id);
+        var project = await _context.Projects
+            .Include(p => p.Tasks)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
         if (project != null)
         {
+            // Remove all linked tasks first
+            _context.Tasks.RemoveRange(project.Tasks);
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
         }
@@ -81,11 +86,21 @@ public class ProjectService
     // Delete (Sync)
     internal void DeleteProject(int id)
     {
-        var project = _context.Projects.Find(id);
+        var project = _context.Projects
+            .Include(p => p.Tasks)
+            .FirstOrDefault(p => p.Id == id);
+
         if (project != null)
         {
+            // Remove all linked tasks first
+            _context.Tasks.RemoveRange(project.Tasks);
             _context.Projects.Remove(project);
             _context.SaveChanges();
         }
+    }
+
+    internal bool ProjectExists(int id)
+    {
+        return _context.Projects.Any(p => p.Id == id);
     }
 }

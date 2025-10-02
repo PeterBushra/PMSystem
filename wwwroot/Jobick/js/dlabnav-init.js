@@ -49,7 +49,6 @@ function getUrlParams(dParam)
 
 	
 	
-	
 	new dlabSettings(dlabSettingsOptions); 
 
 	jQuery(window).on('resize',function(){

@@ -120,4 +120,63 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
         return kpis;
     }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var project = await _pservice.GetProjectAsync(id);
+        if (project == null)
+            return NotFound();
+        return View(project);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, Project model)
+    {
+        if (id != model.Id)
+            return BadRequest();
+
+        ModelState.Remove(nameof(Project.CreatedDate));
+        ModelState.Remove(nameof(Project.CreatedBy));
+        ModelState.Remove(nameof(Project.CreatedByNavigation));
+        ModelState.Remove(nameof(Project.Tasks));
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                await _pservice.UpdateProjectAsync(model);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_pservice.ProjectExists(model.Id))
+                    return NotFound();
+                else
+                    throw;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(model);
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var project = await _pservice.GetProjectAsync(id);
+        if (project == null)
+            return NotFound();
+        return View(project);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PostDelete(int id)
+    {
+        await _pservice.DeleteProjectAsync(id);
+        return RedirectToAction(nameof(Index));
+    }
 }
