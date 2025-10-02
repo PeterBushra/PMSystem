@@ -37,8 +37,17 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
         if (ModelState.IsValid)
         {
-            project.CreatedDate = DateTime.Now;
-            _pservice.AddProject(project);
+            if (project.Id == 0)
+            {
+                // Create new project
+                project.CreatedDate = DateTime.Now;
+                _pservice.AddProject(project);
+            }
+            else
+            {
+                // Update existing project
+                _pservice.UpdateProject(project);
+            }
             return RedirectToAction(nameof(Index));
         }
 
@@ -127,7 +136,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
         var project = await _pservice.GetProjectAsync(id);
         if (project == null)
             return NotFound();
-        return View(project);
+        // Reuse the CreateProject view for editing
+        ViewData["Title"] = "Edit Project";
+        return View("CreateProject", project);
     }
 
     [Authorize(Roles = "Admin")]
@@ -159,7 +170,8 @@ public class ProjectsController(ProjectService _pservice) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        return View(model);
+        ViewData["Title"] = "Edit Project";
+        return View("CreateProject", model);
     }
 
     [Authorize(Roles = "Admin")]
