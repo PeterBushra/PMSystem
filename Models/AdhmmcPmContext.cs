@@ -19,9 +19,19 @@ public partial class AdhmmcPmContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    // Remove hardcoded connection string and warning
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=DESKTOP-DN09NM7\\SQLEXPRESS;Database=ADHMMC-PM;Trusted_Connection=True;TrustServerCertificate=True;");
+    {
+        // Only configure if options are not already set (for design-time tools)
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Use configuration-based connection string
+            optionsBuilder.UseSqlServer(
+                "Name=DefaultConnection",
+                sqlOptions => sqlOptions.EnableRetryOnFailure()
+                );
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
