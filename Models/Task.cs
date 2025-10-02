@@ -57,4 +57,6 @@ public partial class Task
     public virtual Project Project { get; set; } = null!;
 
     public decimal? Weight { get; set; }
+
+    public decimal? Cost { get; set; }
 }

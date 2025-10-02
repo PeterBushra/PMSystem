@@ -20,7 +20,6 @@ public partial class AdhmmcPmContext : DbContext
     public virtual DbSet<Task> Tasks { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Only configure if options are not already set (for design-time tools)
@@ -33,6 +32,7 @@ public partial class AdhmmcPmContext : DbContext
                 );
         }
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>(entity =>
@@ -60,6 +60,7 @@ public partial class AdhmmcPmContext : DbContext
             entity.ToTable("Task");
 
             entity.Property(e => e.AttachmentContentType).HasMaxLength(150);
+            entity.Property(e => e.Cost).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.DefinationOfDone).HasMaxLength(4000);
             entity.Property(e => e.DepartmentResponsible).HasMaxLength(50);

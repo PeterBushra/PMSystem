@@ -33,7 +33,7 @@
                                 <p><strong>هدف المشروع:</strong> @Model.ProjectGoal</p>
                                 <p><strong>تاريخ البدء:</strong> @Model.StartSate.ToShortDateString()</p>
                                 <p><strong>تاريخ الانتهاء:</strong> @Model.EndDate.ToShortDateString()</p>
-                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("C")</p>
+                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString()</p>
                             </div>
                         </div>
                     </div>
@@ -106,14 +106,14 @@
                         <div class="row sp10">
 
                             <!-- Task Completion Chart -->
-                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
+                            @* <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
                                 <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
                                     <span class="donut" data-peity='{ "fill": ["#35c556", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetTaskStatusChartData()</span>
                                     <h4 class="mb-0 pie-label">@Model.KPIs.CompletionPercentage%</h4>
                                 </div>
                                 <h5 class="mb-1">نسبة إنجاز المهام</h5>
                                 <p class="mb-0">@Model.KPIs.CompletedTasks من @Model.KPIs.TotalTasks مهمة</p>
-                            </div>
+                            </div> *@
 
            @*                  <!-- Project Timeline Progress -->
                             <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
@@ -146,7 +146,7 @@
 
         <!-- Department & Stage Distribution -->
         <div class="row">
-            @if (Model.KPIs.TasksByDepartment.Any())
+         @*    @if (Model.KPIs.TasksByDepartment.Any())
             {
                 <div class="col-xl-6">
                     <div class="card">
@@ -171,7 +171,7 @@
                         </div>
                     </div>
                 </div>
-            }
+            } *@
 
             @if (Model.KPIs.TasksByStage.Any())
             {
@@ -217,15 +217,15 @@
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>الحالة</th>
-                                        <th>رقم</th>
-                                        <th>اسم المرحلة</th>
-                                        <th>المهمة</th>
-                                        <th>القسم</th>
-                                        <th>تاريخ البدء المتوقع</th>
-                                        <th>تاريخ الانتهاء المتوقع</th>
-                                        <th>نسبة الإنجاز</th>
-                                        <th>الإجراءات</th>
+                                        <th class="text-center">الحالة</th>
+                                        <th class="text-center">اسم المرحلة</th>
+                                        <th class="text-center">المهمة</th>
+                                        <th class="text-center">القسم</th>
+                                        <th class="text-center">تاريخ البدء المتوقع</th>
+                                        <th class="text-center">تاريخ الانتهاء المتوقع</th>
+                                        <th class="text-center">نسبة الإنجاز</th>
+                                        <th class="text-center">التكلفة</th>
+                                        <th class="text-center">الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -241,13 +241,13 @@
 
                                         <tr>
                                             <td><span class="badge @statusClass">@statusText</span></td>
-                                            <td>@task.Id</td>
                                             <td>@task.StageName</td>
                                             <td>@task.Task1</td>
                                             <td>@task.ImplementorDepartment</td>
                                             <td>@task.ExpectedStartDate.ToShortDateString()</td>
                                             <td>@task.ExpectedEndDate.ToShortDateString()</td>
                                             <td>@task.DoneRatio?.ToString("P0")</td>
+                                            <td>@task.Cost.ToString()</td>
                                             <td>
                                                 <div class="d-flex">
                                                     <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id"
