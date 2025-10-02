@@ -1,7 +1,9 @@
 ﻿using Jobick.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http; // Add this for IFormFile
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Jobick.Controllers;
 public class TasksController(TaskService _tservice) : Controller
@@ -36,6 +38,30 @@ public class TasksController(TaskService _tservice) : Controller
 
         model.TaskAr = model.Task1!;
         model.StageNameAr = model.StageName!;
+
+        // Handle Attachment
+        var file = Request.Form.Files["Attachment"];
+        if (model.DoneRatio == 100.0m) // 100% (already converted to fraction)
+        {
+            if (file == null || file.Length == 0)
+            {
+                ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
+                return View("CreateTask", model);
+            }
+            using (var ms = new MemoryStream())
+            {
+                await file.CopyToAsync(ms);
+                model.AttachmentData = ms.ToArray();
+                model.AttachmentFileName = file.FileName.GetHashCode();
+                model.AttachmentContentType = file.ContentType;
+            }
+        }
+        else
+        {
+            model.AttachmentData = null;
+            model.AttachmentFileName = null;
+            model.AttachmentContentType = null;
+        }
 
         if (!ModelState.IsValid)
             return View("CreateTask", model);
@@ -96,6 +122,34 @@ public class TasksController(TaskService _tservice) : Controller
         model.TaskAr = model.Task1!;
         model.StageNameAr = model.StageName!;
 
+        // Handle Attachment
+        var file = Request.Form.Files["Attachment"];
+        if (model.DoneRatio == 100.0m) // 100% (already converted to fraction)
+        {
+            if ((file == null || file.Length == 0) && (model.AttachmentData == null || model.AttachmentData.Length == 0))
+            {
+                ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
+                return View("CreateTask", model);
+            }
+            if (file != null && file.Length > 0)
+            {
+                using (var ms = new MemoryStream())
+                {
+                    await file.CopyToAsync(ms);
+                    model.AttachmentData = ms.ToArray();
+                    model.AttachmentFileName = file.FileName.GetHashCode();
+                    model.AttachmentContentType = file.ContentType;
+                }
+            }
+            // else: keep existing attachment if present
+        }
+        else
+        {
+            model.AttachmentData = null;
+            model.AttachmentFileName = null;
+            model.AttachmentContentType = null;
+        }
+
         if (!ModelState.IsValid)
             return View("CreateTask", model);
 
@@ -124,5 +178,36 @@ public class TasksController(TaskService _tservice) : Controller
     {
         await _tservice.DeleteTaskAsync(id);
         return RedirectToAction("ProjectDetails", "Projects", new { id = projectId });
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DownloadAttachment(int id)
+    {
+        var task = await _tservice.GetTaskAsync(id);
+        if (task?.AttachmentData == null || task.AttachmentData.Length == 0)
+            return NotFound();
+
+        // Try to get the extension from the content type
+        string extension = "";
+        if (!string.IsNullOrEmpty(task.AttachmentContentType))
+        {
+            // Simple mapping for common types
+            var map = new Dictionary<string, string>
+            {
+                { "application/pdf", ".pdf" },
+                { "image/jpeg", ".jpg" },
+                { "image/png", ".png" },
+                { "application/msword", ".doc" },
+                { "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx" },
+                { "application/vnd.ms-excel", ".xls" },
+                { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx" }
+            };
+            if (map.TryGetValue(task.AttachmentContentType, out var ext))
+                extension = ext;
+        }
+
+        // If you stored the original file name, use its extension
+        string fileName = "Attachment_" + id + extension;
+        return File(task.AttachmentData, task.AttachmentContentType ?? "application/octet-stream", fileName);
     }
 }

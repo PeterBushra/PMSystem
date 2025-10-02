@@ -37,6 +37,12 @@ public partial class Task
 
     public DateTime CreatedDate { get; set; }
 
+    public int? AttachmentFileName { get; set; }
+
+    public byte[]? AttachmentData { get; set; }
+
+    public string? AttachmentContentType { get; set; }
+
     public virtual User? CreatedByNavigation { get; set; }
 
     public virtual Project Project { get; set; } = null!;
