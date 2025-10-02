@@ -8,7 +8,6 @@ using System.IO;
 namespace Jobick.Controllers;
 public class TasksController(TaskService _tservice) : Controller
 {
-    [Authorize(Roles = "Admin")]
     public IActionResult CreateTask(int projectId)
     {
         var model = new Models.Task { ProjectId = projectId, ExpectedStartDate = DateTime.Now, ExpectedEndDate = DateTime.Now };
@@ -86,7 +85,6 @@ public class TasksController(TaskService _tservice) : Controller
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
 
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> EditTask(int id)
     {
         var task = await _tservice.GetTaskAsync(id);
