@@ -1,32 +1,37 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using Jobick.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace Jobick.Controllers;
-public class ADHMMCController : Controller
+public class ADHMMCController(UserService _userService) : Controller
 {
     public async Task<IActionResult> LoginAsync()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
         return View();
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login(string username, string password, bool isRemeberLogin=false)
+    public async Task<IActionResult> Login(string username, string password, bool isRemeberLogin = false)
     {
+        // Use UserService to validate user credentials
+        var user = await _userService.LoginAsync(username, password);
 
-        // TODO: Replace with your user validation logic
-        if (username == "admin" && password == "1234")
+        if (user != null)
         {
+            // Determine role based on Write property
+            var role = user.Write ? "Admin" : "Viewer";
+
             // Create user claims
             var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, username),
-                    new Claim(ClaimTypes.Role, "Admin") // Example role
-                };
+            {
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, role)
+            };
 
             var claimsIdentity = new ClaimsIdentity(
                 claims, CookieAuthenticationDefaults.AuthenticationScheme);

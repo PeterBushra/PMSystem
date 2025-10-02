@@ -1,5 +1,7 @@
 using Jobick.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using Jobick.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<ProjectService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TaskService>();
 
 // --- ADD AUTHENTICATION ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -17,6 +21,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
+
+// Add this before registering your services
+builder.Services.AddDbContext<AdhmmcPmContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 

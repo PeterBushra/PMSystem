@@ -1,21 +1,21 @@
 ﻿using Jobick.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
-public class TasksController(ProjectService _pservice) : Controller
+public class TasksController( TaskService _tservice) : Controller
 {
     [Authorize(Roles = "Admin")]
-
     public IActionResult CreateTask(int projectId)
     {
-        var model = new Models.Task { ProjectId = projectId, ExpectedStartDate=DateTime.Now, ExpectedEndDate=DateTime.Now };
+        var model = new Models.Task { ProjectId = projectId, ExpectedStartDate = DateTime.Now, ExpectedEndDate = DateTime.Now };
         return View(model);
     }
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
-    public IActionResult PostTask(Models.Task model)
+    public async Task<IActionResult> PostTask(Models.Task model)
     {
         // remove validation for properties not posted
         ModelState.Remove("ProjectId");
@@ -30,24 +30,47 @@ public class TasksController(ProjectService _pservice) : Controller
         if (!ModelState.IsValid)
             return View("CreateTask", model);
 
-        var project = _pservice.GetProjectList()
-          .FirstOrDefault(p => p.Id == model.ProjectId);
-
         if (model.Id == 0)
         {
             model.CreatedDate = DateTime.Now;
-            project?.Tasks.Add(model);
+            await _tservice.AddTaskAsync(model);
         }
         else
         {
-            var taskremove = project?.Tasks.FirstOrDefault(t => t.Id == model.Id);
-            project?.Tasks.Remove(taskremove);
             model.CreatedDate = DateTime.Now;
-            project?.Tasks.Add(model);
+            await _tservice.UpdateTaskAsync(model);
         }
-
 
         // Redirect to ProjectDetails using the ProjectId
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet]
+    public async Task<IActionResult> EditTask(int id)
+    {
+        var task = await _tservice.GetTaskAsync(id);
+        if (task == null)
+            return NotFound();
+        return View(task);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    public async Task<IActionResult> EditTask(Models.Task model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        await _tservice.UpdateTaskAsync(model);
+        return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    public async Task<IActionResult> DeleteTask(int id, int projectId)
+    {
+        await _tservice.DeleteTaskAsync(id);
+        return RedirectToAction("ProjectDetails", "Projects", new { id = projectId });
     }
 }

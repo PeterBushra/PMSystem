@@ -4,15 +4,16 @@ using Jobick.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
 
 [Authorize]
 public class ProjectsController(ProjectService _pservice) : Controller
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var projects = _pservice.GetProjectList();
+        var projects = await  _pservice.GetProjectListAsync();
         return View(projects);
     }
 
@@ -47,10 +48,8 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
     public IActionResult ProjectDetails(int id)
     {
-        var project = _pservice.GetProjectList()
+        var project = _pservice.GetProject(id);
                 
-                .FirstOrDefault(p => p.Id == id);
-
         if (project == null) return NotFound();
 
         var vm = new ProjectDetailsVM
