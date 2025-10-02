@@ -55,7 +55,7 @@ public class ProjectsController(ProjectService _pservice, UserService _userservi
         if (ModelState.IsValid)
         {
             if (project.Id == 0)
-            {
+            { 
                 // Create new project
                 project.CreatedDate = DateTime.Now;
                 _pservice.AddProject(project);

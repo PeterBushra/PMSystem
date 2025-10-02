@@ -31,6 +31,11 @@ public class TasksController(TaskService _tservice) : Controller
         ModelState.Remove(nameof(Models.Task.DoneRatio));
         ModelState.Remove(nameof(Models.Task.DepartmentResponsible));
         ModelState.Remove(nameof(Models.Task.ActualEndDate));
+        ModelState.Remove(nameof(Models.Task.StageNameAr));
+        ModelState.Remove(nameof(Models.Task.TaskAr));
+
+        model.TaskAr = model.Task1!;
+        model.StageNameAr = model.StageName!;
 
         if (!ModelState.IsValid)
             return View("CreateTask", model);
@@ -85,6 +90,11 @@ public class TasksController(TaskService _tservice) : Controller
         ModelState.Remove(nameof(Models.Task.DefinationOfDone));
         ModelState.Remove(nameof(Models.Task.DoneRatio));
         ModelState.Remove(nameof(Models.Task.DepartmentResponsible));
+        ModelState.Remove(nameof(Models.Task.StageNameAr));
+        ModelState.Remove(nameof(Models.Task.TaskAr));
+
+        model.TaskAr = model.Task1!;
+        model.StageNameAr = model.StageName!;
 
         if (!ModelState.IsValid)
             return View("CreateTask", model);
