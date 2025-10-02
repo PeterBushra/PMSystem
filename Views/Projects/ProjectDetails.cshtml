@@ -2,6 +2,13 @@
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = "تفاصيل المشروع - " + Model.Name;
+    var today = DateTime.Today;
+    var completed = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
+    var overdue = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
+    var inProgress = Model.Tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m && t.ExpectedEndDate >= today);
+    var notStarted = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
+    var totalTasksCost = Model.Tasks.Sum(t => t.Cost ?? 0);
+    var projectCost = Model.TotalCost ?? 0;
 }
 
 <div class="content-body" dir="rtl" style="text-align:right;">
@@ -95,55 +102,7 @@
             </div>
         </div>
 
-        <!-- KPI Charts -->
-        <div class="row">
-            <div class="col-xl-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">مؤشرات الأداء للمشروع</h4>
-                    </div>
-                    <div class="card-body pb-2">
-                        <div class="row sp10">
-
-                            <!-- Task Completion Chart -->
-                            @* <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
-                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
-                                    <span class="donut" data-peity='{ "fill": ["#35c556", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetTaskStatusChartData()</span>
-                                    <h4 class="mb-0 pie-label">@Model.KPIs.CompletionPercentage%</h4>
-                                </div>
-                                <h5 class="mb-1">نسبة إنجاز المهام</h5>
-                                <p class="mb-0">@Model.KPIs.CompletedTasks من @Model.KPIs.TotalTasks مهمة</p>
-                            </div> *@
-
-           @*                  <!-- Project Timeline Progress -->
-                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
-                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
-                                    <span class="donut" data-peity='{ "fill": ["#3f4cfe", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetProjectProgressChartData()</span>
-                                    <h4 class="mb-0 pie-label">@Model.KPIs.ProjectProgressPercentage%</h4>
-                                </div>
-                                <h5 class="mb-1">تقدم الجدول الزمني</h5>
-                                <p class="mb-0">@Model.KPIs.DaysRemaining يوم متبقي</p>
-                            </div> *@
-
-                            <!-- In Progress vs Remaining -->
-                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
-                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
-                                    <span class="donut" data-peity='{ "fill": ["#ffc107", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.InProgressTasks/@(Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks)</span>
-                                    <h4 class="mb-0 pie-label">
-                                        @((Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) > 0 ?
-                                            Math.Round((decimal)Model.KPIs.InProgressTasks / (Model.KPIs.InProgressTasks + Model.KPIs.NotStartedTasks) * 100, 0) : 0)%
-                                    </h4>
-                                </div>
-                                <h5 class="mb-1">المهام النشطة</h5>
-                                <p class="mb-0">@Model.KPIs.InProgressTasks قيد التنفيذ</p>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+   
         <!-- Department & Stage Distribution -->
         <div class="row">
          @*    @if (Model.KPIs.TasksByDepartment.Any())
@@ -172,6 +131,90 @@
                     </div>
                 </div>
             } *@
+
+            <!-- Task Status Card -->
+            <div class="card mt-4">
+                <div class="card-header border-0 pb-0">
+                    <h4 class="card-title mb-0">حالة المهام</h4>
+                </div>
+                <div class="card-body pt-3">
+                    <div class="row align-items-center">
+                        <div class="col-xl-6 col-sm-6">
+                            <div class="progress default-progress">
+                                <div class="progress-bar bg-success progress-animated" style="width: @(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
+                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)% مكتملة</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
+                                <span class="font-w500">المهام المكتملة</span>
+                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)%</h6>
+                            </div>
+                            <div class="progress default-progress">
+                                <div class="progress-bar bg-info progress-animated" style="width: @(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
+                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)% قيد التنفيذ</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
+                                <span class="font-w500">قيد التنفيذ</span>
+                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)%</h6>
+                            </div>
+                            <div class="progress default-progress">
+                                <div class="progress-bar bg-warning progress-animated" style="width: @(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
+                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)% لم تبدأ</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
+                                <span class="font-w500">لم تبدأ</span>
+                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)%</h6>
+                            </div>
+                            <div class="progress default-progress">
+                                <div class="progress-bar bg-danger progress-animated" style="width: @(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
+                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)% متأخرة</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 justify-content-between">
+                                <span class="font-w500">متأخرة</span>
+                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)%</h6>
+                            </div>
+                        </div>
+                        <div class="col-xl-6 col-sm-6">
+                            <div id="tasksPieChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="card mt-4">
+                <div class="card-header border-0 pb-0">
+                    <h4 class="card-title mb-0">تكلفة المهام مقابل تكلفة المشروع</h4>
+                </div>
+                <div class="card-body pt-3">
+                    <div class="row align-items-center">
+                        <div class="col-xl-6 col-sm-6">
+                            <div class="progress default-progress">
+                                <div class="progress-bar bg-primary progress-animated"
+                                     style="width: @(projectCost > 0 ? (totalTasksCost * 100 / projectCost) : 0)%;" role="progressbar">
+                                    <span class="sr-only">
+                                        @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)% من تكلفة المشروع
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
+                                <span class="font-w500">إجمالي تكلفة المهام</span>
+                                <h6 class="mb-0">@totalTasksCost.ToString("N2")</h6>
+                            </div>
+                            <div class="d-flex align-items-end mt-2 justify-content-between">
+                                <span class="font-w500">تكلفة المشروع</span>
+                                <h6 class="mb-0">@projectCost.ToString("N2")</h6>
+                            </div>
+                        </div>
+                        <div class="col-xl-6 col-sm-6">
+                            <div id="costPieChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             @if (Model.KPIs.TasksByStage.Any())
             {
@@ -225,7 +268,7 @@
                                         <th class="text-center">تاريخ الانتهاء المتوقع</th>
                                         <th class="text-center">نسبة الإنجاز</th>
                                         <th class="text-center">التكلفة</th>
-                                        <th class="text-center">الإجراءات</th>
+                                        <th class="text-center" style="text-align: center !important;">الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -271,6 +314,7 @@
             </div>
         </div>
 
+   
     </div>
 </div>
 
@@ -334,5 +378,67 @@
                 count(0, counter[j], j);
             }
         });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        var options = {
+            chart: {
+                type: 'pie',
+                height: 250
+            },
+            series: [
+                @completed,
+                @inProgress,
+                @notStarted,
+                @overdue
+            ],
+            labels: ['مكتملة', 'قيد التنفيذ', 'لم تبدأ', 'متأخرة'],
+            colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
+            legend: {
+                position: 'bottom',
+                fontFamily: 'inherit',
+                labels: { colors: 'inherit' }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val, opts) {
+                    return opts.w.globals.series[opts.seriesIndex];
+                }
+            }
+        };
+        var chart = new ApexCharts(document.querySelector("#tasksPieChart"), options);
+        chart.render();
+    });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        var options = {
+            chart: {
+                type: 'pie',
+                height: 250
+            },
+            series: [
+                @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0),
+                @(projectCost > 0 ? 100 - Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)
+            ],
+            labels: ['تكلفة المهام', 'بقية تكلفة المشروع'],
+            colors: ['#00c292', '#f4f4f4'],
+            legend: {
+                position: 'bottom',
+                fontFamily: 'inherit',
+                labels: { colors: 'inherit' }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val, opts) {
+                    return opts.w.globals.series[opts.seriesIndex];
+                }
+            }
+        };
+        var chart = new ApexCharts(document.querySelector("#costPieChart"), options);
+        chart.render();
+    });
     </script>
 }

@@ -130,7 +130,7 @@ public class ProjectsController(ProjectService _pservice, UserService _userservi
         // Stage Distribution
         kpis.TasksByStage = tasks
             .Where(t => !string.IsNullOrEmpty(t.StageName))
-            .GroupBy(t => t.StageName)
+            .GroupBy(t => t.StageName?.Trim())
             .ToDictionary(g => g.Key, g => g.Count());
 
         // Time-based KPIs
