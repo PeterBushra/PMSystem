@@ -16,6 +16,5 @@ public partial class User
     public bool Write { get; set; }
 
     public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
-
     public virtual ICollection<Task> Tasks { get; set; } = new List<Task>();
 }

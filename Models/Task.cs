@@ -52,8 +52,9 @@ public partial class Task
     public byte[]? AttachmentData { get; set; }
 
     public string? AttachmentContentType { get; set; }
-
     public virtual User? CreatedByNavigation { get; set; }
 
     public virtual Project Project { get; set; } = null!;
+
+    public decimal? Weight { get; set; }
 }

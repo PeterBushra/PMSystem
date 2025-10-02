@@ -70,6 +70,22 @@ public class TasksController(TaskService _tservice) : Controller
         if (model.DoneRatio < 0) model.DoneRatio = 0;
         model.DoneRatio = model.DoneRatio / 100m;
 
+        // Validate total weight
+        var tasks = await _tservice.GetTaskListAsync();
+        var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId);
+        decimal totalWeight = projectTasks.Sum(t => t.Weight ?? 0);
+        // If adding new, just add; if editing, don't double-count
+        if (model.Id == 0)
+            totalWeight += model.Weight ?? 0;
+        else
+            totalWeight = projectTasks.Where(t => t.Id != model.Id).Sum(t => t.Weight ?? 0) + (model.Weight ?? 0);
+
+        if (totalWeight > 100)
+        {
+            ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
+            return View("CreateTask", model);
+        }
+
         if (model.Id == 0)
         {
             model.CreatedBy = userId;       
@@ -155,6 +171,17 @@ public class TasksController(TaskService _tservice) : Controller
         if (model.DoneRatio > 100) model.DoneRatio = 100;
         if (model.DoneRatio < 0) model.DoneRatio = 0;
         model.DoneRatio = model.DoneRatio / 100m;
+
+        // Validate total weight
+        var tasks = await _tservice.GetTaskListAsync();
+        var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id);
+        decimal totalWeight = projectTasks.Sum(t => t.Weight ?? 0) + (model.Weight ?? 0);
+
+        if (totalWeight > 100)
+        {
+            ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
+            return View("CreateTask", model);
+        }
 
         await _tservice.UpdateTaskAsync(model);
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });

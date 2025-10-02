@@ -72,10 +72,10 @@ public partial class AdhmmcPmContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("Task");
             entity.Property(e => e.TaskAr).HasMaxLength(50);
-
+            entity.Property(e => e.Weight).HasColumnType("decimal(18, 2)");
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Tasks)
-                .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK_Task_User");
+                    .HasForeignKey(d => d.CreatedBy)
+                    .HasConstraintName("FK_Task_User");
 
             entity.HasOne(d => d.Project).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.ProjectId)
