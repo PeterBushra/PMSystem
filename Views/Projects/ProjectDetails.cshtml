@@ -115,7 +115,7 @@
                                 <p class="mb-0">@Model.KPIs.CompletedTasks من @Model.KPIs.TotalTasks مهمة</p>
                             </div>
 
-                            <!-- Project Timeline Progress -->
+           @*                  <!-- Project Timeline Progress -->
                             <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
                                 <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
                                     <span class="donut" data-peity='{ "fill": ["#3f4cfe", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.GetProjectProgressChartData()</span>
@@ -123,17 +123,7 @@
                                 </div>
                                 <h5 class="mb-1">تقدم الجدول الزمني</h5>
                                 <p class="mb-0">@Model.KPIs.DaysRemaining يوم متبقي</p>
-                            </div>
-
-                            <!-- Average Task Completion -->
-                            <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
-                                <div class="d-inline-block ms-auto me-auto mb-md-3 mb-2 db-donut-chart-sale">
-                                    <span class="donut" data-peity='{ "fill": ["#f73a0b", "var(--light)"], "innerRadius": 38, "radius": 10}'>@Model.KPIs.AverageTaskCompletion/100</span>
-                                    <h4 class="mb-0 pie-label">@Model.KPIs.AverageTaskCompletion%</h4>
-                                </div>
-                                <h5 class="mb-1">متوسط الإنجاز</h5>
-                                <p class="mb-0">متوسط تقدم المهام</p>
-                            </div>
+                            </div> *@
 
                             <!-- In Progress vs Remaining -->
                             <div class="col-xl-3 col-md-6 col-6 mb-4 text-center">
