@@ -22,4 +22,9 @@ public class UserService
         return await _context.Users
             .FirstOrDefaultAsync(u => u.Email == email && u.Password == password);
     }
+
+    public async Task<User?> GetUserByIdAsync(int id)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+    }
 }

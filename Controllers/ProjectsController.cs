@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Jobick.Controllers;
 
 [Authorize]
-public class ProjectsController(ProjectService _pservice) : Controller
+public class ProjectsController(ProjectService _pservice, UserService _userservice) : Controller
 {
     public async Task<IActionResult> Index()
     {
@@ -21,7 +21,20 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
     public IActionResult CreateProject()
     {
-        return View();
+        // Get the user ID from claims and parse to int
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int userId = 0;
+        if (!string.IsNullOrEmpty(userIdClaim))
+            int.TryParse(userIdClaim, out userId);
+
+        Project project = new Project
+        {
+            StartSate = DateTime.Now,
+            EndDate = DateTime.Now.AddMonths(1),
+            CreatedBy = userId
+            // Do not set CreatedByNavigation here; it should be set by EF when loading from DB
+        };
+        return View(project);
     }
 
     [Authorize(Roles = "Admin")]
