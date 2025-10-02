@@ -65,4 +65,9 @@ public class ADHMMCController(UserService _userService) : Controller
     {
         return View();
     }
+
+    public IActionResult Error500()
+    {
+        return View();
+    }
 }
