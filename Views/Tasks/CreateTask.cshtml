@@ -29,6 +29,9 @@
                             <input type="hidden" asp-for="CreatedBy" />
                             <input type="hidden" asp-for="Project" />
                             <input type="hidden" asp-for="CreatedByNavigation" />
+                            <input type="hidden" asp-for="AttachmentData" />
+                            <input type="hidden" asp-for="AttachmentContentType" />
+                            <input type="hidden" asp-for="AttachmentFileName" />
 
                             <!-- حقول الإدخال المرئية -->
                             <div class="mb-3">
@@ -53,12 +56,12 @@
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedStartDate" class="form-label">تاريخ البدء المتوقع</label>
-                                <input asp-for="ExpectedStartDate" type="text" class="form-control datepicker" value="@(Model.ExpectedStartDate.ToString("dd/MM/yyyy"))" required />
+                                <input asp-for="ExpectedStartDate" type="date" class="form-control" required />
                                 <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="ExpectedEndDate" class="form-label">تاريخ الانتهاء المتوقع</label>
-                                <input asp-for="ExpectedEndDate" type="text" class="form-control datepicker" value="@(Model.ExpectedEndDate.ToString("dd/MM/yyyy"))" required />
+                                <input asp-for="ExpectedEndDate" type="date" class="form-control" required />
                                 <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
@@ -70,7 +73,7 @@
                                 </div>
                                 <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
                                     <label asp-for="ActualEndDate" class="form-label">تاريخ الانتهاء الفعلي</label>
-                                    <input asp-for="ActualEndDate" type="text" class="form-control datepicker" value="@(Model.ActualEndDate == DateTime.MinValue ? "" : Model.ActualEndDate?.ToString("dd/MM/yyyy"))" />
+                                    <input asp-for="ActualEndDate" type="date" class="form-control" />
                                     <span asp-validation-for="ActualEndDate" class="text-danger"></span>
                                     <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
                                 </div>
@@ -86,16 +89,20 @@
                                 <small class="form-text text-muted d-block mb-2">
                                     الامتدادات المدعومة: PDF، JPG، PNG، DOC، DOCX، XLS، XLSX
                                 </small>
-                                @if (Model.AttachmentData != null && Model.AttachmentData.Length > 0)
+                                @if (Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0)
                                 {
                                     <div class="mb-2">
                                         <span class="text-success">تم إرفاق ملف بالفعل.</span>
                                         <a class="btn btn-link" href="@Url.Action("DownloadAttachment", "Tasks", new { id = Model.Id })">تحميل الملف الحالي</a>
+                                        <!-- لا تعرض حقل رفع المرفق إذا كان هناك ملف بالفعل -->
                                     </div>
                                 }
-                                <input type="file" name="Attachment" id="Attachment" class="form-control"
-                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
-                                <span class="text-danger" id="attachmentError"></span>
+                                else
+                                {
+                                    <input type="file" name="Attachment" id="Attachment" class="form-control"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
+                                    <span class="text-danger" id="attachmentError"></span>
+                                }
                             </div>
                             <div class="mb-3">
                                 <label asp-for="DefinationOfDone" class="form-label">تعريف الإنجاز</label>

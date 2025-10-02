@@ -32,9 +32,9 @@
                             <dt class="col-sm-2">الوصف</dt>
                             <dd class="col-sm-10">@Model.Description</dd>
                             <dt class="col-sm-2">تاريخ البدء</dt>
-                            <dd class="col-sm-10">@Model.StartSate.ToString("yyyy/MM/dd")</dd>
+                            <dd class="col-sm-10">@Model.StartSate.ToString("d")</dd>
                             <dt class="col-sm-2">تاريخ الانتهاء</dt>
-                            <dd class="col-sm-10">@Model.EndDate.ToString("yyyy/MM/dd")</dd>
+                            <dd class="col-sm-10">@Model.EndDate.ToString("d")</dd>
                             <dt class="col-sm-2">التكلفة الإجمالية</dt>
                             <dd class="col-sm-10">@Model.TotalCost?.ToString("C")</dd>
                         </dl>

@@ -32,9 +32,9 @@
                             <dt class="col-sm-2">القسم</dt>
                             <dd class="col-sm-10">@Model.ImplementorDepartment</dd>
                             <dt class="col-sm-2">تاريخ البدء المتوقع</dt>
-                            <dd class="col-sm-10">@Model.ExpectedStartDate.ToString("yyyy/MM/dd")</dd>
+                            <dd class="col-sm-10">@Model.ExpectedStartDate.ToString("d")</dd>
                             <dt class="col-sm-2">تاريخ الانتهاء المتوقع</dt>
-                            <dd class="col-sm-10">@Model.ExpectedEndDate.ToString("yyyy/MM/dd")</dd>
+                            <dd class="col-sm-10">@Model.ExpectedEndDate.ToString("d")</dd>
                         </dl>
                         <form asp-action="PostDeleteTask" method="post">
                             <input type="hidden" asp-for="Id" />
