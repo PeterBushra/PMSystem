@@ -55,38 +55,38 @@
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
+                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهم المنتهية تماماً 100%">
                                     <span><i class="fas fa-check-circle text-success"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
                                     <p class="mb-0">المهام المكتملة</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
+                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهم قيد التنفيذ">
                                     <span><i class="fas fa-spinner text-info"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.InProgressTasks</h3>
                                     <p class="mb-0">قيد التنفيذ</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
+                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهام التي لم يأتي تاريخ بدايتها بعد">
                                     <span><i class="fas fa-clock text-warning"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
                                     <p class="mb-0">لم تبدأ</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
+                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهام المتأخرة عن موعدها - لم تنتهي كم خطط لها">
                                     <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
                                     <p class="mb-0">متأخرة</p>
                                 </div>
                             </div>
                             <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
+                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="الأيام المتبقية حتى نهاية المشروع">
                                     <span><i class="fas fa-calendar-alt"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
-                                    <p class="mb-0">الأيام المتبقية</p>
+                                    <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p>
                                 </div>
                             </div>
                         </div>
@@ -175,7 +175,7 @@
                                 </div>
                                 <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
                                     <span class="font-w500">@dept.Key</span>
-                                    <h6 class="mb-0">@dept.Value مهمة (@percentage%)</h6>
+                                    <h6 class="mb-0"> (@percentage%)</h6>
                                 </div>
                             }
                         </div>
@@ -205,7 +205,7 @@
                                 </div>
                                 <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
                                     <span class="font-w500">@stage.Key</span>
-                                    <h6 class="mb-0">@stage.Value مهمة (@percentage%)</h6>
+                                    <h6 class="mb-0"> (@percentage%)</h6>
                                 </div>
                             }
                         </div>
@@ -232,6 +232,7 @@
                                         <th>اسم المرحلة</th>
                                         <th>المهمة</th>
                                         <th>القسم</th>
+                                        <th>تاريخ البدء المتوقع</th>
                                         <th>تاريخ الانتهاء المتوقع</th>
                                         <th>نسبة الإنجاز</th>
                                         <th>الإجراءات</th>
@@ -254,6 +255,7 @@
                                             <td>@task.StageName</td>
                                             <td>@task.Task1</td>
                                             <td>@task.ImplementorDepartment</td>
+                                            <td>@task.ExpectedStartDate.ToShortDateString()</td>
                                             <td>@task.ExpectedEndDate.ToShortDateString()</td>
                                             <td>@task.DoneRatio?.ToString("P0")</td>
                                             <td>
@@ -304,6 +306,13 @@
 
     <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
 
+    <script>
+        // تفعيل التولتيب باستخدام Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
 
     <script>
         $(document).ready(function() {

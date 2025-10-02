@@ -37,7 +37,7 @@
                             <table id="projectsTable" class="table table-hover table-striped" style="min-width: 1000px">
                                 <thead>
                                     <tr>
-                                        <th>الحالة</th>
+                                        @* <th>الحالة</th> *@
                                         <th>الاسم</th>
                                         <th>الوصف</th>
                                         <th>المسؤول</th>
@@ -54,7 +54,7 @@
                                     {
                                         <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
                                             style="cursor:pointer;">
-                                            <td><span class="badge light badge-warning">قيد التنفيذ</span></td>
+                                            @* <td><span class="badge light badge-warning">قيد التنفيذ</span></td> *@
                                             <td>@project.Name</td>
                                             <td>@project.Description</td>
                                             <td>@project.ResponsibleForImplementing</td>
