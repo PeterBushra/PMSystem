@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Models;
 
@@ -19,7 +21,6 @@ public partial class AdhmmcPmContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    // Remove hardcoded connection string and warning
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Only configure if options are not already set (for design-time tools)
@@ -59,7 +60,6 @@ public partial class AdhmmcPmContext : DbContext
         {
             entity.ToTable("Task");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.DefinationOfDone).HasMaxLength(4000);
             entity.Property(e => e.DepartmentResponsible).HasMaxLength(50);
@@ -86,7 +86,6 @@ public partial class AdhmmcPmContext : DbContext
         {
             entity.ToTable("User");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Email).HasMaxLength(250);
             entity.Property(e => e.Password).HasMaxLength(500);
         });

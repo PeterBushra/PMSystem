@@ -17,6 +17,12 @@ public class TasksController(TaskService _tservice) : Controller
     [HttpPost]
     public async Task<IActionResult> PostTask(Models.Task model)
     {
+        // Get the user ID from claims and parse to int
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int userId = 0;
+        if (!string.IsNullOrEmpty(userIdClaim))
+            int.TryParse(userIdClaim, out userId);
+
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
         ModelState.Remove(nameof(Models.Task.CreatedByNavigation));
@@ -36,6 +42,7 @@ public class TasksController(TaskService _tservice) : Controller
 
         if (model.Id == 0)
         {
+            model.CreatedBy = userId;       
             model.CreatedDate = DateTime.Now;
             await _tservice.AddTaskAsync(model);
         }
