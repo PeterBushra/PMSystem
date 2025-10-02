@@ -1,12 +1,13 @@
 ﻿using Jobick.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http; // Add this for IFormFile
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
-public class TasksController(TaskService _tservice) : Controller
+public class TasksController(TaskService _tservice, ProjectService _projectService) : Controller
 {
     public IActionResult CreateTask(int projectId)
     {
@@ -123,6 +124,8 @@ public class TasksController(TaskService _tservice) : Controller
         if (id != model.Id)
             return BadRequest();
 
+        decimal weights = _tservice.GetTotalTasksWeights(model.ProjectId);
+
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
         ModelState.Remove(nameof(Models.Task.CreatedByNavigation));
@@ -172,10 +175,9 @@ public class TasksController(TaskService _tservice) : Controller
         if (model.DoneRatio < 0) model.DoneRatio = 0;
         model.DoneRatio = model.DoneRatio / 100m;
 
+
         // Validate total weight
-        var tasks = await _tservice.GetTaskListAsync();
-        var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id);
-        decimal totalWeight = projectTasks.Sum(t => t.Weight ?? 0) + (model.Weight ?? 0);
+        decimal totalWeight = weights + (model.Weight ?? 0);
 
         if (totalWeight > 100)
         {
@@ -183,6 +185,7 @@ public class TasksController(TaskService _tservice) : Controller
             return View("CreateTask", model);
         }
 
+        // Copy the posted values into the tracked entity
         await _tservice.UpdateTaskAsync(model);
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }

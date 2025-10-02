@@ -40,6 +40,7 @@ public class TaskService
     // Update
     public async System.Threading.Tasks.Task UpdateTaskAsync(Models.Task task)
     {
+
         _context.Tasks.Update(task);
         await _context.SaveChangesAsync();
     }
@@ -53,5 +54,10 @@ public class TaskService
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
         }
+    }
+
+    internal decimal GetTotalTasksWeights(int projectId)
+    {
+        return _context.Tasks.Where(x=>x.ProjectId == projectId).Sum(x => x.Weight ?? 0);
     }
 }
