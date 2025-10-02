@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Models;
 
@@ -20,8 +22,17 @@ public partial class AdhmmcPmContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=DESKTOP-DN09NM7\\SQLEXPRESS;Database=ADHMMC-PM;Trusted_Connection=True;TrustServerCertificate=True;");
+    {
+        // Only configure if options are not already set (for design-time tools)
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Use configuration-based connection string
+            optionsBuilder.UseSqlServer(
+                "Name=DefaultConnection",
+                sqlOptions => sqlOptions.EnableRetryOnFailure()
+                );
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,7 +60,6 @@ public partial class AdhmmcPmContext : DbContext
         {
             entity.ToTable("Task");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.DefinationOfDone).HasMaxLength(4000);
             entity.Property(e => e.DepartmentResponsible).HasMaxLength(50);
@@ -76,7 +86,6 @@ public partial class AdhmmcPmContext : DbContext
         {
             entity.ToTable("User");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Email).HasMaxLength(250);
             entity.Property(e => e.Password).HasMaxLength(500);
         });

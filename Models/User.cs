@@ -1,4 +1,7 @@
-﻿namespace Jobick.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace Jobick.Models;
 
 public partial class User
 {

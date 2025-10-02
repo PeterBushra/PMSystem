@@ -1,4 +1,7 @@
-﻿namespace Jobick.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace Jobick.Models;
 
 public partial class Task
 {
@@ -26,7 +29,7 @@ public partial class Task
 
     public DateTime ExpectedEndDate { get; set; }
 
-    public DateTime ActualEndDate { get; set; }
+    public DateTime? ActualEndDate { get; set; }
 
     public decimal? DoneRatio { get; set; }
 

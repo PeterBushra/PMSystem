@@ -10,7 +10,11 @@
         <div class="row page-titles">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">Projects</a></li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Add Project</a></li>
+                <li class="breadcrumb-item active">
+                    <a href="javascript:void(0)">
+                        @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                    </a>
+                </li>
             </ol>
         </div>
 
@@ -18,12 +22,21 @@
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Add Project</h4>
+                        <h4 class="card-title">
+                            @(Model.Id == 0 ? "Add Project" : "Edit Project")
+                        </h4>
                     </div>
                     <div class="card-body">
                         <div class="form-validation">
                             <form asp-action="PostProject" method="post" class="needs-validation" novalidate>
                                 <div class="row">
+
+                                    <!-- Hidden fields for non-editable/non-existent attributes -->
+                                    <input type="hidden" asp-for="Id" />
+                                    <input type="hidden" asp-for="CreatedDate" />
+                                    <input type="hidden" asp-for="CreatedBy" />
+                                    <input type="hidden" asp-for="CreatedByNavigation" />
+                                    <input type="hidden" asp-for="Tasks" />
 
                                     <div class="col-xl-6">
                                         <div class="mb-3 row">
@@ -103,7 +116,7 @@
                                         <div class="mb-3 row">
                                             <div class="col-lg-8 ms-auto">
                                                 <button type="submit" class="btn btn-primary">Submit</button>
-                                                <a href="@Url.Action("Index", "Jobick")" class="btn btn-danger">Cancel</a>
+                                                <a href="@Url.Action("Index", "Projects")" class="btn btn-danger">Cancel</a>
                                             </div>
                                         </div>
                                     </div>

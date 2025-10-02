@@ -2,109 +2,107 @@
 
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "Add Task";
+    ViewData["Title"] = Model.Id == 0 ? "Add Task" : "Edit Task";
 }
 
 <div class="content-body">
     <div class="container-fluid">
         <div class="row page-titles">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects", new { area = "ADHMMC" })">Projects</a></li>
-                <li class="breadcrumb-item">
-                    <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId, area = "ADHMMC" })">Project Details</a>
-                </li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">Add Task</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId })">Project Details</a></li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">@ViewData["Title"]</a></li>
             </ol>
         </div>
 
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
-                    <div class="card-header"><h4 class="card-title">Add Task</h4></div>
+                    <div class="card-header">
+                        <h4 class="card-title">@ViewData["Title"]</h4>
+                    </div>
                     <div class="card-body">
-                        <form asp-action="PostTask" method="post" class="needs-validation" novalidate>
+                        <form asp-action="@(Model.Id == 0 ? "PostTask" : "EditTask")" method="post" class="needs-validation" novalidate>
+                            <!-- Hidden fields for non-input/non-editable attributes -->
+                            <input type="hidden" asp-for="Id" />
                             <input type="hidden" asp-for="ProjectId" />
+                            <input type="hidden" asp-for="CreatedDate" />
+                            <input type="hidden" asp-for="CreatedBy" />
+                            <input type="hidden" asp-for="Project" />
+                            <input type="hidden" asp-for="CreatedByNavigation" />
 
-                            <div class="row">
-                                <div class="col-xl-6">
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label required">Stage Name</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="StageName" class="form-control" required />
-                                            <div class="invalid-feedback">Enter stage name.</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label required">Stage Name (AR)</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="StageNameAr" class="form-control" required />
-                                            <div class="invalid-feedback">Enter stage name (AR).</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label required">Task</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="Task1" class="form-control" required />
-                                            <div class="invalid-feedback">Enter task.</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label required">Task (AR)</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="TaskAr" class="form-control" required />
-                                            <div class="invalid-feedback">Enter task (AR).</div>
-                                        </div>
-                                    </div>
+                            <!-- Visible input fields -->
+                            <div class="mb-3">
+                                <label asp-for="Task1" class="form-label"></label>
+                                <input asp-for="Task1" class="form-control" required />
+                                <span asp-validation-for="Task1" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="TaskAr" class="form-label"></label>
+                                <input asp-for="TaskAr" class="form-control" required />
+                                <span asp-validation-for="TaskAr" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="StageName" class="form-label"></label>
+                                <input asp-for="StageName" class="form-control" />
+                                <span asp-validation-for="StageName" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="StageNameAr" class="form-label"></label>
+                                <input asp-for="StageNameAr" class="form-control" />
+                                <span asp-validation-for="StageNameAr" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ImplementorDepartment" class="form-label"></label>
+                                <input asp-for="ImplementorDepartment" class="form-control" />
+                                <span asp-validation-for="ImplementorDepartment" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="DepartmentResponsible" class="form-label"></label>
+                                <input asp-for="DepartmentResponsible" class="form-control" />
+                                <span asp-validation-for="DepartmentResponsible" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ExpectedStartDate" class="form-label"></label>
+                                <input asp-for="ExpectedStartDate" type="date" class="form-control" required />
+                                <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ExpectedEndDate" class="form-label"></label>
+                                <input asp-for="ExpectedEndDate" type="date" class="form-control" required />
+                                <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="showActualEndDate" @(Model.ActualEndDate != DateTime.MinValue ? "checked" : "") />
+                                    <label class="form-check-label" for="showActualEndDate">
+                                        Set Actual End Date
+                                    </label>
                                 </div>
-
-                                <div class="col-xl-6">
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label required">Implementor Department</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="ImplementorDepartment" class="form-control" required />
-                                            <div class="invalid-feedback">Enter department.</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label">Department Responsible</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="DepartmentResponsible" class="form-control" />
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label">Expected Start Date</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="ExpectedStartDate" type="date" class="form-control" />
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label">Expected End Date</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="ExpectedEndDate" type="date" class="form-control" />
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3 row">
-                                        <label class="col-lg-4 col-form-label form-label">Done Ratio (%)</label>
-                                        <div class="col-lg-6">
-                                            <input asp-for="DoneRatio" type="number" step="0.01" class="form-control" />
-                                        </div>
-                                    </div>
+                                <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
+                                    <label asp-for="ActualEndDate" class="form-label"></label>
+                                    <input asp-for="ActualEndDate" type="date" class="form-control" value="@(Model.ActualEndDate == DateTime.MinValue ? "" : Model.ActualEndDate?.ToString("yyyy-MM-dd"))" />
+                                    <span asp-validation-for="ActualEndDate" class="text-danger"></span>
+                                    <small class="form-text text-muted">Leave blank if not completed.</small>
                                 </div>
                             </div>
-
-                            <div class="mb-3 row">
-                                <div class="col-lg-8 ms-auto">
-                                    <button type="submit" class="btn btn-primary">Save</button>
-                                    <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId, area = "ADHMMC" })" class="btn btn-danger">Cancel</a>
-                                </div>
+                            <div class="mb-3">
+                                <label asp-for="DoneRatio" class="form-label"></label>
+                                <input asp-for="DoneRatio" type="number" step="0.01" class="form-control" min="0" max="100" />
+                                <span asp-validation-for="DoneRatio" class="text-danger"></span>
+                                <small class="form-text text-muted">Enter a value between 0 and 100. 100 means complete.</small>
                             </div>
+                            <div class="mb-3">
+                                <label asp-for="DefinationOfDone" class="form-label"></label>
+                                <textarea asp-for="DefinationOfDone" class="form-control"></textarea>
+                                <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ManyDaysToComplete" class="form-label"></label>
+                                <input asp-for="ManyDaysToComplete" type="number" class="form-control" />
+                                <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId })" class="btn btn-secondary">Cancel</a>
                         </form>
                     </div>
                 </div>
@@ -135,6 +133,19 @@
                         form.classList.add('was-validated')
                     }, false)
                 })
+
+            // Show/hide ActualEndDate field
+            var checkbox = document.getElementById('showActualEndDate');
+            var container = document.getElementById('actualEndDateContainer');
+            if (checkbox && container) {
+                checkbox.addEventListener('change', function () {
+                    container.style.display = this.checked ? 'block' : 'none';
+                    if (!this.checked) {
+                        var input = container.querySelector('input[type="date"]');
+                        if (input) input.value = "";
+                    }
+                });
+            }
         })()
     </script>
 }

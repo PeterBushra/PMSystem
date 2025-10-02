@@ -4,15 +4,16 @@ using Jobick.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
 
 [Authorize]
-public class ProjectsController(ProjectService _pservice) : Controller
+public class ProjectsController(ProjectService _pservice, UserService _userservice) : Controller
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var projects = _pservice.GetProjectList();
+        var projects = await  _pservice.GetProjectListAsync();
         return View(projects);
     }
 
@@ -20,7 +21,20 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
     public IActionResult CreateProject()
     {
-        return View();
+        // Get the user ID from claims and parse to int
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int userId = 0;
+        if (!string.IsNullOrEmpty(userIdClaim))
+            int.TryParse(userIdClaim, out userId);
+
+        Project project = new Project
+        {
+            StartSate = DateTime.Now,
+            EndDate = DateTime.Now.AddMonths(1),
+            CreatedBy = userId
+            // Do not set CreatedByNavigation here; it should be set by EF when loading from DB
+        };
+        return View(project);
     }
 
     [Authorize(Roles = "Admin")]
@@ -36,8 +50,17 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
         if (ModelState.IsValid)
         {
-            project.CreatedDate = DateTime.Now;
-            _pservice.AddProject(project);
+            if (project.Id == 0)
+            {
+                // Create new project
+                project.CreatedDate = DateTime.Now;
+                _pservice.AddProject(project);
+            }
+            else
+            {
+                // Update existing project
+                _pservice.UpdateProject(project);
+            }
             return RedirectToAction(nameof(Index));
         }
 
@@ -47,10 +70,8 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
     public IActionResult ProjectDetails(int id)
     {
-        var project = _pservice.GetProjectList()
+        var project = _pservice.GetProject(id);
                 
-                .FirstOrDefault(p => p.Id == id);
-
         if (project == null) return NotFound();
 
         var vm = new ProjectDetailsVM
@@ -120,5 +141,67 @@ public class ProjectsController(ProjectService _pservice) : Controller
         }
 
         return kpis;
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var project = await _pservice.GetProjectAsync(id);
+        if (project == null)
+            return NotFound();
+        // Reuse the CreateProject view for editing
+        ViewData["Title"] = "Edit Project";
+        return View("CreateProject", project);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, Project model)
+    {
+        if (id != model.Id)
+            return BadRequest();
+
+        ModelState.Remove(nameof(Project.CreatedDate));
+        ModelState.Remove(nameof(Project.CreatedBy));
+        ModelState.Remove(nameof(Project.CreatedByNavigation));
+        ModelState.Remove(nameof(Project.Tasks));
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                await _pservice.UpdateProjectAsync(model);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_pservice.ProjectExists(model.Id))
+                    return NotFound();
+                else
+                    throw;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        ViewData["Title"] = "Edit Project";
+        return View("CreateProject", model);
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var project = await _pservice.GetProjectAsync(id);
+        if (project == null)
+            return NotFound();
+        return View(project);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PostDelete(int id)
+    {
+        await _pservice.DeleteProjectAsync(id);
+        return RedirectToAction(nameof(Index));
     }
 }
