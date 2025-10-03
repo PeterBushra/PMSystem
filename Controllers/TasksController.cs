@@ -1,17 +1,27 @@
 ﻿using Jobick.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http; // Add this for IFormFile
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
 public class TasksController(TaskService _tservice, ProjectService _projectService) : Controller
 {
-    public IActionResult CreateTask(int projectId)
+    public async Task<IActionResult> CreateTask(int projectId)
     {
-        var model = new Models.Task { ProjectId = projectId, ExpectedStartDate = DateTime.Now, ExpectedEndDate = DateTime.Now };
+        var model = new Models.Task
+        {
+            ProjectId = projectId,
+            ExpectedStartDate = DateTime.Now,
+            ExpectedEndDate = DateTime.Now
+        };
+
+        var project = await _projectService.GetProjectAsync(projectId);
+        var tasks = await _tservice.GetTaskListAsync();
+        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
+        ViewBag.ProjectTotalCost = project?.TotalCost ?? 0;
+        ViewBag.ExistingTasksCost = existingCost;
+
         return View(model);
     }
 
@@ -108,9 +118,17 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         if (task == null)
             return NotFound();
 
-        // Convert DoneRatio from fraction to percentage for the form
         if (task.DoneRatio.HasValue)
             task.DoneRatio = task.DoneRatio.Value * 100m;
+
+        var project = await _projectService.GetProjectAsync(task.ProjectId);
+        var tasks = await _tservice.GetTaskListAsync();
+        decimal existingCostExcludingCurrent = tasks
+            .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
+            .Sum(t => t.Cost ?? 0);
+
+        ViewBag.ProjectTotalCost = project?.TotalCost ?? 0;
+        ViewBag.ExistingTasksCost = existingCostExcludingCurrent;
 
         ViewData["Title"] = "Edit Task";
         return View("CreateTask", task);
