@@ -28,7 +28,7 @@ namespace Jobick.ViewModels
         public class ProjectInfo
         {
             public int ProjectId { get; set; }
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
             public DateTime EndDate { get; set; }
             public int IncompleteTasksCount { get; set; }
         }

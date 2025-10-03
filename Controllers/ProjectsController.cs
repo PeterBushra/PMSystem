@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Jobick.Controllers;
 
 [Authorize]
-public class ProjectsController(ProjectService _pservice, UserService _userservice) : Controller
+public class ProjectsController(ProjectService _pservice) : Controller
 {
     public async Task<IActionResult> Index()
     {

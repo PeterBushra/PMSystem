@@ -1,7 +1,6 @@
 ﻿@model Jobick.ViewModels.ProjectDetailsVM
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
-    ViewData["Title"] = "تفاصيل المشروع - " + Model.Name;
     var today = DateTime.Today;
     var completed = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
     var overdue = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
@@ -9,6 +8,11 @@
     var notStarted = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
     var totalTasksCost = Model.Tasks.Sum(t => t.Cost ?? 0);
     var projectCost = Model.TotalCost ?? 0;
+    var allTasksCompleted = Model.Tasks.Count > 0 && completed == Model.Tasks.Count;
+
+    ViewData["Title"] = allTasksCompleted
+        ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
+        : $"تفاصيل المشروع - {Model.Name}";
 }
 
 <div class="content-body" dir="rtl" style="text-align:right;">
@@ -31,7 +35,10 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-xl-6">
-                                <p><strong>الاسم:</strong> @Model.Name</p>
+                                <p>
+                                    <strong>الاسم:</strong>
+                                    <span class="ms-2">@Model.Name</span>
+                                </p>
                                 <p><strong>الوصف:</strong> @Model.Description</p>
                                 <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
                             </div>
@@ -74,11 +81,14 @@
                                 <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
                                 <p class="mb-0">متأخرة</p>
                             </div>
-                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
-                                <span><i class="fas fa-calendar-alt"></i></span>
-                                <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
-                                <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p    >
-                            </div>
+                            @if (!allTasksCompleted)
+                            {
+                                <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                    <span><i class="fas fa-calendar-alt"></i></span>
+                                    <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
+                                    <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -431,7 +441,8 @@
             ],
             labels: ['مكتملة', 'قيد التنفيذ', 'لم تبدأ', 'متأخرة'],
             colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
-            legend: {
+            legend:
+            {
                 position: 'bottom',
                 fontFamily: 'inherit',
                 labels: { colors: 'inherit' }
