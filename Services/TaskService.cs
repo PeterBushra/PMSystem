@@ -60,4 +60,9 @@ public class TaskService
     {
         return _context.Tasks.Where(x=>x.ProjectId == projectId).Sum(x => x.Weight ?? 0);
     }
+
+    internal decimal GetTaskWeight(int taskID)
+    {
+        return _context.Tasks.FirstOrDefault(x => x.Id == taskID)?.Weight ?? 0;
+    }
 }

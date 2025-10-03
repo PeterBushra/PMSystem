@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace Jobick.Controllers;
-public class ADHMMCController(UserService _userService) : Controller
+public class ADHMMCController(UserService _userService, ProjectService _projectService) : Controller
 {
     public async Task<IActionResult> LoginAsync()
     {

@@ -125,6 +125,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
             return BadRequest();
 
         decimal weights = _tservice.GetTotalTasksWeights(model.ProjectId);
+        weights -= _tservice.GetTaskWeight(model.Id);
 
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
