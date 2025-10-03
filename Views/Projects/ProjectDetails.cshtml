@@ -249,7 +249,8 @@
                                         <th class="text-center">القسم</th>
                                         <th class="text-center">تاريخ البدء المتوقع</th>
                                         <th class="text-center">تاريخ الانتهاء المتوقع</th>
-                                        <th class="text-center">نسبة الإنجاز</th>
+                                        <th class="text-center">الوزن</th>
+                                        <th class="text-center">النسبة الفعلية</th>
                                         <th class="text-center">التكلفة</th>
                                         <th class="text-center" style="text-align: center !important;">الإجراءات</th>
                                     </tr>
@@ -272,6 +273,7 @@
                                             <td>@task.ImplementorDepartment</td>
                                             <td>@task.ExpectedStartDate.ToShortDateString()</td>
                                             <td>@task.ExpectedEndDate.ToShortDateString()</td>
+                                            <td>@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td>@task.DoneRatio?.ToString("P0")</td>
                                             <td>@task.Cost.ToString()</td>
                                             <td>
