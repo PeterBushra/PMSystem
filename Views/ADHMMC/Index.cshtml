@@ -94,8 +94,9 @@
             </div>
         </div>
 
-        <!-- NEW ROW: Budgets per Year (Vertical Bars) -->
+        <!-- NEW ROW: Budgets per Year (Vertical Bars) + Donut (Third KPI) -->
         <div class="row mt-4">
+            <!-- Budgets per Year (Vertical Bars) -->
             <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
@@ -110,12 +111,10 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Third KPI Budgets (Donut) -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
+            <!-- Third KPI Budgets (Donut) moved here (was a separate full-width row) -->
+            <div class="col-xl-6">
+                <div class="card h-100">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">ميزانيات المشاريع (غير المكتملة بالكامل)</h4>
                         <span class="small text-muted">
@@ -129,7 +128,7 @@
                         }
                         else
                         {
-                            <div id="projectsBudgetsDonut" style="min-height:340px;"></div>
+                            <div id="projectsBudgetsDonut" style="min-height:280px;"></div>
                         }
                     </div>
                 </div>
