@@ -63,6 +63,6 @@ public class TaskService
 
     internal decimal GetTaskWeight(int taskID)
     {
-        return _context.Tasks.FirstOrDefault(x => x.Id == taskID)?.Weight ?? 0;
+        return _context.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskID)?.Weight ?? 0;
     }
 }
