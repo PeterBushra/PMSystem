@@ -2,7 +2,6 @@
 
 public class ProjectDetailsVM
 {
-    // Project Information
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string NameAr { get; set; } = null!;
@@ -15,46 +14,36 @@ public class ProjectDetailsVM
     public DateTime EndDate { get; set; }
     public decimal? TotalCost { get; set; }
 
-    // Tasks
-    public List<Models.Task> Tasks { get; set; } = new List<Models.Task>();
-
-    // KPIs
-    public ProjectKPIs KPIs { get; set; } = new ProjectKPIs();
+    public List<Models.Task> Tasks { get; set; } = new();
+    public ProjectKPIs KPIs { get; set; } = new();
 }
 
 public class ProjectKPIs
 {
-    // Task Status KPIs
     public int TotalTasks { get; set; }
     public int CompletedTasks { get; set; }
     public int InProgressTasks { get; set; }
     public int NotStartedTasks { get; set; }
     public int OverdueTasks { get; set; }
 
-    // Completion Percentages
     public decimal CompletionPercentage { get; set; }
     public decimal AverageTaskCompletion { get; set; }
 
-    // Department Distribution
-    public Dictionary<string, int> TasksByDepartment { get; set; } = new Dictionary<string, int>();
+    public Dictionary<string, int> TasksByDepartment { get; set; } = new();
+    public Dictionary<string, int> StageTaskCounts { get; set; } = new();
 
-    // Stage Distribution
-    public Dictionary<string, int> TasksByStage { get; set; } = new Dictionary<string, int>();
+    // Each value = (Σ (w_i * doneRatio_i) / Σ w_i) for that stage (DoneRatio fraction 0..1)
+    public Dictionary<string, decimal> StageCompletionByWeight { get; set; } = new();
 
-    // Time-based KPIs
     public int DaysRemaining { get; set; }
     public int TotalProjectDays { get; set; }
     public decimal ProjectProgressPercentage { get; set; }
 
-    // Helper Methods for Chart Data
-    public string GetTaskStatusChartData()
-    {
-        return $"{CompletedTasks}/{TotalTasks}";
-    }
+    public string GetTaskStatusChartData() => $"{CompletedTasks}/{TotalTasks}";
 
     public string GetProjectProgressChartData()
     {
-        var daysElapsed = TotalProjectDays - DaysRemaining;
-        return $"{daysElapsed}/{TotalProjectDays}";
+        var elapsed = TotalProjectDays - DaysRemaining;
+        return $"{elapsed}/{TotalProjectDays}";
     }
 }

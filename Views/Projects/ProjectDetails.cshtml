@@ -199,31 +199,82 @@
                 </div>
             </div>
 
-            @if (Model.KPIs.TasksByStage.Any())
+            @if (Model.KPIs.StageCompletionByWeight.Any())
             {
+                // Pre-calculate total project weight (should normally be 100, but calculated for safety)
+                var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
+
                 <div class="col-xl-6">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">المهام حسب المرحلة</h4>
+                            <h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4>
                         </div>
                         <div class="card-body">
-                            @foreach (var stage in Model.KPIs.TasksByStage.OrderByDescending(s => s.Value))
-                            {
-                                var percentage = Math.Round((decimal)stage.Value / Model.KPIs.TotalTasks * 100, 0);
-                                var colors = new[] { "bg-success", "bg-info", "bg-warning", "bg-danger", "bg-primary" };
-                                var colorIndex = Math.Abs(stage.Key.GetHashCode()) % colors.Length;
-
-                                <div class="progress default-progress mb-3">
-                                    <div class="progress-bar @colors[colorIndex] progress-animated"
-                                         style="width: @percentage%; height:8px;" role="progressbar">
-                                        <span class="sr-only">@percentage% مكتملة</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-end mt-2 pb-3 justify-content-between">
-                                    <span class="font-w500">@stage.Key</span>
-                                    <h6 class="mb-0"> (@percentage%)</h6>
-                                </div>
+                            @{
+                                var stagesOrdered = Model.KPIs.StageCompletionByWeight
+                                    .OrderByDescending(s => s.Value)
+                                    .ToList();
                             }
+                            @foreach (var s in stagesOrdered)
+                            {
+                                var stageName = s.Key;
+                                var relativeFraction = s.Value;              // 0..1 (actual inside the stage)
+                                var relativePercent = Math.Round(relativeFraction * 100m, 2);
+
+                                // Sum of raw weights (project-based) for this stage
+                                var stageWeightSum = Model.Tasks
+                                    .Where(t => (t.StageName ?? "").Trim() == stageName)
+                                    .Sum(t => t.Weight ?? 0m);               // e.g. 25 (meaning 25% of project if total weights=100)
+
+                                // Stage weight share of project (if totalProjectWeight != 100)
+                                var stageWeightPercentOfProject = totalProjectWeight > 0
+                                    ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2)
+                                    : 0m;
+
+                                // Decide where to render text (inside/outside)
+                                var showInside = relativePercent >= 18m;
+                                var textClass = relativePercent >= 55m ? "text-white" : "text-dark";
+
+                                var colors = new[] { "bg-success", "bg-info", "bg-warning", "bg-danger", "bg-primary" };
+                                var colorIndex = Math.Abs(stageName.GetHashCode()) % colors.Length;
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="font-w500">@stageName</span>
+                                    <span class="small">
+                                        وزن المرحلة: 
+                                        <strong>@stageWeightSum@("%")</strong>
+                                        @if (totalProjectWeight != 100)
+                                        {
+                                            <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
+                                        }
+                                        &nbsp;|&nbsp; إنجاز داخل المرحلة: <strong>@relativePercent%</strong>
+                                    </span>
+                                </div>
+
+                                <div class="progress default-progress position-relative" style="height:16px; overflow:visible;">
+                                    <div class="progress-bar @colors[colorIndex] d-flex align-items-center @textClass"
+                                         style="width:@relativePercent%; height:16px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
+                                        @if (showInside)
+                                        {
+                                            <span class="w-100 text-center" style="line-height:1;">
+                                                @relativePercent% | وزن: @stageWeightSum%
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (!showInside)
+                                    {
+                                        <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
+                                              style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
+                                            @relativePercent% | وزن: @stageWeightSum%
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            }
+                            <small class="text-muted d-block mt-2">
+                                يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.  
+                                الوزن المعروض هو مجموع أوزان مهام المرحلة (من إجمالي أوزان المشروع).
+                            </small>
                         </div>
                     </div>
                 </div>

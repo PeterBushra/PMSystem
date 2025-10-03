@@ -106,42 +106,58 @@ public class ProjectsController(ProjectService _pservice, UserService _userservi
         var tasks = project.Tasks.ToList();
         var today = DateTime.Today;
 
-        // Task Status KPIs
+        // Task status counts
         kpis.TotalTasks = tasks.Count;
         kpis.CompletedTasks = tasks.Count(t => t.DoneRatio >= 1.0m);
-        kpis.InProgressTasks = tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m);
-        kpis.NotStartedTasks = tasks.Count(t => t.DoneRatio == 0 || t.DoneRatio == null);
-        kpis.OverdueTasks = tasks.Count(t => t.ExpectedEndDate < today && (t.DoneRatio < 1.0m || t.DoneRatio == null));
+        kpis.InProgressTasks = tasks.Count(t => t.DoneRatio is > 0m and < 1.0m);
+        kpis.NotStartedTasks = tasks.Count(t => t.DoneRatio == 0m || t.DoneRatio == null);
+        kpis.OverdueTasks = tasks.Count(t => t.ExpectedEndDate < today && (t.DoneRatio == null || t.DoneRatio < 1.0m));
 
-        // Completion Percentages
         if (kpis.TotalTasks > 0)
         {
-            kpis.CompletionPercentage = Math.Round((decimal)kpis.CompletedTasks / kpis.TotalTasks * 100, 2);
-            kpis.AverageTaskCompletion = Math.Round(
-                tasks.Average(t => (t.DoneRatio ?? 0) * 100), 2);
+            kpis.CompletionPercentage = Math.Round((decimal)kpis.CompletedTasks / kpis.TotalTasks * 100m, 2);
+            kpis.AverageTaskCompletion = Math.Round(tasks.Average(t => (t.DoneRatio ?? 0m) * 100m), 2);
         }
 
-        // Department Distribution
+        // Department distribution
         kpis.TasksByDepartment = tasks
-            .Where(t => !string.IsNullOrEmpty(t.ImplementorDepartment))
-            .GroupBy(t => t.ImplementorDepartment)
+            .Where(t => !string.IsNullOrWhiteSpace(t.ImplementorDepartment))
+            .GroupBy(t => t.ImplementorDepartment!.Trim())
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // Stage Distribution
-        kpis.TasksByStage = tasks
-            .Where(t => !string.IsNullOrEmpty(t.StageName))
-            .GroupBy(t => t.StageName?.Trim())
+        // Stage counts (raw)
+        kpis.StageTaskCounts = tasks
+            .Where(t => !string.IsNullOrWhiteSpace(t.StageName))
+            .GroupBy(t => t.StageName!.Trim())
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // Time-based KPIs
+        // Per-stage weighted (relative to the stage itself -> each stage max 100%)
+        kpis.StageCompletionByWeight = new Dictionary<string, decimal>();
+        var stageGroups = tasks
+            .Where(t => !string.IsNullOrWhiteSpace(t.StageName))
+            .GroupBy(t => t.StageName!.Trim());
+
+        foreach (var g in stageGroups)
+        {
+            // Weights in DB are project-based (0..100 total across project).
+            // For per-stage completion we normalize inside the stage:
+            decimal sumStageWeights = g.Sum(t => t.Weight ?? 0m);                 // Σ w_i
+            decimal weightedDone = g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)); // Σ (w_i * doneRatio_i)  (DoneRatio stored 0..1)
+            decimal relative = (sumStageWeights > 0m) ? (weightedDone / sumStageWeights) : 0m; // 0..1
+
+            if (relative < 0m) relative = 0m;
+            if (relative > 1m) relative = 1m;
+
+            kpis.StageCompletionByWeight[g.Key] = relative; // fraction 0..1
+        }
+
+        // Timeline KPIs
         kpis.TotalProjectDays = (project.EndDate - project.StartSate).Days;
         kpis.DaysRemaining = (project.EndDate - today).Days;
-
         if (kpis.TotalProjectDays > 0)
         {
-            var daysElapsed = kpis.TotalProjectDays - kpis.DaysRemaining;
-            kpis.ProjectProgressPercentage = Math.Round(
-                (decimal)daysElapsed / kpis.TotalProjectDays * 100, 2);
+            var elapsed = kpis.TotalProjectDays - kpis.DaysRemaining;
+            kpis.ProjectProgressPercentage = Math.Round((decimal)elapsed / kpis.TotalProjectDays * 100m, 2);
         }
 
         return kpis;
