@@ -1,11 +1,19 @@
 ﻿@model Jobick.ViewModels.ProjectStatisticsVM
+@using System.Text.Json
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = "بيانات المشاريع";
+
+    var total = Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects;
+    var orderedYears = Model.ProjectsCountByYear.OrderBy(x => x.Key).ToList();
+    var yearsJson  = JsonSerializer.Serialize(orderedYears.Select(x => x.Key));   // [2023,2024]
+    var countsJson = JsonSerializer.Serialize(orderedYears.Select(x => x.Value)); // [5,7]
 }
 <div class="content-body">
     <div class="container-fluid">
+        <!-- First Row -->
         <div class="row">
+            <!-- Project Status (Pie like ProjectDetails style) -->
             <div class="col-xl-6">
                 <div class="card mt-4">
                     <div class="card-header border-0 pb-0">
@@ -14,44 +22,63 @@
                     <div class="card-body pt-3">
                         <div class="row align-items-center">
                             <div class="col-xl-6 col-sm-6">
+                                @{
+                                    int pct(int v) => total > 0 ? (int)Math.Round(v * 100.0 / total) : 0;
+                                }
                                 <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-success progress-animated" style="width: @((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.DoneProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)%;" role="progressbar">
-                                        <span class="sr-only">@((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.DoneProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)% مكتملة</span>
-                                    </div>
+                                    <div class="progress-bar bg-success progress-animated" style="width:@pct(Model.DoneProjects)%"></div>
                                 </div>
-                                <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                    <span class="font-w500">المشاريع المكتملة </span>
-                                    <h6 class="mb-0">@Model.DoneProjects</h6>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="font-w500">المشاريع المكتملة</span>
+                                    <span>@Model.DoneProjects (@pct(Model.DoneProjects)%)</span>
                                 </div>
+
                                 <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-info progress-animated" style="width: @((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.InProgressProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)%;" role="progressbar">
-                                        <span class="sr-only">@((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.InProgressProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)% جاري التنفيذ</span>
-                                    </div>
+                                    <div class="progress-bar bg-info progress-animated" style="width:@pct(Model.InProgressProjects)%"></div>
                                 </div>
-                                <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                    <span class="font-w500">جاري التنفيذ </span>
-                                    <h6 class="mb-0">@Model.InProgressProjects</h6>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="font-w500">جاري التنفيذ</span>
+                                    <span>@Model.InProgressProjects (@pct(Model.InProgressProjects)%)</span>
                                 </div>
+
                                 <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-warning progress-animated" style="width: @((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.NotStartedProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)%;" role="progressbar">
-                                        <span class="sr-only">@((Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects) > 0 ? (Model.NotStartedProjects * 100 / (Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects)) : 0)% لم تبدأ</span>
-                                    </div>
+                                    <div class="progress-bar bg-warning progress-animated" style="width:@pct(Model.NotStartedProjects)%"></div>
                                 </div>
-                                <div class="d-flex align-items-end mt-2 justify-content-between">
-                                    <span class="font-w500"> لم تبدأ</span>
-                                    <h6 class="mb-0">@Model.NotStartedProjects</h6>
+                                <div class="d-flex justify-content-between">
+                                    <span class="font-w500">لم تبدأ</span>
+                                    <span>@Model.NotStartedProjects (@pct(Model.NotStartedProjects)%)</span>
                                 </div>
                             </div>
                             <div class="col-xl-6 col-sm-6">
-                                <div id="projectsPieChart"></div>
+                                <div id="projectsStatusPie"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Second KPI Vertical Bars -->
+            <div class="col-xl-6">
+                <div class="card mt-4">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">عدد المشاريع حسب السنة</h4>
+                        @if(!orderedYears.Any())
+                        {
+                            <span class="badge bg-warning text-dark">لا بيانات</span>
+                        }
+                    </div>
+                    <div class="card-body pt-3">
+                        <div id="projectsByYearBar" style="min-height:280px;"></div>
+                        @* Debug (remove if not needed):
+                        <div class="small text-muted mt-2">
+                            @string.Join(" | ", orderedYears.Select(x => $"{x.Key}:{x.Value}"))
+                        </div>*@
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Overdue Projects DataTable -->
+        <!-- Overdue Projects Table -->
         <div class="row mt-4">
             <div class="col-12">
                 <div class="card">
@@ -60,119 +87,148 @@
                     </div>
                     <div class="card-body pt-3">
                         <div class="table-responsive">
-                            <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width: 1000px">
+                            <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width:900px">
                                 <thead>
                                     <tr>
                                         <th class="text-center">معرف المشروع</th>
                                         <th class="text-center">اسم المشروع</th>
                                         <th class="text-center">تاريخ الانتهاء</th>
-                                        <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
+                                        <th class="text-center">عدد المهام غير المكتملة</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
-                                    {
-                                        <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
-                                            <td class="text-center">@p.ProjectId</td>
-                                            <td class="text-center">@p.Name</td>
-                                            <td class="text-center">@p.EndDate.ToShortDateString()</td>
-                                            <td class="text-center">@p.IncompleteTasksCount</td>
-                                        </tr>
-                                    }
+                                @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
+                                {
+                                    <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
+                                        <td class="text-center">@p.ProjectId</td>
+                                        <td class="text-center">@p.Name</td>
+                                        <td class="text-center">@p.EndDate.ToShortDateString()</td>
+                                        <td class="text-center">@p.IncompleteTasksCount</td>
+                                    </tr>
+                                }
                                 </tbody>
                             </table>
+                            @if(!Model.OverdueProjectsWithIncompleteTasks.Any())
+                            {
+                                <div class="alert alert-info text-center mb-0 mt-3">لا توجد مشاريع متأخرة.</div>
+                            }
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
-@section Jobick_style
-{
-    <!-- Datatable -->
-    <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet">
-    <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet">
-    <!-- Custom Stylesheet -->
-    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
+@section Jobick_style{
+    <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
 }
 
-@section Jobick_script
-{
-    <!-- Required vendors -->
+@section Jobick_script{
+    <!-- Core & Vendor (single includes, remove duplicates) -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
-    <!-- Apex Chart -->
     <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
-
-    <!-- Datatable -->
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
-    <script src="~/Jobick/js/plugins-init/datatables.init.js"></script>
-
-    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
-    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
-
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
 
-    <script src="~/Jobick/vendor/global/global.min.js"></script>
-    <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
-    <script src="~/Jobick/js/plugins-init/datatables.init.js"></script>
-    <script src="~/Jobick/js/custom.min.js"></script>
     <script>
-        $(document).ready(function () {
-            // Row click event to redirect to project details
-            $('#overdueProjectsTable').on('click', '.project-row', function () {
-                var projectId = $(this).data('project-id');
-                if (projectId) {
-                    window.location.href = '/Projects/ProjectDetails/' + projectId;
-                }
+        (function(){
+
+            const years  = @Html.Raw(yearsJson);   // e.g. [2023,2024]
+            const counts = @Html.Raw(countsJson);  // e.g. [5,7]
+
+            // 1. Status Pie (mirrors style used in ProjectDetails)
+            const statusEl = document.querySelector("#projectsStatusPie");
+            if(statusEl){
+                new ApexCharts(statusEl,{
+                    chart:{ type:'pie', height:250, fontFamily:'inherit' },
+                    series:[@Model.DoneProjects, @Model.InProgressProjects, @Model.NotStartedProjects],
+                    labels:['مكتملة','جاري التنفيذ','لم تبدأ'],
+                    colors:['#198754','#0dcaf0','#ffc107'],
+                    legend:{ position:'bottom' },
+                    dataLabels:{
+                        enabled:true,
+                        formatter:(val,opts)=> opts.w.globals.series[opts.seriesIndex]
+                    },
+                    tooltip:{ y:{ formatter:v=> v + ' مشروع'} }
+                }).render();
+            }
+
+            // 2. Vertical Bars for KPI2
+            const barEl = document.querySelector("#projectsByYearBar");
+            if(barEl){
+                const realYears = years.length ? years : ['لا بيانات'];
+                const realCounts = years.length ? counts : [0];
+
+                new ApexCharts(barEl,{
+                    chart:{
+                        type:'bar',
+                        height:280,
+                        toolbar:{ show:false },
+                        fontFamily:'inherit'
+                    },
+                    series:[{ name:'عدد المشاريع', data: realCounts }],
+                    xaxis:{
+                        categories: realYears,
+                        axisBorder:{ show:false },
+                        axisTicks:{ show:false },
+                        labels:{ style:{ colors:'#6c757d', fontSize:'13px' } }
+                    },
+                    yaxis:{
+                        labels:{ style:{ colors:'#6c757d', fontSize:'12px' } }
+                    },
+                    plotOptions:{
+                        bar:{
+                            columnWidth:'40%',
+                            endingShape:'rounded',
+                            borderRadius:4
+                        }
+                    },
+                    dataLabels:{
+                        enabled:true,
+                        formatter:(val)=> val,
+                        style:{ fontSize:'12px', fontWeight:'600' }
+                    },
+                    stroke:{ show:true, width:2, colors:['transparent'] },
+                    colors:['#35c556'],
+                    fill:{
+                        type:'gradient',
+                        gradient:{
+                            shade:'light',
+                            type:'vertical',
+                            opacityFrom:.95,
+                            opacityTo:.4,
+                            stops:[0,90,100]
+                        }
+                    },
+                    grid:{
+                        strokeDashArray:6,
+                        borderColor:'var(--border, #e5e5e5)'
+                    },
+                    tooltip:{ y:{ formatter:v=> v + ' مشروع'} },
+                    noData:{ text:'لا توجد بيانات', align:'center', verticalAlign:'middle' }
+                }).render();
+            }
+
+            // 3. Overdue projects table (simple / no paging)
+            $('#overdueProjectsTable').DataTable({
+                paging:false,
+                searching:false,
+                info:false,
+                responsive:true,
+                language:{ url:'//cdn.datatables.net/plug-ins/1.10.21/i18n/Arabic.json' }
             });
-        });
-    </script>
 
-    <!-- Apex Chart -->
-    <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+            // Row click -> redirect
+            $(document).on('click','#overdueProjectsTable .project-row',function(){
+                const id = $(this).data('project-id');
+                if(id) window.location.href = '/Projects/ProjectDetails/' + id;
+            });
 
-    <!-- Chart piety plugin files -->
-    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
-
-    <!-- Dashboard 1 -->
-    <script src="~/Jobick/js/dashboard/dashboard-1.js"></script>
-
-    <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
-
-    <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var options = {
-                chart: { type: 'pie', height: 250 },
-                series: [
-                    @Model.DoneProjects,
-                    @Model.InProgressProjects,
-                    @Model.NotStartedProjects
-                ],
-                labels: ['‎ ‎ مكتملة‎ ‎ ', '‎ ‎ جاري التنفيذ', '‎‎  لم تبدأ‎ ‎ '],
-                colors: ['#198754', '#0dcaf0', '#ffc107'],
-                legend: { position: 'bottom', fontFamily: 'inherit', labels: { colors: 'inherit' } },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function (val, opts) {
-                        return opts.w.globals.series[opts.seriesIndex];
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (val) { return val + ' مشروع'; }
-                    }
-                }
-            };
-            var chart = new ApexCharts(document.querySelector("#projectsPieChart"), options);
-            chart.render();
-        });
+        })();
     </script>
 }
