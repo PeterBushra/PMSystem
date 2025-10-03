@@ -53,48 +53,31 @@
             <div class="col-xl-12">
                 <div class="card">
                     <div class="card-body">
-                        <div class="row shapreter-row">
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon">
-                                    <span><i class="fas fa-tasks"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
-                                    <p class="mb-0">إجمالي المهام</p>
-                                </div>
+                        <div class="d-flex flex-row flex-wrap justify-content-between align-items-stretch">
+                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <span><i class="fas fa-tasks"></i></span>
+                                <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
+                                <p class="mb-0">إجمالي المهام</p>
                             </div>
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهم المنتهية تماماً 100%">
-                                    <span><i class="fas fa-check-circle text-success"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
-                                    <p class="mb-0">المهام المكتملة</p>
-                                </div>
+                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <span><i class="fas fa-check-circle text-success"></i></span>
+                                <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
+                                <p class="mb-0">المهام المكتملة</p>
                             </div>
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهم قيد التنفيذ">
-                                    <span><i class="fas fa-spinner text-info"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.InProgressTasks</h3>
-                                    <p class="mb-0">قيد التنفيذ</p>
-                                </div>
+                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <span><i class="fas fa-clock text-warning"></i></span>
+                                <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
+                                <p class="mb-0">لم تبدأ</p>
                             </div>
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهام التي لم يأتي تاريخ بدايتها بعد">
-                                    <span><i class="fas fa-clock text-warning"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
-                                    <p class="mb-0">لم تبدأ</p>
-                                </div>
+                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
+                                <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
+                                <p class="mb-0">متأخرة</p>
                             </div>
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="عدد المهام المتأخرة عن موعدها - لم تنتهي كم خطط لها">
-                                    <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
-                                    <p class="mb-0">متأخرة</p>
-                                </div>
-                            </div>
-                            <div class="col-xl-2 col-lg-4 col-sm-4 col-6">
-                                <div class="static-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="الأيام المتبقية حتى نهاية المشروع">
-                                    <span><i class="fas fa-calendar-alt"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
-                                    <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p>
-                                </div>
+                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <span><i class="fas fa-calendar-alt"></i></span>
+                                <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
+                                <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p    >
                             </div>
                         </div>
                     </div>
@@ -424,7 +407,7 @@
                 @(projectCost > 0 ? 100 - Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)
             ],
             labels: ['تكلفة المهام', 'بقية تكلفة المشروع'],
-            colors: ['#00c292', '#f4f4f4'],
+                colors: ['#00c292', '#e0cb09'],
             legend: {
                 position: 'bottom',
                 fontFamily: 'inherit',
