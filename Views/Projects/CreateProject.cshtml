@@ -42,7 +42,7 @@
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">الاسم</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="Name" class="form-control" placeholder="اسم المشروع" required />
+                                                <input asp-for="Name" class="form-control" placeholder="اسم المشروع" required maxlength="150" />
                                                 <div class="invalid-feedback">يرجى إدخال اسم المشروع.</div>
                                             </div>
                                         </div>
@@ -50,7 +50,7 @@
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">الوصف</label>
                                             <div class="col-lg-6">
-                                                <textarea asp-for="Description" class="form-control" rows="3" placeholder="الوصف" required></textarea>
+                                                <textarea asp-for="Description" class="form-control" rows="3" placeholder="الوصف" required maxlength="2000"></textarea>
                                                 <div class="invalid-feedback">يرجى إدخال الوصف.</div>
                                             </div>
                                         </div>
@@ -58,21 +58,21 @@
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">المسؤول عن التنفيذ</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="اسم المسؤول" required />
+                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="اسم المسؤول" required maxlength="150" />
                                                 <div class="invalid-feedback">يرجى إدخال اسم المسؤول عن التنفيذ.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">مالك النظام</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="SystemOwner" class="form-control" placeholder="مالك النظام" required />
+                                                <input asp-for="SystemOwner" class="form-control" placeholder="مالك النظام" required maxlength="150" />
                                                 <div class="invalid-feedback">يرجى إدخال مالك النظام.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">هدف المشروع</label>
                                             <div class="col-lg-6">
-                                                <textarea asp-for="ProjectGoal" class="form-control" rows="3" placeholder="هدف المشروع" required></textarea>
+                                                <textarea asp-for="ProjectGoal" class="form-control" rows="3" placeholder="هدف المشروع" required maxlength="150"></textarea>
                                                 <div class="invalid-feedback">يرجى إدخال هدف المشروع.</div>
                                             </div>
                                         </div>

@@ -38,22 +38,22 @@
                                     <!-- حقول الإدخال المرئية -->
                                     <div class="mb-3">
                                         <label asp-for="Task1" class="form-label fw-bold">المهمة</label>
-                                        <input asp-for="Task1" class="form-control" required />
+                                        <input asp-for="Task1" class="form-control" required maxlength="150" />
                                         <span asp-validation-for="Task1" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="StageName" class="form-label fw-bold">اسم المرحلة</label>
-                                        <input asp-for="StageName" class="form-control" required />
+                                        <input asp-for="StageName" class="form-control" required maxlength="150" />
                                         <span asp-validation-for="StageName" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="ImplementorDepartment" class="form-label fw-bold">القسم المنفذ</label>
-                                        <input asp-for="ImplementorDepartment" class="form-control" required />
+                                        <input asp-for="ImplementorDepartment" class="form-control" required maxlength="150" />
                                         <span asp-validation-for="ImplementorDepartment" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="DepartmentResponsible" class="form-label fw-bold">القسم المسؤول</label>
-                                        <input asp-for="DepartmentResponsible" class="form-control" required />
+                                        <input asp-for="DepartmentResponsible" class="form-control" required maxlength="150" />
                                         <span asp-validation-for="DepartmentResponsible" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
@@ -109,7 +109,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="DefinationOfDone" class="form-label fw-bold">تعريف الإنجاز</label>
-                                        <textarea asp-for="DefinationOfDone" class="form-control" required></textarea>
+                                        <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000"></textarea>
                                         <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
