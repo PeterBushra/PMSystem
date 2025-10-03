@@ -83,10 +83,20 @@ public class ADHMMCController(UserService _userService, ProjectService _projectS
             .GroupBy(p => p.EndDate.Year)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // Third KPI: Budgets for projects not fully done
-        var budgetsExceptFullyDone = projects
-            .Where(p => !(p.Tasks.Count > 0 && p.Tasks.All(t => t.DoneRatio == 1.0m)))
-            .ToDictionary(p => p.Id, p => p.TotalCost ?? 0);
+        // Third KPI: Budgets for projects not fully done (use TotalCost if set, else sum task costs)
+        var budgetsExceptFullyDone = new Dictionary<int, decimal>();
+        var projectNames = new Dictionary<int, string>();
+
+        foreach (var p in projects)
+        {
+            bool fullyDone = p.Tasks.Count > 0 && p.Tasks.All(t => t.DoneRatio == 1.0m);
+            if (fullyDone) continue;
+
+            decimal budget = p.TotalCost ?? p.Tasks.Sum(t => t.Cost ?? 0m);
+            if (budget < 0) budget = 0;
+            budgetsExceptFullyDone[p.Id] = budget;
+            projectNames[p.Id] = p.Name;
+        }
 
         // Fourth KPI: Budgets by year (EndDate.Year), only years >= this year
         var budgetsByYear = projects
@@ -113,6 +123,7 @@ public class ADHMMCController(UserService _userService, ProjectService _projectS
             DoneProjects = done,
             ProjectsCountByYear = projectsCountByYear,
             AllProjectsBudgetsExceptFullyDone = budgetsExceptFullyDone,
+            ProjectNames = projectNames,
             ProjectsBudgetsByYear = budgetsByYear,
             OverdueProjectsWithIncompleteTasks = overdueProjects
         };

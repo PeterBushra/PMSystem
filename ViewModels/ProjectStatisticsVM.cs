@@ -13,8 +13,11 @@ namespace Jobick.ViewModels
         // Second KPI
         public Dictionary<int, int> ProjectsCountByYear { get; set; } = new();
 
-        // Third KPI
+        // Third KPI (Budgets of not fully done projects)
+        // ProjectId -> Budget value
         public Dictionary<int, decimal> AllProjectsBudgetsExceptFullyDone { get; set; } = new();
+        // ProjectId -> Project Name (for labels)
+        public Dictionary<int, string> ProjectNames { get; set; } = new();
 
         // Fourth KPI
         public Dictionary<int, decimal> ProjectsBudgetsByYear { get; set; } = new();

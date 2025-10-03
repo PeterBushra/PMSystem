@@ -5,15 +5,32 @@
     ViewData["Title"] = "بيانات المشاريع";
 
     var total = Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects;
+
     var orderedYears = Model.ProjectsCountByYear.OrderBy(x => x.Key).ToList();
-    var yearsJson  = JsonSerializer.Serialize(orderedYears.Select(x => x.Key));   // [2023,2024]
-    var countsJson = JsonSerializer.Serialize(orderedYears.Select(x => x.Value)); // [5,7]
+    var yearsJson  = JsonSerializer.Serialize(orderedYears.Select(x => x.Key));
+    var countsJson = JsonSerializer.Serialize(orderedYears.Select(x => x.Value));
+
+    // Third KPI – ordered budgets & real names
+    var orderedBudgets = Model.AllProjectsBudgetsExceptFullyDone
+        .OrderByDescending(x => x.Value)
+        .ToList();
+
+    // Safely map Id -> Name (fallback to "مشروع {id}")
+    var budgetLabelsJson = JsonSerializer.Serialize(
+        orderedBudgets.Select(x => 
+            Model.ProjectNames.TryGetValue(x.Key, out var name) && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : $"مشروع {x.Key}"
+        ));
+
+    var budgetValuesJson = JsonSerializer.Serialize(orderedBudgets.Select(x => x.Value));
+    var totalBudget = orderedBudgets.Sum(b => b.Value);
 }
 <div class="content-body">
     <div class="container-fluid">
         <!-- First Row -->
         <div class="row">
-            <!-- Project Status (Pie like ProjectDetails style) -->
+            <!-- Project Status -->
             <div class="col-xl-6">
                 <div class="card mt-4">
                     <div class="card-header border-0 pb-0">
@@ -32,7 +49,6 @@
                                     <span class="font-w500">المشاريع المكتملة</span>
                                     <span>@Model.DoneProjects (@pct(Model.DoneProjects)%)</span>
                                 </div>
-
                                 <div class="progress default-progress mb-3">
                                     <div class="progress-bar bg-info progress-animated" style="width:@pct(Model.InProgressProjects)%"></div>
                                 </div>
@@ -40,7 +56,6 @@
                                     <span class="font-w500">جاري التنفيذ</span>
                                     <span>@Model.InProgressProjects (@pct(Model.InProgressProjects)%)</span>
                                 </div>
-
                                 <div class="progress default-progress mb-3">
                                     <div class="progress-bar bg-warning progress-animated" style="width:@pct(Model.NotStartedProjects)%"></div>
                                 </div>
@@ -56,8 +71,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Second KPI Vertical Bars -->
+            <!-- Projects Count By Year -->
             <div class="col-xl-6">
                 <div class="card mt-4">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
@@ -69,10 +83,30 @@
                     </div>
                     <div class="card-body pt-3">
                         <div id="projectsByYearBar" style="min-height:280px;"></div>
-                        @* Debug (remove if not needed):
-                        <div class="small text-muted mt-2">
-                            @string.Join(" | ", orderedYears.Select(x => $"{x.Key}:{x.Value}"))
-                        </div>*@
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third KPI Budgets (New Row Full Width) -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">ميزانيات المشاريع (غير المكتملة بالكامل)</h4>
+                        <span class="small text-muted">
+                            الإجمالي: @totalBudget.ToString("N2")
+                        </span>
+                    </div>
+                    <div class="card-body pt-3">
+                        @if (!orderedBudgets.Any())
+                        {
+                            <div class="alert alert-info text-center mb-0">لا توجد بيانات ميزانيات للعرض.</div>
+                        }
+                        else
+                        {
+                            <div id="projectsBudgetsDonut" style="min-height:340px;"></div>
+                        }
                     </div>
                 </div>
             </div>
@@ -127,21 +161,23 @@
 }
 
 @section Jobick_script{
-    <!-- Core & Vendor (single includes, remove duplicates) -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
     <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
-
     <script>
         (function(){
 
-            const years  = @Html.Raw(yearsJson);   // e.g. [2023,2024]
-            const counts = @Html.Raw(countsJson);  // e.g. [5,7]
+            const years  = @Html.Raw(yearsJson);
+            const counts = @Html.Raw(countsJson);
 
-            // 1. Status Pie (mirrors style used in ProjectDetails)
+            const budgetLabels = @Html.Raw(budgetLabelsJson);
+            const budgetValues = @Html.Raw(budgetValuesJson);
+            const totalBudget = @(@totalBudget.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            // 1. Status Pie
             const statusEl = document.querySelector("#projectsStatusPie");
             if(statusEl){
                 new ApexCharts(statusEl,{
@@ -158,7 +194,7 @@
                 }).render();
             }
 
-            // 2. Vertical Bars for KPI2
+            // 2. Projects Count By Year
             const barEl = document.querySelector("#projectsByYearBar");
             if(barEl){
                 const realYears = years.length ? years : ['لا بيانات'];
@@ -182,11 +218,7 @@
                         labels:{ style:{ colors:'#6c757d', fontSize:'12px' } }
                     },
                     plotOptions:{
-                        bar:{
-                            columnWidth:'40%',
-                            endingShape:'rounded',
-                            borderRadius:4
-                        }
+                        bar:{ columnWidth:'40%', endingShape:'rounded', borderRadius:4 }
                     },
                     dataLabels:{
                         enabled:true,
@@ -197,24 +229,79 @@
                     colors:['#35c556'],
                     fill:{
                         type:'gradient',
-                        gradient:{
-                            shade:'light',
-                            type:'vertical',
-                            opacityFrom:.95,
-                            opacityTo:.4,
-                            stops:[0,90,100]
-                        }
+                        gradient:{ shade:'light', type:'vertical', opacityFrom:.95, opacityTo:.4, stops:[0,90,100] }
                     },
-                    grid:{
-                        strokeDashArray:6,
-                        borderColor:'var(--border, #e5e5e5)'
-                    },
+                    grid:{ strokeDashArray:6, borderColor:'var(--border, #e5e5e5)' },
                     tooltip:{ y:{ formatter:v=> v + ' مشروع'} },
                     noData:{ text:'لا توجد بيانات', align:'center', verticalAlign:'middle' }
                 }).render();
             }
 
-            // 3. Overdue projects table (simple / no paging)
+            // 3. Budgets Donut
+            const budgetEl = document.querySelector("#projectsBudgetsDonut");
+            if(budgetEl && budgetValues.length){
+                new ApexCharts(budgetEl,{
+                    chart:{ type:'donut', height:340, fontFamily:'inherit' },
+                    series: budgetValues,
+                    labels: budgetLabels,
+                    colors: ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'],
+                    legend:{
+                        position:'right',
+                        fontSize:'12px',
+                        markers:{ width:10, height:10 },
+                        itemMargin:{ vertical:4 }
+                    },
+                    dataLabels:{
+                        enabled:true,
+                        formatter:(val,opts)=>{
+                            const v = opts.w.globals.series[opts.seriesIndex];
+                            if(!v) return '';
+                            // Show absolute value in compact form
+                            return Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(v);
+                        }
+                    },
+                    tooltip:{
+                        y:{
+                            formatter:(v)=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2, maximumFractionDigits:2}).format(v)
+                        }
+                    },
+                    plotOptions:{
+                        pie:{
+                            donut:{
+                                size:'70%',
+                                labels:{
+                                    show:true,
+                                    name:{
+                                        show:true,
+                                        offsetY:10
+                                    },
+                                    value:{
+                                        show:true,
+                                        fontSize:'14px',
+                                        formatter:(v)=> Intl.NumberFormat(
+                                            'ar-EG',
+                                            {minimumFractionDigits:2, maximumFractionDigits:2}
+                                        ).format(parseFloat(v||0))
+                                    },
+                                    total:{
+                                        show:true,
+                                        label:'الإجمالي',
+                                        fontSize:'14px',
+                                        formatter: function () {
+                                            return Intl.NumberFormat(
+                                                'ar-EG',
+                                                {minimumFractionDigits:2, maximumFractionDigits:2}
+                                            ).format(totalBudget);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }).render();
+            }
+
+            // 4. Overdue Table
             $('#overdueProjectsTable').DataTable({
                 paging:false,
                 searching:false,
@@ -223,7 +310,6 @@
                 language:{ url:'//cdn.datatables.net/plug-ins/1.10.21/i18n/Arabic.json' }
             });
 
-            // Row click -> redirect
             $(document).on('click','#overdueProjectsTable .project-row',function(){
                 const id = $(this).data('project-id');
                 if(id) window.location.href = '/Projects/ProjectDetails/' + id;
