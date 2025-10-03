@@ -98,11 +98,10 @@ public class ADHMMCController(UserService _userService, ProjectService _projectS
             projectNames[p.Id] = p.Name;
         }
 
-        // Fourth KPI: Budgets by year (EndDate.Year), only years >= this year
+        // Fourth KPI: Budgets by EndDate.Year (include all years)
         var budgetsByYear = projects
-            .Where(p => p.EndDate.Year >= thisYear)
             .GroupBy(p => p.EndDate.Year)
-            .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalCost ?? 0));
+            .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalCost ?? 0m));
 
         // Fifth KPI: Projects with incomplete tasks and EndDate passed
         var overdueProjects = projects
