@@ -1,5 +1,8 @@
 ﻿namespace Jobick.ViewModels;
 
+/// <summary>
+/// View model for project details page including raw project data and derived KPIs.
+/// </summary>
 public class ProjectDetailsVM
 {
     public int Id { get; set; }
@@ -18,6 +21,10 @@ public class ProjectDetailsVM
     public ProjectKPIs KPIs { get; set; } = new();
 }
 
+/// <summary>
+/// Encapsulates computed metrics for a single project.
+/// Unless stated otherwise, percentages are 0..100 and task DoneRatio is stored as 0..1.
+/// </summary>
 public class ProjectKPIs
 {
     public int TotalTasks { get; set; }
@@ -32,15 +39,24 @@ public class ProjectKPIs
     public Dictionary<string, int> TasksByDepartment { get; set; } = new();
     public Dictionary<string, int> StageTaskCounts { get; set; } = new();
 
-    // Each value = (Σ (w_i * doneRatio_i) / Σ w_i) for that stage (DoneRatio fraction 0..1)
+    /// <summary>
+    /// Each value = Σ (w_i * done_i) / Σ w_i where w_i is task weight and done_i is DoneRatio (0..1).
+    /// Values are fractions in [0,1] per stage.
+    /// </summary>
     public Dictionary<string, decimal> StageCompletionByWeight { get; set; } = new();
 
     public int DaysRemaining { get; set; }
     public int TotalProjectDays { get; set; }
     public decimal ProjectProgressPercentage { get; set; }
 
+    /// <summary>
+    /// Returns a simple "completed/total" string for charting.
+    /// </summary>
     public string GetTaskStatusChartData() => $"{CompletedTasks}/{TotalTasks}";
 
+    /// <summary>
+    /// Returns a simple "elapsed/total" string for charting.
+    /// </summary>
     public string GetProjectProgressChartData()
     {
         var elapsed = TotalProjectDays - DaysRemaining;

@@ -5,8 +5,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Controllers;
+
+/// <summary>
+/// Handles creation, editing, deletion and attachment download for tasks.
+/// Uses services to interact with EF Core context and keeps controller slim.
+/// </summary>
 public class TasksController(TaskService _tservice, ProjectService _projectService) : Controller
 {
+    // Static, readonly map for common content types to file extensions used during downloads.
+    private static readonly IReadOnlyDictionary<string, string> _contentTypeToExtension = new Dictionary<string, string>
+    {
+        { "application/pdf", ".pdf" },
+        { "image/jpeg", ".jpg" },
+        { "image/png", ".png" },
+        { "application/msword", ".doc" },
+        { "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx" },
+        { "application/vnd.ms-excel", ".xls" },
+        { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx" }
+    };
+
+    /// <summary>
+    /// Returns the create form for a task with defaults and cost context in ViewBag.
+    /// </summary>
     public async Task<IActionResult> CreateTask(int projectId)
     {
         var model = new Models.Task
@@ -27,6 +47,11 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
+    /// <summary>
+    /// Handles create task submission, including attachment requirement when DoneRatio is 100%.
+    /// Converts DoneRatio from percentage (0..100) to fraction (0..1) before persistence.
+    /// Also validates that the sum of weights across project tasks does not exceed 100.
+    /// </summary>
     public async Task<IActionResult> PostTask(Models.Task model)
     {
         // Get the user ID from claims and parse to int
@@ -76,10 +101,8 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         if (!ModelState.IsValid)
             return View("CreateTask", model);
 
-        // Convert DoneRatio from percentage to fraction
-        if (model.DoneRatio > 100) model.DoneRatio = 100;
-        if (model.DoneRatio < 0) model.DoneRatio = 0;
-        model.DoneRatio = model.DoneRatio / 100m;
+        // Convert DoneRatio from percentage to fraction and clamp to [0,100] then [0,1]
+        model.DoneRatio = ClampToFraction(model.DoneRatio);
 
         // Validate total weight
         var tasks = await _tservice.GetTaskListAsync();
@@ -112,6 +135,10 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
 
+    /// <summary>
+    /// Loads the edit form for a task and prepares cost context for client-side warnings.
+    /// Converts DoneRatio from stored fraction to percentage for display.
+    /// </summary>
     public async Task<IActionResult> EditTask(int id)
     {
         var task = await _tservice.GetTaskAsync(id);
@@ -137,6 +164,9 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    /// <summary>
+    /// Handles task update submission with the same validations as creation.
+    /// </summary>
     public async Task<IActionResult> EditTask(int id, Models.Task model)
     {
         if (id != model.Id)
@@ -189,11 +219,8 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         if (!ModelState.IsValid)
             return View("CreateTask", model);
 
-        // Convert DoneRatio from percentage to fraction
-        if (model.DoneRatio > 100) model.DoneRatio = 100;
-        if (model.DoneRatio < 0) model.DoneRatio = 0;
-        model.DoneRatio = model.DoneRatio / 100m;
-
+        // Convert DoneRatio from percentage to fraction and clamp
+        model.DoneRatio = ClampToFraction(model.DoneRatio);
 
         // Validate total weight
         decimal totalWeight = weights + (model.Weight ?? 0);
@@ -210,6 +237,9 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     }
 
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// Shows delete confirmation for a task.
+    /// </summary>
     public async Task<IActionResult> DeleteTask(int id, int projectId)
     {
         var task = await _tservice.GetTaskAsync(id);
@@ -221,6 +251,9 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    /// <summary>
+    /// Executes deletion of a task.
+    /// </summary>
     public async Task<IActionResult> PostDeleteTask(int id, int projectId)
     {
         await _tservice.DeleteTaskAsync(id);
@@ -228,6 +261,10 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     }
 
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// Allows users to download the stored attachment for the given task id.
+    /// Chooses a best-effort file name based on the task id and content type.
+    /// </summary>
     public async Task<IActionResult> DownloadAttachment(int id)
     {
         var task = await _tservice.GetTaskAsync(id);
@@ -238,23 +275,25 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         string extension = "";
         if (!string.IsNullOrEmpty(task.AttachmentContentType))
         {
-            // Simple mapping for common types
-            var map = new Dictionary<string, string>
-            {
-                { "application/pdf", ".pdf" },
-                { "image/jpeg", ".jpg" },
-                { "image/png", ".png" },
-                { "application/msword", ".doc" },
-                { "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx" },
-                { "application/vnd.ms-excel", ".xls" },
-                { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx" }
-            };
-            if (map.TryGetValue(task.AttachmentContentType, out var ext))
+            if (_contentTypeToExtension.TryGetValue(task.AttachmentContentType, out var ext))
                 extension = ext;
         }
 
         // If you stored the original file name, use its extension
         string fileName = "Attachment_" + id + extension;
         return File(task.AttachmentData, task.AttachmentContentType ?? "application/octet-stream", fileName);
+    }
+
+    /// <summary>
+    /// Clamps a percentage value in [0,100] and returns a fraction in [0,1].
+    /// Accepts null and returns 0.
+    /// </summary>
+    private static decimal ClampToFraction(decimal? percentage)
+    {
+        if (!percentage.HasValue) return 0m;
+        var p = percentage.Value;
+        if (p > 100m) p = 100m;
+        if (p < 0m) p = 0m;
+        return p / 100m;
     }
 }

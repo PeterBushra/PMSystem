@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Services;
 
+/// <summary>
+/// Encapsulates data access for <see cref="Project"/> entities.
+/// Keeps EF Core interaction in one place to support SRP and ease of maintenance.
+/// </summary>
 public class ProjectService
 {
     private readonly AdhmmcPmContext _context;
@@ -12,21 +16,27 @@ public class ProjectService
         _context = context;
     }
 
-    // Create (Async)
+    /// <summary>
+    /// Adds a new project and saves changes asynchronously.
+    /// </summary>
     public async System.Threading.Tasks.Task AddProjectAsync(Project project)
     {
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
     }
 
-    // Create (Sync)
+    /// <summary>
+    /// Adds a new project and saves changes synchronously.
+    /// </summary>
     internal void AddProject(Project project)
     {
         _context.Projects.Add(project);
         _context.SaveChanges();
     }
 
-    // Read All (Async)
+    /// <summary>
+    /// Returns all projects including tasks and creator navigation properties.
+    /// </summary>
     public async Task<List<Project>> GetProjectListAsync()
     {
         return await _context.Projects
@@ -35,7 +45,9 @@ public class ProjectService
             .ToListAsync();
     }
 
-    // Read Single (Sync)
+    /// <summary>
+    /// Returns a single project by id including related entities.
+    /// </summary>
     internal Project? GetProject(int id)
     {
         return _context.Projects
@@ -44,7 +56,9 @@ public class ProjectService
             .FirstOrDefault(p => p.Id == id);
     }
 
-    // Read Single (Async)
+    /// <summary>
+    /// Returns a single project by id including related entities asynchronously.
+    /// </summary>
     public async Task<Project?> GetProjectAsync(int id)
     {
         return await _context.Projects
@@ -53,21 +67,27 @@ public class ProjectService
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    // Update (Async)
+    /// <summary>
+    /// Updates a project asynchronously.
+    /// </summary>
     public async System.Threading.Tasks.Task UpdateProjectAsync(Project project)
     {
         _context.Projects.Update(project);
         await _context.SaveChangesAsync();
     }
 
-    // Update (Sync)
+    /// <summary>
+    /// Updates a project synchronously.
+    /// </summary>
     internal void UpdateProject(Project project)
     {
         _context.Projects.Update(project);
         _context.SaveChanges();
     }
 
-    // Delete (Async)
+    /// <summary>
+    /// Deletes a project and its tasks asynchronously to maintain referential integrity.
+    /// </summary>
     public async System.Threading.Tasks.Task DeleteProjectAsync(int id)
     {
         var project = await _context.Projects
@@ -83,7 +103,9 @@ public class ProjectService
         }
     }
 
-    // Delete (Sync)
+    /// <summary>
+    /// Deletes a project and its tasks synchronously.
+    /// </summary>
     internal void DeleteProject(int id)
     {
         var project = _context.Projects
@@ -99,6 +121,9 @@ public class ProjectService
         }
     }
 
+    /// <summary>
+    /// Checks existence of a project by id.
+    /// </summary>
     internal bool ProjectExists(int id)
     {
         return _context.Projects.Any(p => p.Id == id);

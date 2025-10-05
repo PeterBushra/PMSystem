@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Jobick.Models;
 
+/// <summary>
+/// EF Core entity representing an application user with permissions and navigation collections.
+/// </summary>
 public partial class User
 {
     public int Id { get; set; }

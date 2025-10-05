@@ -8,9 +8,16 @@ using System.Threading.Tasks;
 
 namespace Jobick.Controllers;
 
+/// <summary>
+/// Controller responsible for CRUD and reporting operations for projects.
+/// All actions require authentication; some require Admin role.
+/// </summary>
 [Authorize]
 public class ProjectsController(ProjectService _pservice) : Controller
 {
+    /// <summary>
+    /// Lists all projects with their related data using the backing service.
+    /// </summary>
     public async Task<IActionResult> Index()
     {
         var projects = await  _pservice.GetProjectListAsync();
@@ -18,7 +25,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     }
 
     [Authorize(Roles = "Admin")]
-
+    /// <summary>
+    /// Returns the create project screen with sensible defaults.
+    /// </summary>
     public IActionResult CreateProject()
     {
         // Get the user ID from claims and parse to int
@@ -40,6 +49,10 @@ public class ProjectsController(ProjectService _pservice) : Controller
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    /// <summary>
+    /// Handles creation or update of a project based on whether <see cref="Project.Id"/> is zero.
+    /// Keeps model state valid by removing properties that are not posted from the form.
+    /// </summary>
     public IActionResult PostProject(Project project)
     {
         ModelState.Remove(nameof(Project.Id));
@@ -49,6 +62,7 @@ public class ProjectsController(ProjectService _pservice) : Controller
         ModelState.Remove(nameof(Project.Tasks));
         ModelState.Remove(nameof(Project.NameAr));
         ModelState.Remove(nameof(Project.DescriptionAr));
+        // Ensure Arabic fields mirror the provided English values if not explicitly provided
         project.NameAr = project.Name;
         project.DescriptionAr = project.Description;
 
@@ -72,6 +86,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     }
 
 
+    /// <summary>
+    /// Shows details for a single project including derived KPIs.
+    /// </summary>
     public IActionResult ProjectDetails(int id)
     {
         var project = _pservice.GetProject(id);
@@ -100,6 +117,22 @@ public class ProjectsController(ProjectService _pservice) : Controller
         return View(vm);
     }
 
+    /// <summary>
+    /// Calculates common KPIs for a given project.
+    /// The method uses only in-memory task data to avoid extra queries and keeps
+    /// output stable with explicit clamping and rounding where appropriate.
+    /// </summary>
+    /// <remarks>
+    /// KPI definitions:
+    /// - CompletedTasks: t.DoneRatio >= 1.0 (DoneRatio stored as 0..1 fraction)
+    /// - InProgressTasks: 0 &lt; DoneRatio &lt; 1
+    /// - NotStartedTasks: null or 0
+    /// - OverdueTasks: ExpectedEndDate &lt; Today and not completed
+    /// - CompletionPercentage: CompletedTasks / TotalTasks * 100
+    /// - AverageTaskCompletion: Average of task DoneRatio values scaled to 0..100
+    /// - StageCompletionByWeight: For each stage, Σ(w_i * done_i) / Σ(w_i) as a fraction in [0,1]
+    /// - ProjectProgressPercentage: elapsedDays / totalProjectDays * 100
+    /// </remarks>
     private ProjectKPIs CalculateProjectKPIs(Project project)
     {
         var kpis = new ProjectKPIs();
@@ -115,7 +148,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
         if (kpis.TotalTasks > 0)
         {
+            // Overall completion percentage based on completed task count (0..100)
             kpis.CompletionPercentage = Math.Round((decimal)kpis.CompletedTasks / kpis.TotalTasks * 100m, 2);
+            // Average of task DoneRatio values (convert from fraction to percentage)
             kpis.AverageTaskCompletion = Math.Round(tasks.Average(t => (t.DoneRatio ?? 0m) * 100m), 2);
         }
 
@@ -131,7 +166,7 @@ public class ProjectsController(ProjectService _pservice) : Controller
             .GroupBy(t => t.StageName!.Trim())
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // Per-stage weighted (relative to the stage itself -> each stage max 100%)
+        // Per-stage weighted completion (normalized per stage to make each stage max at 100%)
         kpis.StageCompletionByWeight = new Dictionary<string, decimal>();
         var stageGroups = tasks
             .Where(t => !string.IsNullOrWhiteSpace(t.StageName))
@@ -139,12 +174,14 @@ public class ProjectsController(ProjectService _pservice) : Controller
 
         foreach (var g in stageGroups)
         {
-            // Weights in DB are project-based (0..100 total across project).
-            // For per-stage completion we normalize inside the stage:
-            decimal sumStageWeights = g.Sum(t => t.Weight ?? 0m);                 // Σ w_i
-            decimal weightedDone = g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)); // Σ (w_i * doneRatio_i)  (DoneRatio stored 0..1)
-            decimal relative = (sumStageWeights > 0m) ? (weightedDone / sumStageWeights) : 0m; // 0..1
+            // Σ w_i within the stage
+            decimal sumStageWeights = g.Sum(t => t.Weight ?? 0m);
+            // Σ (w_i * done_i) where done_i is a fraction in [0,1]
+            decimal weightedDone = g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+            // Relative completion within this stage (fraction 0..1); protects against divide by zero
+            decimal relative = (sumStageWeights > 0m) ? (weightedDone / sumStageWeights) : 0m;
 
+            // Clamp for safety to keep values within [0,1]
             if (relative < 0m) relative = 0m;
             if (relative > 1m) relative = 1m;
 
@@ -164,6 +201,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     }
 
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// Returns the edit form reusing the create view for consistency.
+    /// </summary>
     public async Task<IActionResult> Edit(int id)
     {
         var project = await _pservice.GetProjectAsync(id);
@@ -177,6 +217,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    /// <summary>
+    /// Handles the edit postback using optimistic concurrency through EF Core.
+    /// </summary>
     public async Task<IActionResult> Edit(int id, Project model)
     {
         if (id != model.Id)
@@ -208,6 +251,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     }
 
     [Authorize(Roles = "Admin")]
+    /// <summary>
+    /// Shows confirmation for deletion of a project.
+    /// </summary>
     public async Task<IActionResult> Delete(int id)
     {
         var project = await _pservice.GetProjectAsync(id);
@@ -219,6 +265,9 @@ public class ProjectsController(ProjectService _pservice) : Controller
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    /// <summary>
+    /// Executes the deletion of a project, ensuring related tasks are also removed by the service.
+    /// </summary>
     public async Task<IActionResult> PostDelete(int id)
     {
         await _pservice.DeleteProjectAsync(id);

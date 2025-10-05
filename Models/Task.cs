@@ -4,6 +4,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Jobick.Models;
 
+/// <summary>
+/// EF Core entity representing a project task, including scheduling, progress, and costing.
+/// </summary>
 public partial class Task
 {
     public int Id { get; set; }
