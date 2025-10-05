@@ -46,7 +46,7 @@
                                         <th class="text-center">تاريخ البدء</th>
                                         <th class="text-center">تاريخ الانتهاء</th>
                                         <th class="text-center">التكلفة الإجمالية</th>
-                                        <th class="text-center" style="text-align: center !important;">الإجراءات</th>
+                                        <th class="text-center" style="text-align: center !important;"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -60,9 +60,9 @@
                                             <td>@project.ResponsibleForImplementing</td>
                                             <td>@project.SystemOwner</td>
                                             <td>@project.ProjectGoal</td>
-                                            <td>@project.StartSate.ToString("d")</td>
-                                            <td>@project.EndDate.ToString("d")</td>
-                                            <td>@project.TotalCost?.ToString()</td>
+                                            <td data-order="@project.StartSate.ToString("yyyy-MM-dd")">@project.StartSate.ToString("d")</td>
+                                            <td data-order="@project.EndDate.ToString("yyyy-MM-dd")">@project.EndDate.ToString("d")</td>
+                                            <td data-order="@project.TotalCost.GetValueOrDefault(0).ToString(System.Globalization.CultureInfo.InvariantCulture)">@project.TotalCost?.ToString()</td>
                                             <td>
                                                 <div class="d-flex">
                                                     <a asp-controller="Projects" asp-action="Edit" asp-route-id="@project.Id"
@@ -96,6 +96,7 @@
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet">
     <!-- Custom Stylesheet -->
     <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
+    <link href="~/css/datatables-rtl.css" rel="stylesheet">
 }
 
 @section Jobick_script
@@ -117,5 +118,19 @@
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
 
-
+    <script>
+        $(function(){
+            // Initialize sorting for projects list, Arabic UI, disable sorting for actions column
+            $('#projectsTable').DataTable({
+                order: [],
+                responsive: true,
+                columnDefs: [ { targets: -1, orderable: false } ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Arabic.json',
+                    paginate: { previous: '&lt;', next: '&gt;' },
+                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل'
+                }
+            });
+        });
+    </script>
 }
