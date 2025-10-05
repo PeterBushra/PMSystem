@@ -47,7 +47,7 @@ public class ADHMMCController(UserService _userService, ProjectService _projectS
             return RedirectToAction(nameof(Index));
         }
 
-        ModelState.AddModelError("", "Invalid username or password");
+        ModelState.AddModelError("", "خطأ في كلمة المرور او اسم المستخدم");
         return View();
     }
 
