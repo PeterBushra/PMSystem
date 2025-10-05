@@ -34,53 +34,75 @@
 }
 <div class="content-body">
     <div class="container-fluid">
+        <!-- Modern KPI row -->
+        <div class="row kpi-row g-3 mt-2">
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card kpi-card kpi-bg-success">
+                    <div class="card-body">
+                        <div class="kpi-top">
+                            <div class="kpi-label">المشاريع المكتملة</div>
+                            <i class="kpi-icon fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-value" data-countup>@Model.DoneProjects</div>
+                        <div class="kpi-sub">نسبة: @((total>0? (Model.DoneProjects*100/total):0))%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card kpi-card kpi-bg_info kpi-bg-info">
+                    <div class="card-body">
+                        <div class="kpi-top">
+                            <div class="kpi-label">جاري التنفيذ</div>
+                            <i class="kpi-icon fas fa-tasks"></i>
+                        </div>
+                        <div class="kpi-value" data-countup>@Model.InProgressProjects</div>
+                        <div class="kpi-sub">نسبة: @((total>0? (Model.InProgressProjects*100/total):0))%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card kpi-card kpi-bg-warning">
+                    <div class="card-body">
+                        <div class="kpi-top">
+                            <div class="kpi-label">لم تبدأ</div>
+                            <i class="kpi-icon fas fa-hourglass-start"></i>
+                        </div>
+                        <div class="kpi-value" data-countup>@Model.NotStartedProjects</div>
+                        <div class="kpi-sub">نسبة: @((total>0? (Model.NotStartedProjects*100/total):0))%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card kpi-card kpi-bg-primary">
+                    <div class="card-body">
+                        <div class="kpi-top">
+                            <div class="kpi-label">الميزانية الإجمالية</div>
+                            <i class="kpi-icon fas fa-coins"></i>
+                        </div>
+                        <div class="kpi-value" data-countup data-decimals="2">@totalBudget.ToString("0.##")</div>
+                        @* Removed currency text as requested *@
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- First Row -->
-        <div class="row">
+        <div class="row mt-3">
             <!-- Project Status -->
             <div class="col-xl-6">
-                <div class="card mt-4">
+                <div class="card card-modern mt-4">
                     <div class="card-header border-0 pb-0 d-flex align-items-center">
                         <h4 class="card-title mb-0">حالة المشاريع</h4>
                         <span class="badge bg-info ms-2" style="font-size:0.7rem;">يتم احتساب حالة المشاريع فقط للمشاريع التي تحتوي على مهام</span>
                     </div>
                     <div class="card-body pt-3">
-                        <div class="row align-items-center">
-                            <div class="col-xl-6 col-sm-6">
-                                @{
-                                    int pct(int v) => total > 0 ? (int)Math.Round(v * 100.0 / total) : 0;
-                                }
-                                <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-success progress-animated" style="width:@pct(Model.DoneProjects)%"></div>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <span class="font-w500">المشاريع المكتملة</span>
-                                    <span>@Model.DoneProjects (@pct(Model.DoneProjects)%)</span>
-                                </div>
-                                <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-info progress-animated" style="width:@pct(Model.InProgressProjects)%"></div>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <span class="font-w500">جاري التنفيذ</span>
-                                    <span>@Model.InProgressProjects (@pct(Model.InProgressProjects)%)</span>
-                                </div>
-                                <div class="progress default-progress mb-3">
-                                    <div class="progress-bar bg-warning progress-animated" style="width:@pct(Model.NotStartedProjects)%"></div>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="font-w500">لم تبدأ</span>
-                                    <span>@Model.NotStartedProjects (@pct(Model.NotStartedProjects)%)</span>
-                                </div>
-                            </div>
-                            <div class="col-xl-6 col-sm-6">
-                                <div id="projectsStatusPie"></div>
-                            </div>
-                        </div>
+                        <div id="projectsStatusPie"></div>
                     </div>
                 </div>
             </div>
             <!-- Projects Count By Year -->
             <div class="col-xl-6">
-                <div class="card mt-4">
+                <div class="card card-modern mt-4">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">عدد المشاريع حسب السنة</h4>
                         @if(!orderedYears.Any())
@@ -89,7 +111,7 @@
                         }
                     </div>
                     <div class="card-body pt-3">
-                        <div id="projectsByYearBar" style="min-height:280px;"></div>
+                        <div id="projectsByYearBar"></div>
                     </div>
                 </div>
             </div>
@@ -99,7 +121,7 @@
         <div class="row mt-4">
             <!-- Budgets per Year (Vertical Bars) -->
             <div class="col-xl-6">
-                <div class="card">
+                <div class="card card-modern">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">ميزانيات المشاريع حسب السنة</h4>
                         @if(!orderedBudgetYears.Any())
@@ -108,15 +130,15 @@
                         }
                     </div>
                     <div class="card-body pt-3">
-                        <div id="projectsBudgetByYearBar" style="min-height:280px;"></div>
+                        <div id="projectsBudgetByYearBar"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Third KPI Budgets (Donut) moved here (was a separate full-width row) -->
+            <!-- Third KPI Budgets (Donut) moved here -->
             <div class="col-xl-6">
-                <div class="card h-100">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <div class="card card-modern h-100">
+                    <div class="card-header border-0 pb-0 d-flex justify-content_between justify-content-between align-items-center">
                         <h4 class="card-title mb-0">ميزانيات المشاريع (غير المكتملة بالكامل)</h4>
                         <span class="small text-muted">
                             الإجمالي: @totalBudget.ToString("N2")
@@ -129,7 +151,7 @@
                         }
                         else
                         {
-                            <div id="projectsBudgetsDonut" style="min-height:280px;"></div>
+                            <div id="projectsBudgetsDonut"></div>
                         }
                     </div>
                 </div>
@@ -139,7 +161,7 @@
         <!-- Overdue Projects Table -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card">
+                <div class="card card-modern">
                     <div class="card-header border-0 pb-0">
                         <h4 class="card-title mb-0">المشاريع المتأخرة</h4>
                     </div>
@@ -158,7 +180,7 @@
                                 @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
                                 {
                                     <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
-                                        <td class="text-center">@p.ProjectId</td>
+                                        @* <td class="text-center">@p.ProjectId</td> *@
                                         <td class="text-center">@p.Name</td>
                                         <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
                                         <td class="text-center">@p.IncompleteTasksCount</td>
@@ -183,6 +205,7 @@
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
+    <link href="~/css/dashboard-modern.css" rel="stylesheet" />
 }
 
 @section Jobick_script{
@@ -201,25 +224,37 @@
             const years  = @Html.Raw(yearsJson);
             const counts = @Html.Raw(countsJson);
 
+            // CountUp effect for KPIs
+            document.querySelectorAll('[data-countup]').forEach(el=>{
+                const decimals = parseInt(el.getAttribute('data-decimals')||'0');
+                const target = parseFloat((el.textContent||'0').replace(/,/g,'')) || 0;
+                let start = 0, startTime = null, dur = 900;
+                const fmt = (v)=> decimals? v.toFixed(decimals) : Math.round(v).toString();
+                function step(ts){
+                    if(startTime===null) startTime = ts;
+                    const p = Math.min(1,(ts-startTime)/dur);
+                    el.textContent = fmt(start + (target-start)*p);
+                    if(p<1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+
             // Status Pie
             const statusEl = document.querySelector("#projectsStatusPie");
             const done = @Model.DoneProjects;
             const inProgress = @Model.InProgressProjects;
             const notStarted = @Model.NotStartedProjects;
             if(statusEl){
-                if(done + inProgress + notStarted > 0){
-                    new ApexCharts(statusEl,{
-                        chart:{ type:'pie', height:250, fontFamily:'inherit' },
-                        series:[done, inProgress, notStarted],
-                        labels:['مكتملة','جاري التنفيذ','لم تبدأ'],
-                        colors:['#198754','#0dcaf0','#ffc107'],
-                        legend:{ position:'bottom' },
-                        dataLabels:{ enabled:true, formatter:(val,opts)=> opts.w.globals.series[opts.seriesIndex] },
-                        tooltip:{ y:{ formatter:v=> v + ' مشروع'} }
-                    }).render();
-                }else{
-                    statusEl.innerHTML = '<div class="alert alert-info text-center mb-0">لا توجد بيانات حالة المشاريع للعرض.</div>';
-                }
+                new ApexCharts(statusEl,{
+                    chart:{ type:'donut', height:360, fontFamily:'inherit' },
+                    series:[done, inProgress, notStarted],
+                    labels:['مكتملة','جاري التنفيذ','لم تبدأ'],
+                    colors:['#198754','#0dcaf0','#ffc107'],
+                    legend:{ position:'bottom' },
+                    dataLabels:{ enabled:true, formatter:(val,opts)=> opts.w.globals.series[opts.seriesIndex] },
+                    tooltip:{ y:{ formatter:v=> v + ' مشروع'} },
+                    plotOptions:{ pie:{ donut:{ size:'68%' } } }
+                }).render();
             }
 
             // Projects Count By Year
@@ -228,24 +263,17 @@
                 const realYears = years.length ? years : ['لا بيانات'];
                 const realCounts = years.length ? counts : [0];
                 new ApexCharts(barEl,{
-                    chart:{ type:'bar', height:280, toolbar:{ show:false }, fontFamily:'inherit' },
+                    chart:{ type:'bar', height:360, toolbar:{ show:false }, fontFamily:'inherit' },
                     series:[{ name:'عدد المشاريع', data: realCounts }],
-                    xaxis:{
-                        categories: realYears,
-                        axisBorder:{ show:false },
-                        axisTicks:{ show:false },
-                        labels:{ style:{ colors:'#6c757d', fontSize:'13px' } }
-                    },
+                    xaxis:{ categories: realYears, axisBorder:{ show:false }, axisTicks:{ show:false }, labels:{ style:{ colors:'#6c757d', fontSize:'13px' } } },
                     yaxis:{ labels:{ style:{ colors:'#6c757d', fontSize:'12px' } } },
-                    plotOptions:{ bar:{ columnWidth:'40%', endingShape:'rounded', borderRadius:4 } },
+                    plotOptions:{ bar:{ columnWidth:'45%', borderRadius:6 } },
                     dataLabels:{ enabled:true, formatter:(val)=> val, style:{ fontSize:'12px', fontWeight:'600' } },
                     stroke:{ show:true, width:2, colors:['transparent'] },
                     colors:['#0d6efd'],
-                    fill:{ type:'gradient', gradient:{ shade:'light', type:'vertical', opacityFrom:.95, opacityTo:.4, stops:[0,90,100] } },
                     grid:{ strokeDashArray:6, borderColor:'var(--border, #e5e5e5)' },
-                    tooltip:{ y:{ formatter:v=> v + ' مشروع'} },
-                    noData:{ text:'لا توجد بيانات', align:'center', verticalAlign:'middle' }
-                }).render();
+                    tooltip:{ y:{ formatter:v=> v + ' مشروع'} }
+                } ).render();
             }
 
             // Budgets per Year Bar
@@ -256,28 +284,16 @@
                 const realBudgetYears = budgetYears.length ? budgetYears : ['لا بيانات'];
                 const realBudgetValues = budgetYears.length ? budgetYearValues : [0];
                 new ApexCharts(budgetYearEl,{
-                    chart:{ type:'bar', height:280, toolbar:{ show:false }, fontFamily:'inherit' },
+                    chart:{ type:'bar', height:360, toolbar:{ show:false }, fontFamily:'inherit' },
                     series:[{ name:'الميزانية', data: realBudgetValues }],
-                    xaxis:{
-                        categories: realBudgetYears,
-                        axisBorder:{ show:false },
-                        axisTicks:{ show:false },
-                        labels:{ style:{ colors:'#6c757d', fontSize:'13px' } }
-                    },
-                    yaxis:{
-                        labels:{
-                            style:{ colors:'#6c757d', fontSize:'12px' },
-                            formatter:(v)=> Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(v)
-                        }
-                    },
-                    plotOptions:{ bar:{ columnWidth:'40%', endingShape:'rounded', borderRadius:4 } },
+                    xaxis:{ categories: realBudgetYears, axisBorder:{ show:false }, axisTicks:{ show:false }, labels:{ style:{ colors:'#6c757d', fontSize:'13px' } } },
+                    yaxis:{ labels:{ style:{ colors:'#6c757d', fontSize:'12px' }, formatter:(v)=> Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(v) } },
+                    plotOptions:{ bar:{ columnWidth:'45%', borderRadius:6 } },
                     dataLabels:{ enabled:true, formatter:(val)=> Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(val), style:{ fontSize:'12px', fontWeight:'600' } },
                     stroke:{ show:true, width:2, colors:['transparent'] },
                     colors:['#0d6efd'],
-                    fill:{ type:'gradient', gradient:{ shade:'light', type:'vertical', opacityFrom:.95, opacityTo:.4, stops:[0,90,100] } },
                     grid:{ strokeDashArray:6, borderColor:'var(--border, #e5e5e5)' },
-                    tooltip:{ y:{ formatter:v=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v) } },
-                    noData:{ text:'لا توجد بيانات', align:'center', verticalAlign:'middle' }
+                    tooltip:{ y:{ formatter:v=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v) } }
                 }).render();
             }
 
@@ -288,29 +304,27 @@
                 const budgetValues = @Html.Raw(@budgetValuesJson);
                 if(budgetValues.length){
                     new ApexCharts(budgetEl,{
-                        chart:{ type:'donut', height:340, fontFamily:'inherit' },
+                        chart:{ type:'donut', height:360, fontFamily:'inherit' },
                         series: budgetValues,
                         labels: budgetLabels,
                         colors:['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'],
                         legend:{ position:'right', fontSize:'12px', markers:{ width:10, height:10 }, itemMargin:{ vertical:4 } },
                         dataLabels:{ enabled:true, formatter:(val,opts)=>{ const v=opts.w.globals.series[opts.seriesIndex]; return v?Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(v):''; } },
                         tooltip:{ y:{ formatter:(v)=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2, maximumFractionDigits:2}).format(v) } },
-                        plotOptions:{ pie:{ donut:{ size:'70%', labels:{ show:true, name:{ show:true, offsetY:10 }, value:{ show:true, fontSize:'14px', formatter:(v)=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2, maximumFractionDigits:2}).format(parseFloat(v||0)) }, total:{ show:true, label:'الإجمالي', fontSize:'14px', formatter:()=> Intl.NumberFormat('ar-EG',{minimumFractionDigits:2, maximumFractionDigits:2}).format(@totalBudget) } } } } }
+                        plotOptions:{ pie:{ donut:{ size:'68%' } } }
                     }).render();
                 }
             }
 
-            // Overdue Table (RTL + Arabic strings + arrows)
+            // Overdue Table (Arabic UI + < > pagination)
             $('#overdueProjectsTable').DataTable({
                 paging:true,
-                searching:false,
+                searching:true,
                 info:true,
                 responsive:true,
                 order: [[2, 'desc']],
                 language:{
-                    url:'//cdn.datatables.net/plug-ins/1.10.21/i18n/Arabic.json',
-                    paginate: { previous: '&lt;', next: '&gt;' },
-                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل'
+                    paginate:{ previous: '&lt;', next: '&gt;' }
                 }
             });
 

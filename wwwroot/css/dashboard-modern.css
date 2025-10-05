@@ -1,0 +1,40 @@
+/* Modern dashboard styles (RTL friendly) */
+:root{
+  --kpi-radius: 1rem;
+  --kpi-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.kpi-row .kpi-card{
+  border: 0;
+  border-radius: var(--kpi-radius);
+  box-shadow: var(--kpi-shadow);
+  color: #fff;
+  overflow: hidden;
+}
+.kpi-row .kpi-card .card-body{padding:1rem 1.25rem}
+.kpi-row .kpi-card .kpi-label{opacity:.85;font-size:.95rem}
+.kpi-row .kpi-card .kpi-value{font-weight:800; font-size:2rem; line-height:1;}
+.kpi-row .kpi-card .kpi-sub{opacity:.9; font-size:.85rem}
+.kpi-row .kpi-icon{font-size:2rem; opacity:.2}
+.kpi-row .kpi-top{display:flex; align-items:center; justify-content:space-between}
+
+/* gradient backgrounds */
+.kpi-bg-primary{background: linear-gradient(135deg,#0d6efd,#5aa0ff)}
+.kpi-bg-success{background: linear-gradient(135deg,#198754,#39c07a)}
+.kpi-bg-info{background: linear-gradient(135deg,#0dcaf0,#6dd5fa)}
+.kpi-bg-warning{background: linear-gradient(135deg,#ffc107,#ffdd57); color:#1b1b1b}
+.kpi-bg-danger{background: linear-gradient(135deg,#dc3545,#ff6b81)}
+.kpi-bg-dark{background: linear-gradient(135deg,#343a40,#6c757d)}
+
+/* Modern card */
+.card-modern{border:0; border-radius:1rem; box-shadow: var(--kpi-shadow)}
+.card-modern .card-header{background: transparent}
+
+/* Bigger charts */
+#projectsByYearBar,
+#projectsBudgetByYearBar,
+#projectsBudgetsDonut,
+#projectsStatusPie{min-height:360px !important}
+
+/* DataTable search input alignment in RTL */
+.dataTables_wrapper .dataTables_filter input{margin-inline-start:.5rem; margin-inline-end:0}
