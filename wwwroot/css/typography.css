@@ -1,0 +1,41 @@
+/* Global typography standards: change only these variables to switch fonts app-wide */
+:root {
+  /* Arabic-friendly font stacks */
+  --app-font-base: "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --app-font-heading: "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Sync with theme/Bootstrap variables */
+  --bs-body-font-family: var(--app-font-base);
+  --font-family-base: var(--app-font-base);
+  --font-family-title: var(--app-font-heading);
+}
+
+/* Body text */
+html body {
+  font-family: var(--app-font-base) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings and common title elements */
+h1, h2, h3, h4, h5, h6,
+.card-title,
+.modal-title,
+.navbar-brand,
+.page-title,
+.title {
+  font-family: var(--app-font-heading) !important;
+}
+
+/* Code and monospaced */
+code, kbd, pre, samp {
+  font-family: var(--app-font-mono) !important;
+}
+
+/* Ensure our choice wins even if JS sets data-typography */
+body[data-typography],
+[data-typography] body {
+  font-family: var(--app-font-base) !important;
+}

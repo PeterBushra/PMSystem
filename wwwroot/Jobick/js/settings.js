@@ -1,4 +1,3 @@
-
 var body = $('body');
 var html = $('html');
 
@@ -69,6 +68,8 @@ dlabSettings.prototype.manageTypography = function() {
         default: 
             body.attr("data-typography", "roboto");
     }
+    // Force our global font variables to win
+    body.css('font-family', 'var(--app-font-base)');
 }
 
 dlabSettings.prototype.manageLayout = function() {
