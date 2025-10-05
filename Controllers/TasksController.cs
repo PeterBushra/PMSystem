@@ -1,4 +1,5 @@
 ﻿using Jobick.Services;
+using Jobick.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace Jobick.Controllers;
 /// Handles creation, editing, deletion and attachment download for tasks.
 /// Uses services to interact with EF Core context and keeps controller slim.
 /// </summary>
-public class TasksController(TaskService _tservice, ProjectService _projectService) : Controller
+public class TasksController(ITaskService _taskService, IProjectService _projectService) : Controller
 {
     // Static, readonly map for common content types to file extensions used during downloads.
     private static readonly IReadOnlyDictionary<string, string> _contentTypeToExtension = new Dictionary<string, string>
@@ -37,7 +38,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         };
 
         var project = await _projectService.GetProjectAsync(projectId);
-        var tasks = await _tservice.GetTaskListAsync();
+        var tasks = await _taskService.GetTaskListAsync();
         decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
         ViewBag.ProjectTotalCost = project?.TotalCost ?? 0;
         ViewBag.ExistingTasksCost = existingCost;
@@ -105,7 +106,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         model.DoneRatio = ClampToFraction(model.DoneRatio);
 
         // Validate total weight
-        var tasks = await _tservice.GetTaskListAsync();
+        var tasks = await _taskService.GetTaskListAsync();
         var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId);
         decimal totalWeight = projectTasks.Sum(t => t.Weight ?? 0);
         // If adding new, just add; if editing, don't double-count
@@ -124,12 +125,12 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         {
             model.CreatedBy = userId;       
             model.CreatedDate = DateTime.Now;
-            await _tservice.AddTaskAsync(model);
+            await _taskService.AddTaskAsync(model);
         }
         else
         {
             model.CreatedDate = DateTime.Now;
-            await _tservice.UpdateTaskAsync(model);
+            await _taskService.UpdateTaskAsync(model);
         }
 
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
@@ -141,7 +142,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     /// </summary>
     public async Task<IActionResult> EditTask(int id)
     {
-        var task = await _tservice.GetTaskAsync(id);
+        var task = await _taskService.GetTaskAsync(id);
         if (task == null)
             return NotFound();
 
@@ -149,7 +150,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
             task.DoneRatio = task.DoneRatio.Value * 100m;
 
         var project = await _projectService.GetProjectAsync(task.ProjectId);
-        var tasks = await _tservice.GetTaskListAsync();
+        var tasks = await _taskService.GetTaskListAsync();
         decimal existingCostExcludingCurrent = tasks
             .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
             .Sum(t => t.Cost ?? 0);
@@ -172,8 +173,8 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         if (id != model.Id)
             return BadRequest();
 
-        decimal weights = _tservice.GetTotalTasksWeights(model.ProjectId);
-        weights -= _tservice.GetTaskWeight(model.Id);
+        decimal weights = _taskService.GetTotalTasksWeights(model.ProjectId);
+        weights -= _taskService.GetTaskWeight(model.Id);
 
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
@@ -232,7 +233,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
         }
 
         // Copy the posted values into the tracked entity
-        await _tservice.UpdateTaskAsync(model);
+        await _taskService.UpdateTaskAsync(model);
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
 
@@ -242,7 +243,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     /// </summary>
     public async Task<IActionResult> DeleteTask(int id, int projectId)
     {
-        var task = await _tservice.GetTaskAsync(id);
+        var task = await _taskService.GetTaskAsync(id);
         if (task == null)
             return NotFound();
         return View(task);
@@ -256,7 +257,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     /// </summary>
     public async Task<IActionResult> PostDeleteTask(int id, int projectId)
     {
-        await _tservice.DeleteTaskAsync(id);
+        await _taskService.DeleteTaskAsync(id);
         return RedirectToAction("ProjectDetails", "Projects", new { id = projectId });
     }
 
@@ -267,7 +268,7 @@ public class TasksController(TaskService _tservice, ProjectService _projectServi
     /// </summary>
     public async Task<IActionResult> DownloadAttachment(int id)
     {
-        var task = await _tservice.GetTaskAsync(id);
+        var task = await _taskService.GetTaskAsync(id);
         if (task?.AttachmentData == null || task.AttachmentData.Length == 0)
             return NotFound();
 

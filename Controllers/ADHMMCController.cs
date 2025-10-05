@@ -1,4 +1,5 @@
 ﻿using Jobick.Services;
+using Jobick.Services.Interfaces;
 using Jobick.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,7 +12,7 @@ namespace Jobick.Controllers;
 /// <summary>
 /// Handles authentication and dashboard statistics (KPIs) for projects.
 /// </summary>
-public class ADHMMCController(UserService _userService, ProjectService _projectService, TaskService _taskService) : Controller
+public class ADHMMCController(IUserService _userService, IProjectService _projectService, ITaskService _taskService, IStatisticsService _statisticsService) : Controller
 {
     /// <summary>
     /// Displays login page and ensures any previous cookie is cleared.
@@ -72,85 +73,8 @@ public class ADHMMCController(UserService _userService, ProjectService _projectS
     {
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();
-        var now = DateTime.Today;
-        var thisYear = now.Year;
 
-        // First KPI: Project status distribution
-        // Only include projects that contain at least one task (matches UI hint)
-        // Classify by task progress: all 100% => Done, all 0%/null => Not Started, otherwise In Progress
-        int inProgress = 0, notStarted = 0, done = 0;
-        foreach (var p in projects)
-        {
-            if (p.Tasks == null || p.Tasks.Count == 0)
-                continue; // exclude projects without tasks
-
-            bool allDone = p.Tasks.All(t => t.DoneRatio == 1.0m);
-            bool noneStarted = p.Tasks.All(t => (t.DoneRatio ?? 0m) == 0m);
-
-            if (allDone)
-            {
-                done++;
-            }
-            else if (noneStarted)
-            {
-                notStarted++;
-            }
-            else
-            {
-                inProgress++;
-            }
-        }
-
-        // Second KPI: Projects count by year (EndDate.Year)
-        var projectsCountByYear = projects
-            .GroupBy(p => p.EndDate.Year)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        // Third KPI: Budgets for projects not fully done (use TotalCost if set, else sum task costs)
-        var budgetsExceptFullyDone = new Dictionary<int, decimal>();
-        var projectNames = new Dictionary<int, string>();
-
-        foreach (var p in projects)
-        {
-            bool fullyDone = p.Tasks.Count > 0 && p.Tasks.All(t => t.DoneRatio == 1.0m);
-            if (fullyDone) continue;
-
-            // Prefer project.TotalCost, fallback to sum of task costs
-            decimal budget = p.TotalCost ?? p.Tasks.Sum(t => t.Cost ?? 0m);
-            if (budget < 0) budget = 0; // Clamp negative to zero for stability
-            budgetsExceptFullyDone[p.Id] = budget;
-            projectNames[p.Id] = p.Name;
-        }
-
-        // Fourth KPI: Budgets by EndDate.Year (include all years)
-        var budgetsByYear = projects
-            .GroupBy(p => p.EndDate.Year)
-            .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalCost ?? 0m));
-
-        // Fifth KPI: Projects with incomplete tasks and EndDate passed
-        var overdueProjects = projects
-            .Where(p => p.EndDate < now && p.Tasks.Any(t => t.DoneRatio < 1.0m))
-            .Select(p => new ProjectStatisticsVM.ProjectInfo
-            {
-                ProjectId = p.Id,
-                Name = p.Name,
-                EndDate = p.EndDate,
-                IncompleteTasksCount = p.Tasks.Count(t => t.DoneRatio < 1.0m)
-            })
-            .ToList();
-
-        var vm = new ProjectStatisticsVM
-        {
-            InProgressProjects = inProgress,
-            NotStartedProjects = notStarted,
-            DoneProjects = done,
-            ProjectsCountByYear = projectsCountByYear,
-            AllProjectsBudgetsExceptFullyDone = budgetsExceptFullyDone,
-            ProjectNames = projectNames,
-            ProjectsBudgetsByYear = budgetsByYear,
-            OverdueProjectsWithIncompleteTasks = overdueProjects
-        };
-
+        var vm = _statisticsService.CalculateDashboard(projects, allTasks);
         return View(vm);
     }
 

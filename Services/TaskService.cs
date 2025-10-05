@@ -1,12 +1,13 @@
 using Jobick.Models;
 using Microsoft.EntityFrameworkCore;
+using Jobick.Services.Interfaces;
 
 namespace Jobick.Services;
 
 /// <summary>
 /// Provides CRUD operations and helpers for <see cref="Task"/> entities.
 /// </summary>
-public class TaskService
+public class TaskService : ITaskService
 {
     private readonly AdhmmcPmContext _context;
 
@@ -71,7 +72,7 @@ public class TaskService
     /// <summary>
     /// Gets the sum of weights for all tasks in a project.
     /// </summary>
-    internal decimal GetTotalTasksWeights(int projectId)
+    public decimal GetTotalTasksWeights(int projectId)
     {
         return _context.Tasks.Where(x=>x.ProjectId == projectId).Sum(x => x.Weight ?? 0);
     }
@@ -79,7 +80,7 @@ public class TaskService
     /// <summary>
     /// Gets the weight value of a single task without tracking.
     /// </summary>
-    internal decimal GetTaskWeight(int taskID)
+    public decimal GetTaskWeight(int taskID)
     {
         return _context.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskID)?.Weight ?? 0;
     }

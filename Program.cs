@@ -1,4 +1,5 @@
 using Jobick.Services;
+using Jobick.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Jobick.Models;
@@ -8,9 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddScoped<ProjectService>();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<TaskService>();
+// Register services via interfaces for better DI and testability
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IProjectKpiService, ProjectKpiService>();
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // --- ADD AUTHENTICATION ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

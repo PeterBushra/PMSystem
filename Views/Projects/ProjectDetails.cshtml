@@ -479,8 +479,8 @@
             },
             dataLabels: {
                 enabled: true,
-                formatter: function (val, opts) {
-                    return opts.w.globals.series[opts.seriesIndex];
+                formatter: function (val) {
+                    return val + '%';
                 }
             }
         };

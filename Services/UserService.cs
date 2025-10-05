@@ -1,12 +1,13 @@
 using Jobick.Models;
 using Microsoft.EntityFrameworkCore;
+using Jobick.Services.Interfaces;
 
 namespace Jobick.Services;
 
 /// <summary>
 /// Provides user-related operations like login and lookup.
 /// </summary>
-public class UserService
+public class UserService : IUserService
 {
     private readonly AdhmmcPmContext _context;
 

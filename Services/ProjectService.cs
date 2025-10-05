@@ -1,5 +1,6 @@
 ﻿using Jobick.Models;
 using Microsoft.EntityFrameworkCore;
+using Jobick.Services.Interfaces;
 
 namespace Jobick.Services;
 
@@ -7,7 +8,7 @@ namespace Jobick.Services;
 /// Encapsulates data access for <see cref="Project"/> entities.
 /// Keeps EF Core interaction in one place to support SRP and ease of maintenance.
 /// </summary>
-public class ProjectService
+public class ProjectService : IProjectService
 {
     private readonly AdhmmcPmContext _context;
 
@@ -28,7 +29,7 @@ public class ProjectService
     /// <summary>
     /// Adds a new project and saves changes synchronously.
     /// </summary>
-    internal void AddProject(Project project)
+    public void AddProject(Project project)
     {
         _context.Projects.Add(project);
         _context.SaveChanges();
@@ -48,7 +49,7 @@ public class ProjectService
     /// <summary>
     /// Returns a single project by id including related entities.
     /// </summary>
-    internal Project? GetProject(int id)
+    public Project? GetProject(int id)
     {
         return _context.Projects
             .Include(p => p.Tasks)
@@ -79,7 +80,7 @@ public class ProjectService
     /// <summary>
     /// Updates a project synchronously.
     /// </summary>
-    internal void UpdateProject(Project project)
+    public void UpdateProject(Project project)
     {
         _context.Projects.Update(project);
         _context.SaveChanges();
@@ -106,7 +107,7 @@ public class ProjectService
     /// <summary>
     /// Deletes a project and its tasks synchronously.
     /// </summary>
-    internal void DeleteProject(int id)
+    public void DeleteProject(int id)
     {
         var project = _context.Projects
             .Include(p => p.Tasks)
@@ -124,7 +125,7 @@ public class ProjectService
     /// <summary>
     /// Checks existence of a project by id.
     /// </summary>
-    internal bool ProjectExists(int id)
+    public bool ProjectExists(int id)
     {
         return _context.Projects.Any(p => p.Id == id);
     }
