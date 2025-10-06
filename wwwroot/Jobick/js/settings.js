@@ -17,7 +17,7 @@ function dlabSettings({typography, version, layout, navheaderBg, headerBg, sideb
     this.direction = direction || "ltr";
 	this.primary = primary || "color_1";
 
-    // this.manageTypography();
+    this.manageTypography(); // enforce global typography on every init
     this.manageVersion();
     this.manageLayout();
     this.manageNavHeaderBg();

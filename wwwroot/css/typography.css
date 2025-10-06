@@ -52,9 +52,9 @@
 
 /* Global typography standards: change only these variables to switch fonts app-wide */
 :root {
-  /* Use your custom family everywhere, then Arabic-friendly fallbacks */
-  --app-font-base: "The Sans Arabic";
-  --app-font-heading: "The Sans Arabic";
+  /* Arabic-friendly font stacks (ensure your custom family is first if registered) */
+  --app-font-base: "The Sans Arabic", "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --app-font-heading: "The Sans Arabic", "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
   --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Sync with theme/Bootstrap variables */
@@ -63,8 +63,31 @@
   --font-family-title: var(--app-font-heading);
 }
 
-/* Body text */
-html body {
+/* Apply to body and common UI elements so Bootstrap/theme overrides don't win */
+html body,
+body,
+button,
+input,
+select,
+textarea,
+label,
+.form-control,
+.form-select,
+.form-label,
+.btn,
+.badge,
+.alert,
+.dropdown-menu,
+.nav,
+.navbar,
+.breadcrumb,
+.pagination,
+.card,
+.modal,
+.table,
+.list-group,
+.offcanvas,
+.toast {
   font-family: var(--app-font-base) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
