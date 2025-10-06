@@ -240,6 +240,12 @@
         .kpi-notstarted .kpi-sub {
             color: #212529 !important;
         }
+
+        /* Center DataTables "لا توجد نتائج مطابقة" message */
+        #overdueProjectsTable tbody td.dataTables_empty,
+        table.dataTable tbody td.dataTables_empty {
+            text-align: center !important;
+        }
     </style>
 }
 
@@ -364,14 +370,19 @@
                 responsive: true,
                 columnDefs: [ { targets: -1, orderable: false } ],
                 language: {
+                    // Localize search and length menu
                     search: 'بحث:',
                     searchPlaceholder: 'اكتب للبحث...',
                     lengthMenu: 'إظهار _MENU_ مُدخل',
+                    // Keep your custom arrows
                     paginate: { previous: '&lt;', next: '&gt;' },
-                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل'
+                    // Helpful Arabic strings
+                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل',
+                    infoEmpty: 'لا توجد بيانات لعرضها',
+                    zeroRecords: 'لا توجد نتائج مطابقة',
+                    infoFiltered: '(مصفاة من إجمالي _MAX_ مُدخل)'
                 }
             });
-
             $(document).on('click','#overdueProjectsTable .project-row',function(){
                 const id = $(this).data('project-id');
                 if(id) window.location.href = '/Projects/ProjectDetails/' + id;

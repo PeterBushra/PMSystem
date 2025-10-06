@@ -200,7 +200,7 @@
                             @foreach (var s in stagesOrdered)
                             {
                                 var stageName = s.Key;
-                                var relativeFraction = s.Value;              // 0..1 (actual inside the stage)
+                                var relativeFraction = s.Value;              // 0..1
                                 var relativePercent = Math.Round(relativeFraction * 100m, 2);
 
                                 // Sum of raw weights (project-based) for this stage
@@ -342,6 +342,14 @@
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
+
+    <style>
+        /* Center DataTables "لا توجد نتائج مطابقة" message */
+        #tasksTable tbody td.dataTables_empty,
+        table.dataTable tbody td.dataTables_empty {
+            text-align: center !important;
+        }
+    </style>
 }
 
 @section Jobick_script {
