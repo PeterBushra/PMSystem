@@ -406,12 +406,24 @@
                 count(0, counter[j], j);
             }
 
-            // DataTables init for tasks
+            // DataTables init for tasks (Arabic UI)
             $('#tasksTable').DataTable({
                 order: [],
                 responsive: true,
                 columnDefs: [ { targets: -1, orderable: false } ],
-                language: { url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Arabic.json', paginate: { previous: '&lt;', next: '&gt;' } }
+                language: {
+                    // Localize search and length menu
+                    search: 'بحث:',
+                    searchPlaceholder: 'اكتب للبحث...',
+                    lengthMenu: 'إظهار _MENU_ مُدخل',
+                    // Keep your custom arrows
+                    paginate: { previous: '&lt;', next: '&gt;' },
+                    // Helpful Arabic strings
+                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل',
+                    infoEmpty: 'لا توجد بيانات لعرضها',
+                    zeroRecords: 'لا توجد نتائج مطابقة',
+                    infoFiltered: '(مصفاة من إجمالي _MAX_ مُدخل)'
+                }
             });
         });
     </script>
@@ -478,4 +490,6 @@
         chart.render();
     });
     </script>
+
+ 
 }
