@@ -170,12 +170,12 @@
             </div>
         </div>
 
-        <!-- Overdue Projects Table -->
+        <!-- Overdue + At-Risk Projects Table -->
         <div class="row mt-4">
             <div class="col-12">
                 <div class="card card-modern">
                     <div class="card-header border-0 pb-0">
-                        <h4 class="card-title mb-0">المشاريع المتأخرة</h4>
+                        <h4 class="card-title mb-0">المشاريع المتأخرة أو المعرضة للخطر</h4>
                     </div>
                     <div class="card-body pt-3">
                         <div class="table-responsive">
@@ -184,6 +184,7 @@
                                     <tr>
                                         <th class="text-center">اسم المشروع</th>
                                         <th class="text-center">تاريخ الانتهاء</th>
+                                        <th class="text-center">الحالة</th>
                                         <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
                                     </tr>
                                 </thead>
@@ -193,6 +194,16 @@
                                     <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
                                         <td class="text-center">@p.Name</td>
                                         <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
+                                        <td class="text-center">
+                                            @if (p.EndDate.Date < DateTime.Today)
+                                            {
+                                                <span class="badge bg-danger">متأخر</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">مُعرض للتأخير</span>
+                                            }
+                                        </td>
                                         <td class="text-center">@p.IncompleteTasksCount</td>
                                     </tr>
                                 }
@@ -200,7 +211,7 @@
                             </table>
                             @if(!Model.OverdueProjectsWithIncompleteTasks.Any())
                             {
-                                <div class="alert alert-info text-center mb-0 mt-3">لا توجد مشاريع متأخرة.</div>
+                                <div class="alert alert-info text-center mb-0 mt-3">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
                             }
                         </div>
                     </div>
@@ -364,11 +375,13 @@
                 }
             }
 
-            // Overdue Table
+            // Overdue + At-Risk Table
             $('#overdueProjectsTable').DataTable({
                 order: [],
                 responsive: true,
-                columnDefs: [ { targets: -1, orderable: false } ],
+                columnDefs: [
+                    { targets: 2, orderable: false } // status column
+                ],
                 language: {
                     // Localize search and length menu
                     search: 'بحث:',

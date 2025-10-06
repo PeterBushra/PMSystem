@@ -12,16 +12,20 @@ public class StatisticsService : IStatisticsService
     public ProjectStatisticsVM CalculateDashboard(IEnumerable<Project> projects, IEnumerable<Jobick.Models.Task> allTasks, DateTime? now = null)
     {
         now ??= DateTime.Today;
-        var today = now.Value;
+        var today = now.Value.Date;
 
         int inProgress = 0, notStarted = 0, done = 0;
         foreach (var p in projects)
         {
-            if (p.Tasks == null || p.Tasks.Count == 0)
+            var tasks = (p.Tasks != null && p.Tasks.Count > 0)
+                ? p.Tasks
+                : allTasks.Where(t => t.ProjectId == p.Id).ToList();
+
+            if (tasks == null || tasks.Count == 0)
                 continue;
 
-            bool allDone = p.Tasks.All(t => t.DoneRatio == 1.0m);
-            bool noneStarted = p.Tasks.All(t => (t.DoneRatio ?? 0m) == 0m);
+            bool allDone = tasks.All(t => (t.DoneRatio ?? 0m) >= 1.0m);
+            bool noneStarted = tasks.All(t => (t.DoneRatio ?? 0m) == 0m);
 
             if (allDone) done++;
             else if (noneStarted) notStarted++;
@@ -37,28 +41,65 @@ public class StatisticsService : IStatisticsService
 
         foreach (var p in projects)
         {
-            bool fullyDone = p.Tasks.Count > 0 && p.Tasks.All(t => t.DoneRatio == 1.0m);
+            var tasks = (p.Tasks != null && p.Tasks.Count > 0)
+                ? p.Tasks
+                : allTasks.Where(t => t.ProjectId == p.Id).ToList();
+
+            bool fullyDone = tasks.Count > 0 && tasks.All(t => (t.DoneRatio ?? 0m) >= 1.0m);
             if (fullyDone) continue;
 
-            decimal budget = p.TotalCost ?? p.Tasks.Sum(t => t.Cost ?? 0m);
+            decimal budget = p.TotalCost ?? tasks.Sum(t => t.Cost ?? 0m);
             if (budget < 0) budget = 0;
             budgetsExceptFullyDone[p.Id] = budget;
-            projectNames[p.Id] = p.Name;
+            projectNames[p.Id] = string.IsNullOrWhiteSpace(p.NameAr) ? p.Name : p.NameAr;
         }
 
         var budgetsByYear = projects
             .GroupBy(p => p.EndDate.Year)
             .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalCost ?? 0m));
 
-        var overdueProjects = projects
-            .Where(p => p.EndDate < today && p.Tasks.Any(t => t.DoneRatio < 1.0m))
-            .Select(p => new ProjectStatisticsVM.ProjectInfo
+        // Overdue or At-Risk projects (with incomplete tasks)
+        var overdueOrAtRisk = projects
+            .Select(p => new
             {
-                ProjectId = p.Id,
-                Name = p.Name,
-                EndDate = p.EndDate,
-                IncompleteTasksCount = p.Tasks.Count(t => t.DoneRatio < 1.0m)
+                Project = p,
+                Tasks = (p.Tasks != null && p.Tasks.Count > 0)
+                    ? p.Tasks
+                    : allTasks.Where(t => t.ProjectId == p.Id).ToList()
             })
+            .Select(x =>
+            {
+                var incompleteTasks = x.Tasks.Where(t => (t.DoneRatio ?? 0m) < 1.0m).ToList();
+                int incompleteCount = incompleteTasks.Count;
+
+                // Total required days for remaining (incomplete) tasks
+                int remainingRequiredDays = incompleteTasks.Sum(t => t.ManyDaysToComplete);
+
+                // Available project duration in days (non-negative)
+                int projectDurationDays = Math.Max(0, (x.Project.EndDate.Date - x.Project.StartSate.Date).Days);
+
+                bool isOverdue = today > x.Project.EndDate.Date && incompleteCount > 0;
+                bool isAtRisk = !isOverdue && incompleteCount > 0 && remainingRequiredDays > projectDurationDays;
+
+                return new
+                {
+                    x.Project,
+                    incompleteCount,
+                    isOverdue,
+                    isAtRisk
+                };
+            })
+            .Where(x => x.isOverdue || x.isAtRisk)
+            .Select(x => new ProjectStatisticsVM.ProjectInfo
+            {
+                ProjectId = x.Project.Id,
+                Name = string.IsNullOrWhiteSpace(x.Project.NameAr) ? x.Project.Name : x.Project.NameAr,
+                EndDate = x.Project.EndDate,
+                IncompleteTasksCount = x.incompleteCount
+            })
+            // Keep overdue first if desired, then others by nearest end date
+            .OrderByDescending(pi => pi.EndDate < today) // bool: overdue first
+            .ThenBy(pi => pi.EndDate)
             .ToList();
 
         return new ProjectStatisticsVM
@@ -70,7 +111,7 @@ public class StatisticsService : IStatisticsService
             AllProjectsBudgetsExceptFullyDone = budgetsExceptFullyDone,
             ProjectNames = projectNames,
             ProjectsBudgetsByYear = budgetsByYear,
-            OverdueProjectsWithIncompleteTasks = overdueProjects
+            OverdueProjectsWithIncompleteTasks = overdueOrAtRisk
         };
     }
 }
