@@ -41,7 +41,7 @@
                                 </p>
                                 <p><strong>الوصف:</strong> @Model.Description</p>
                                 <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
-                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString()</p>
+                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("N0")</p>
                             </div>
                             <div class="col-xl-6">
                                 <p><strong>مالك النظام:</strong> @Model.SystemOwner</p>
@@ -310,7 +310,7 @@
                                             <td data-order="@task.ExpectedEndDate.ToString("yyyy-MM-dd")">@task.ExpectedEndDate.ToShortDateString()</td>
                                             <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
-                                            <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost.ToString()</td>
+                                            <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
                                             <td>
                                                 <div class="d-flex">
                                                     <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id"

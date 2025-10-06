@@ -62,7 +62,7 @@
                                             <td>@project.ProjectGoal</td>
                                             <td data-order="@project.StartSate.ToString("yyyy-MM-dd")">@project.StartSate.ToString("d")</td>
                                             <td data-order="@project.EndDate.ToString("yyyy-MM-dd")">@project.EndDate.ToString("d")</td>
-                                            <td data-order="@project.TotalCost.GetValueOrDefault(0).ToString(System.Globalization.CultureInfo.InvariantCulture)">@project.TotalCost?.ToString()</td>
+                                            <td data-order="@project.TotalCost.GetValueOrDefault(0).ToString(System.Globalization.CultureInfo.InvariantCulture)">@project.TotalCost?.ToString("N0")</td>
                                             <td>
                                                 <div class="d-flex">
                                                     <a asp-controller="Projects" asp-action="Edit" asp-route-id="@project.Id"
