@@ -39,11 +39,15 @@ public class TasksController(ITaskService _taskService, IProjectService _project
 
         var project = await _projectService.GetProjectAsync(projectId);
         var tasks = await _taskService.GetTaskListAsync();
-        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
 
-        ViewBag.ProjectTotalCost = project?.TotalCost;                 // keep nullable
-        ViewBag.HasProjectTotal  = project?.TotalCost.HasValue == true;
-        ViewBag.ExistingTasksCost = existingCost;
+        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
+        decimal existingWeight = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Weight ?? 0);
+
+        ViewBag.ProjectTotalCost   = project?.TotalCost;                 // keep nullable
+        ViewBag.HasProjectTotal    = project?.TotalCost.HasValue == true;
+        ViewBag.ExistingTasksCost  = existingCost;
+        // Sum of other tasks' weight (for Add it's all current tasks)
+        ViewBag.OtherTasksWeight   = existingWeight;
 
         return View(model);
     }
@@ -83,6 +87,8 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         {
             if (file == null || file.Length == 0)
             {
+                // Repopulate ViewBag context for the UI before returning
+                await PopulateCreateViewBagsAsync(model.ProjectId);
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
                 return View("CreateTask", model);
             }
@@ -102,7 +108,11 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         }
 
         if (!ModelState.IsValid)
+        {
+            // Repopulate ViewBag context for the UI before returning
+            await PopulateCreateViewBagsAsync(model.ProjectId);
             return View("CreateTask", model);
+        }
 
         // Convert DoneRatio from percentage to fraction and clamp to [0,100] then [0,1]
         model.DoneRatio = ClampToFraction(model.DoneRatio);
@@ -110,15 +120,13 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         // Validate total weight
         var tasks = await _taskService.GetTaskListAsync();
         var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId);
-        decimal totalWeight = projectTasks.Sum(t => t.Weight ?? 0);
-        // If adding new, just add; if editing, don't double-count
-        if (model.Id == 0)
-            totalWeight += model.Weight ?? 0;
-        else
-            totalWeight = projectTasks.Where(t => t.Id != model.Id).Sum(t => t.Weight ?? 0) + (model.Weight ?? 0);
+        decimal existingWeight = projectTasks.Sum(t => t.Weight ?? 0);
+        decimal totalWeight = existingWeight + (model.Weight ?? 0);
 
         if (totalWeight > 100)
         {
+            // Repopulate ViewBag context for the UI before returning
+            await PopulateCreateViewBagsAsync(model.ProjectId);
             ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
             return View("CreateTask", model);
         }
@@ -153,13 +161,20 @@ public class TasksController(ITaskService _taskService, IProjectService _project
 
         var project = await _projectService.GetProjectAsync(task.ProjectId);
         var tasks = await _taskService.GetTaskListAsync();
+
         decimal existingCostExcludingCurrent = tasks
             .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
             .Sum(t => t.Cost ?? 0);
 
-        ViewBag.ProjectTotalCost = project?.TotalCost;                 // keep nullable
-        ViewBag.HasProjectTotal  = project?.TotalCost.HasValue == true;
-        ViewBag.ExistingTasksCost = existingCostExcludingCurrent;
+        // Other tasks' weights (exclude current)
+        decimal otherTasksWeight = tasks
+            .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
+            .Sum(t => t.Weight ?? 0);
+
+        ViewBag.ProjectTotalCost   = project?.TotalCost;                 // keep nullable
+        ViewBag.HasProjectTotal    = project?.TotalCost.HasValue == true;
+        ViewBag.ExistingTasksCost  = existingCostExcludingCurrent;
+        ViewBag.OtherTasksWeight   = otherTasksWeight;
 
         ViewData["Title"] = "Edit Task";
         return View("CreateTask", task);
@@ -177,7 +192,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
             return BadRequest();
 
         decimal weights = _taskService.GetTotalTasksWeights(model.ProjectId);
-        weights -= _taskService.GetTaskWeight(model.Id);
+        weights -= _taskService.GetTaskWeight(model.Id); // weights of other tasks
 
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
@@ -198,6 +213,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         {
             if ((file == null || file.Length == 0) && (model.AttachmentData == null || model.AttachmentData.Length == 0))
             {
+                await PopulateEditViewBagsAsync(model);
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
                 return View("CreateTask", model);
             }
@@ -221,7 +237,10 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         }
 
         if (!ModelState.IsValid)
+        {
+            await PopulateEditViewBagsAsync(model, weights);
             return View("CreateTask", model);
+        }
 
         // Convert DoneRatio from percentage to fraction and clamp
         model.DoneRatio = ClampToFraction(model.DoneRatio);
@@ -231,6 +250,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
 
         if (totalWeight > 100)
         {
+            await PopulateEditViewBagsAsync(model, weights);
             ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
             return View("CreateTask", model);
         }
@@ -299,5 +319,40 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         if (p > 100m) p = 100m;
         if (p < 0m) p = 0m;
         return p / 100m;
+    }
+
+    // Helper: populate ViewBags for Create (POST error paths)
+    private async Task PopulateCreateViewBagsAsync(int projectId)
+    {
+        var project = await _projectService.GetProjectAsync(projectId);
+        var tasks = await _taskService.GetTaskListAsync();
+
+        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
+        decimal existingWeight = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Weight ?? 0);
+
+        ViewBag.ProjectTotalCost  = project?.TotalCost;
+        ViewBag.HasProjectTotal   = project?.TotalCost.HasValue == true;
+        ViewBag.ExistingTasksCost = existingCost;
+        ViewBag.OtherTasksWeight  = existingWeight;
+    }
+
+    // Helper: populate ViewBags for Edit (POST error paths)
+    private async Task PopulateEditViewBagsAsync(Models.Task model, decimal? otherWeightsOverride = null)
+    {
+        var project = await _projectService.GetProjectAsync(model.ProjectId);
+        var tasks = await _taskService.GetTaskListAsync();
+
+        decimal existingCostExcludingCurrent = tasks
+            .Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id)
+            .Sum(t => t.Cost ?? 0);
+
+        decimal otherTasksWeight = otherWeightsOverride ?? tasks
+            .Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id)
+            .Sum(t => t.Weight ?? 0);
+
+        ViewBag.ProjectTotalCost  = project?.TotalCost;
+        ViewBag.HasProjectTotal   = project?.TotalCost.HasValue == true;
+        ViewBag.ExistingTasksCost = existingCostExcludingCurrent;
+        ViewBag.OtherTasksWeight  = otherTasksWeight;
     }
 }

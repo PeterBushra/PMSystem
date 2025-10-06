@@ -7,6 +7,10 @@
     decimal? projectTotalCost = ViewBag.ProjectTotalCost is decimal d ? d : ViewBag.ProjectTotalCost as decimal?;
     bool hasProjectTotal = ViewBag.HasProjectTotal is bool b && b;
     decimal existingTasksCost = ViewBag.ExistingTasksCost is decimal e ? e : 0m;
+
+    // Sum of weights of all OTHER tasks in the same project (controller should provide this)
+    // For Add: sum of all existing tasks' weights. For Edit: sum excluding current task weight.
+    decimal otherTasksWeight = ViewBag.OtherTasksWeight is decimal ew ? ew : 0m;
 }
 
 <div class="content-body" dir="rtl" style="text-align:right;">
@@ -28,7 +32,8 @@
                         <form asp-action="@(Model.Id == 0 ? "PostTask" : "EditTask")" method="post" enctype="multipart/form-data" class="needs-validation" novalidate
                               data-project-total="@(hasProjectTotal ? projectTotalCost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")"
                               data-has-total="@hasProjectTotal.ToString().ToLower()"
-                              data-existing-cost="@existingTasksCost">
+                              data-existing-cost="@existingTasksCost"
+                              data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)">
                             <!-- حقول مخفية للسمات غير القابلة للتحرير -->
                             <input type="hidden" asp-for="Id" />
                             <input type="hidden" asp-for="ProjectId" />
@@ -97,6 +102,10 @@
                                         <input asp-for="Weight" id="weightInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                         <span asp-validation-for="Weight" class="text-danger"></span>
                                         <small class="form-text text-muted">ادخل وزن المهمة بحد اقصي 100</small>
+                                        <small class="form-text text-muted d-block">
+                                            إجمالي أوزان المهام الأخرى: <span id="otherWeightSpan">@otherTasksWeight.ToString("N2")</span>% — المتاح: <span id="remainingWeightSpan">@Math.Max(100m - otherTasksWeight, 0m).ToString("N2")</span>%
+                                        </small>
+                                        <div id="weightError" class="invalid-feedback d-block"></div>
                                     </div>
 
                                     <div class="mb-3">
@@ -150,7 +159,7 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">حفظ</button>
+                            <button type="submit" class="btn btn-primary" id="saveBtn">حفظ</button>
                             <a href="@Url.Action("ProjectDetails", "Projects", new { id = Model.ProjectId })" class="btn btn-secondary">إلغاء</a>
                         </form>
                     </div>
@@ -173,6 +182,53 @@
 
             const form = document.querySelector('form.needs-validation');
             if (!form) return;
+
+            // ---- Weight validation (Total must not exceed 100%) ----
+            const weightInput = document.getElementById('weightInput');
+            const weightError = document.getElementById('weightError');
+            const otherWeightSpan = document.getElementById('otherWeightSpan');
+            const remainingWeightSpan = document.getElementById('remainingWeightSpan');
+            const saveBtn = document.getElementById('saveBtn');
+
+            const otherWeight = parseFloat(form.getAttribute('data-other-weight-sum')) || 0; // sum of other tasks' weights
+            const limit = 100;
+
+            function formatPct(n) {
+                try { return n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+                catch { return (Math.round(n * 100) / 100).toString(); }
+            }
+
+            function updateWeightValidation() {
+                if (!weightInput) return;
+
+                const entered = parseFloat(weightInput.value);
+                const weight = isNaN(entered) ? 0 : entered;
+                const total = otherWeight + weight;
+                const remainingBefore = Math.max(limit - otherWeight, 0);
+                const remainingAfter = Math.max(limit - total, 0);
+
+                if (remainingWeightSpan) remainingWeightSpan.textContent = formatPct(remainingBefore);
+
+                if (total > limit) {
+                    const exceededBy = total - limit;
+                    weightInput.classList.add('is-invalid');
+                    weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
+                    if (weightError) {
+                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.';
+                    }
+                    if (saveBtn) saveBtn.disabled = true;
+                } else {
+                    weightInput.classList.remove('is-invalid');
+                    weightInput.setCustomValidity('');
+                    if (weightError) weightError.textContent = '';
+                    if (saveBtn) saveBtn.disabled = false;
+                }
+            }
+
+            if (weightInput) {
+                weightInput.addEventListener('input', updateWeightValidation, { once: false });
+                updateWeightValidation();
+            }
 
             // ---- Cost Warning Logic (with null vs. zero distinction) ----
             const hasTotal = form.getAttribute('data-has-total') === 'true';
@@ -201,18 +257,16 @@
                 warningDiv.textContent = '';
             }
 
-            function updateWarning() {
+            function updateCostWarning() {
                 if (!costInput || !warningDiv) return;
                 const entered = parseFloat(costInput.value) || 0;
 
                 if (!hasTotal) {
-                    // Budget not set (null) => show informational hint and skip overrun check
                     showInfo('لم يتم تحديد التكلفة الإجمالية للمشروع. لن يتم التحقق من تجاوز الميزانية. يُفضل تحديدها من تفاصيل المشروع أولاً.');
                     if (remainingBeforeSpan) remainingBeforeSpan.textContent = 'غير محدد';
                     return;
                 }
 
-                // Budget is set (including 0) => perform overrun check
                 const newTotal = existingCost + entered;
                 const remaining = Math.max(projectTotal - existingCost, 0);
                 if (remainingBeforeSpan) remainingBeforeSpan.textContent = formatNumber(remaining);
@@ -222,7 +276,7 @@
                     showWarn(
                         'تنبيه: مجموع تكاليف المهام بعد إضافة هذه المهمة (' + formatNumber(newTotal) +
                         ') سيتجاوز تكلفة المشروع (' + formatNumber(projectTotal) +
-                        '). مقدار التجاوز: ' + formatNumber(exceededBy) + '. سيتم طلب تأكيد قبل الحفظ.'
+                        '). مقدار التجاوز: ' + formatNumber(exceededBy) + '.'
                     );
                 } else {
                     hideWarning();
@@ -230,18 +284,18 @@
             }
 
             if (costInput) {
-                costInput.addEventListener('input', updateWarning, { once: false });
-                updateWarning();
+                costInput.addEventListener('input', updateCostWarning, { once: false });
+                updateCostWarning();
             }
 
-            // ---- Submit Confirmation Only Once ----
-            let confirmShown = false;
+            // ---- Submit handler ----
             form.addEventListener('submit', function (event) {
                 const doneRatioInput = document.getElementById('doneRatioInput');
                 const attachmentInput = document.getElementById('Attachment');
                 const attachmentError = document.getElementById('attachmentError');
                 const attachmentContainer = document.getElementById('attachmentContainer');
 
+                // Enforce attachment when 100% done
                 if (doneRatioInput) {
                     const doneRatio = parseFloat(doneRatioInput.value);
                     if (doneRatio === 100 && attachmentInput && !attachmentInput.value && !(attachmentInput.hasAttribute('data-existing'))) {
@@ -254,6 +308,8 @@
                     }
                 }
 
+                // Block submit if weight invalid (>100% total)
+                updateWeightValidation();
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     event.stopPropagation();
@@ -261,25 +317,8 @@
                     return;
                 }
 
-                // Only confirm when budget is set and we exceed it
-                if (hasTotal && costInput) {
-                    const entered = parseFloat(costInput.value) || 0;
-                    const newTotal = existingCost + entered;
-                    if (newTotal > projectTotal && !confirmShown) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        confirmShown = true;
-                        const ok = confirm('تنبيه: مجموع التكاليف سيتجاوز تكلفة المشروع. هل تريد المتابعة؟');
-                        if (ok) form.requestSubmit();
-                        else confirmShown = false;
-                        return;
-                    }
-                }
-
                 form.classList.add('was-validated');
             }, { once: false });
-
-            // ---- Existing code below (attachment toggle, date, counters, etc.) ----
 
             // Show / hide actual end date
             const checkbox = document.getElementById('showActualEndDate');
