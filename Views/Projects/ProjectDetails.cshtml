@@ -206,7 +206,7 @@
                                 // Sum of raw weights (project-based) for this stage
                                 var stageWeightSum = Model.Tasks
                                     .Where(t => (t.StageName ?? "").Trim() == stageName)
-                                    .Sum(t => t.Weight ?? 0m);               // e.g. 25 (meaning 25% of project if total weights=100)
+                                    .Sum(t => t.Weight ?? 0m);
 
                                 // Stage weight share of project (if totalProjectWeight != 100)
                                 var stageWeightPercentOfProject = totalProjectWeight > 0
@@ -217,8 +217,10 @@
                                 var showInside = relativePercent >= 18m;
                                 var textClass = relativePercent >= 55m ? "text-white" : "text-dark";
 
-                                var colors = new[] { "bg-success", "bg-info", "bg-warning", "bg-danger", "bg-primary" };
-                                var colorIndex = Math.Abs(stageName.GetHashCode()) % colors.Length;
+                                // Only two colors: green when complete (>=100%), yellow otherwise
+                                var barColorClass = (relativeFraction >= 1m || relativePercent >= 100m)
+                                    ? "bg-success"
+                                    : "bg-warning";
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="font-w500">@stageName</span>
@@ -234,7 +236,7 @@
                                 </div>
 
                                 <div class="progress default-progress position-relative" style="height:16px; overflow:visible;">
-                                    <div class="progress-bar @colors[colorIndex] d-flex align-items-center @textClass"
+                                    <div class="progress-bar @barColorClass d-flex align-items-center @textClass"
                                          style="width:@relativePercent%; height:16px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
                                         @if (showInside)
                                         {

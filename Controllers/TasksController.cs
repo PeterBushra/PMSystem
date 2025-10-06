@@ -40,7 +40,9 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         var project = await _projectService.GetProjectAsync(projectId);
         var tasks = await _taskService.GetTaskListAsync();
         decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
-        ViewBag.ProjectTotalCost = project?.TotalCost ?? 0;
+
+        ViewBag.ProjectTotalCost = project?.TotalCost;                 // keep nullable
+        ViewBag.HasProjectTotal  = project?.TotalCost.HasValue == true;
         ViewBag.ExistingTasksCost = existingCost;
 
         return View(model);
@@ -155,7 +157,8 @@ public class TasksController(ITaskService _taskService, IProjectService _project
             .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
             .Sum(t => t.Cost ?? 0);
 
-        ViewBag.ProjectTotalCost = project?.TotalCost ?? 0;
+        ViewBag.ProjectTotalCost = project?.TotalCost;                 // keep nullable
+        ViewBag.HasProjectTotal  = project?.TotalCost.HasValue == true;
         ViewBag.ExistingTasksCost = existingCostExcludingCurrent;
 
         ViewData["Title"] = "Edit Task";
