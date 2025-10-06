@@ -45,7 +45,7 @@
         if (abs >= 1_000m)             return $"{sign}{Math.Round(abs / 1_000m).ToString("N0", culture)} ألف";
         return v.ToString("N0", culture);
     }
-    var totalBudgetCompact = CompactBudgetAr(totalBudget, ar);
+    var totalBudgetCompact = totalBudget.ToString("N0", ar);
     var totalBudgetExact   = totalBudget.ToString("N2", ar);
 }
 <div class="content-body">
