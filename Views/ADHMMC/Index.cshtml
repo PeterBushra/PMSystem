@@ -1,5 +1,6 @@
 ﻿@model Jobick.ViewModels.ProjectStatisticsVM
 @using System.Text.Json
+@using System.Globalization
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = "بيانات المشاريع";
@@ -31,6 +32,21 @@
 
     var budgetValuesJson = JsonSerializer.Serialize(orderedBudgets.Select(x => x.Value));
     var totalBudget = orderedBudgets.Sum(b => b.Value);
+
+    // Arabic compact display (no decimals): ألف / مليون / مليار / تريليون, with Arabic number formatting.
+    var ar = new CultureInfo("ar-EG");
+    string CompactBudgetAr(decimal v, CultureInfo culture)
+    {
+        var sign = v < 0 ? "-" : "";
+        var abs = Math.Abs(v);
+        if (abs >= 1_000_000_000_000m) return $"{sign}{Math.Round(abs / 1_000_000_000_000m).ToString("N0", culture)} تريليون";
+        if (abs >= 1_000_000_000m)     return $"{sign}{Math.Round(abs / 1_000_000_000m).ToString("N0", culture)} مليار";
+        if (abs >= 1_000_000m)         return $"{sign}{Math.Round(abs / 1_000_000m).ToString("N0", culture)} مليون";
+        if (abs >= 1_000m)             return $"{sign}{Math.Round(abs / 1_000m).ToString("N0", culture)} ألف";
+        return v.ToString("N0", culture);
+    }
+    var totalBudgetCompact = CompactBudgetAr(totalBudget, ar);
+    var totalBudgetExact   = totalBudget.ToString("N2", ar);
 }
 <div class="content-body">
     <div class="container-fluid">
@@ -81,7 +97,14 @@
                             <div class="kpi-label">الميزانية الإجمالية</div>
                             <i class="kpi-icon fas fa-coins"></i>
                         </div>
-                        <div class="kpi-value" data-countup data-decimals="2">@totalBudget.ToString("0.##")</div>
+                        <!-- Compact Arabic text; tooltip shows exact Arabic-formatted amount -->
+                        <div class="kpi-value"
+                             id="totalBudgetDisplay"
+                             data-bs-toggle="tooltip"
+                             data-bs-placement="top"
+                             title="@totalBudgetExact">
+                            @totalBudgetCompact
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,11 +265,18 @@
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
     <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
     <script>
+        // Initialize Bootstrap tooltips (for total budget hover)
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (el) { new bootstrap.Tooltip(el); });
+        });
+    </script>
+    <script>
         (function(){
             const years  = @Html.Raw(yearsJson);
             const counts = @Html.Raw(countsJson);
 
-            // CountUp effect for KPIs
+            // CountUp effect for KPIs (kept for numeric KPIs only)
             document.querySelectorAll('[data-countup]').forEach(el=>{
                 const decimals = parseInt(el.getAttribute('data-decimals')||'0');
                 const target = parseFloat((el.textContent||'0').replace(/,/g,'')) || 0;
