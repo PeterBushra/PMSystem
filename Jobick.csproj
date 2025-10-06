@@ -15,4 +15,19 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot\Fonts\THESANSARABIC-BOLD.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\Fonts\TheSansArabicExtrabold.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\Fonts\TheSansArabicLight_2.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\Fonts\TheSansArabicPlain.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

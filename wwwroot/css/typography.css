@@ -1,8 +1,60 @@
+﻿/* Register "The Sans Arabic" family from /wwwroot/Jobick/Fonts
+   Tip:
+   - Prefer tff. Keep tff as fallback only if needed.
+   - If your file names contain spaces, URLs must be percent‑encoded (e.g., "The Sans Arabic Plain.tff" => TheSansArabicPlain.tff)
+   - Adjust paths if your files are named differently.
+*/
+@font-face {
+  font-family: "The Sans Arabic";
+  src:
+    local("The Sans Arabic Light_2"),
+    url("/Fonts/TheSansArabicLight_2.tff") format("tff"),
+    url("/Fonts/TheSansArabicLight_2.tff") format("tff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "The Sans Arabic";
+  src:
+    local("The Sans Arabic Plain"),
+    url("/Fonts/TheSansArabicPlain.tff") format("tff"),
+    url("/Fonts/TheSansArabicPlain.tff") format("tff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "The Sans Arabic";
+  src:
+    local("THESANSARABIC-BOLD"),
+    local("The Sans Arabic Bold"),
+    url("/Fonts/THESANSARABIC-BOLD.tff") format("tff"),
+    url("/Fonts/THESANSARABIC-BOLD.tff") format("tff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "The Sans Arabic";
+  src:
+    local("The Sans Arabic Extrabold"),
+    url("/Fonts/TheSansArabicExtrabold.tff") format("tff"),
+    url("/Fonts/TheSansArabicExtrabold.tff") format("tff");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
 /* Global typography standards: change only these variables to switch fonts app-wide */
 :root {
-  /* Arabic-friendly font stacks */
-  --app-font-base: "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
-  --app-font-heading: "Cairo", "Tajawal", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  /* Use your custom family everywhere, then Arabic-friendly fallbacks */
+  --app-font-base: "The Sans Arabic";
+  --app-font-heading: "The Sans Arabic";
   --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Sync with theme/Bootstrap variables */
