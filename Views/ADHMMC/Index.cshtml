@@ -49,7 +49,8 @@
                 </div>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
-                <div class="card kpi-card kpi-bg_info kpi-bg-info">
+                <!-- In-progress uses #e16b16 -->
+                <div class="card kpi-card kpi-inprogress">
                     <div class="card-body">
                         <div class="kpi-top">
                             <div class="kpi-label">جاري التنفيذ</div>
@@ -61,7 +62,8 @@
                 </div>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
-                <div class="card kpi-card kpi-bg-warning">
+                <!-- Not started uses #b5b5b5 -->
+                <div class="card kpi-card kpi-notstarted">
                     <div class="card-body">
                         <div class="kpi-top">
                             <div class="kpi-label">لم تبدأ</div>
@@ -80,7 +82,6 @@
                             <i class="kpi-icon fas fa-coins"></i>
                         </div>
                         <div class="kpi-value" data-countup data-decimals="2">@totalBudget.ToString("0.##")</div>
-                        @* Removed currency text as requested *@
                     </div>
                 </div>
             </div>
@@ -119,7 +120,6 @@
 
         <!-- NEW ROW: Budgets per Year (Vertical Bars) + Donut (Third KPI) -->
         <div class="row mt-4">
-            <!-- Budgets per Year (Vertical Bars) -->
             <div class="col-xl-6">
                 <div class="card card-modern">
                     <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
@@ -135,7 +135,6 @@
                 </div>
             </div>
 
-            <!-- Third KPI Budgets (Donut) moved here -->
             <div class="col-xl-6">
                 <div class="card card-modern h-100">
                     <div class="card-header border-0 pb-0 d-flex justify-content_between justify-content-between align-items-center">
@@ -170,7 +169,6 @@
                             <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width:900px">
                                 <thead>
                                     <tr>
-                                        @* <th class="text-center">معرف المشروع</th> *@
                                         <th class="text-center">اسم المشروع</th>
                                         <th class="text-center">تاريخ الانتهاء</th>
                                         <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
@@ -180,7 +178,6 @@
                                 @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
                                 {
                                     <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
-                                        @* <td class="text-center">@p.ProjectId</td> *@
                                         <td class="text-center">@p.Name</td>
                                         <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
                                         <td class="text-center">@p.IncompleteTasksCount</td>
@@ -206,6 +203,31 @@
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
     <link href="~/css/dashboard-modern.css" rel="stylesheet" />
+    <style>
+        /* Force "in progress" KPI to #e16b16 */
+        .kpi-inprogress {
+            background-color: #e16b16 !important;
+            color: #fff !important;
+        }
+        .kpi-inprogress .kpi-icon,
+        .kpi-inprogress .kpi-label,
+        .kpi-inprogress .kpi-value,
+        .kpi-inprogress .kpi-sub {
+            color: #fff !important;
+        }
+
+        /* Force "not started" KPI to #b5b5b5 */
+        .kpi-notstarted {
+            background-color: #b5b5b5 !important;
+            color: #212529 !important;
+        }
+        .kpi-notstarted .kpi-icon,
+        .kpi-notstarted .kpi-label,
+        .kpi-notstarted .kpi-value,
+        .kpi-notstarted .kpi-sub {
+            color: #212529 !important;
+        }
+    </style>
 }
 
 @section Jobick_script{
@@ -239,7 +261,7 @@
                 requestAnimationFrame(step);
             });
 
-            // Status Pie
+            // Status Pie (3rd slice "لم تبدأ" = #b5b5b5)
             const statusEl = document.querySelector("#projectsStatusPie");
             const done = @Model.DoneProjects;
             const inProgress = @Model.InProgressProjects;
@@ -249,7 +271,7 @@
                     chart:{ type:'donut', height:360, fontFamily:'inherit' },
                     series:[done, inProgress, notStarted],
                     labels:['مكتملة','جاري التنفيذ','لم تبدأ'],
-                    colors:['#198754','#0dcaf0','#ffc107'],
+                    colors:['#198754','#e16b16','#b5b5b5'],
                     legend:{ position:'bottom' },
                     dataLabels:{ enabled:true, formatter:(val,opts)=> opts.w.globals.series[opts.seriesIndex] },
                     tooltip:{ y:{ formatter:v=> v + ' مشروع'} },
@@ -316,9 +338,9 @@
                 }
             }
 
-            // Overdue Table (Arabic UI + < > pagination)
+            // Overdue Table
             $('#overdueProjectsTable').DataTable({
-        order: [],
+                order: [],
                 responsive: true,
                 columnDefs: [ { targets: -1, orderable: false } ],
                 language: {

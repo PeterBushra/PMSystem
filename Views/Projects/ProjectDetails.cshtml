@@ -41,13 +41,13 @@
                                 </p>
                                 <p><strong>الوصف:</strong> @Model.Description</p>
                                 <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
+                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString()</p>
                             </div>
                             <div class="col-xl-6">
                                 <p><strong>مالك النظام:</strong> @Model.SystemOwner</p>
                                 <p><strong>هدف المشروع:</strong> @Model.ProjectGoal</p>
                                 <p><strong>تاريخ البدء:</strong> @Model.StartSate.ToShortDateString()</p>
                                 <p><strong>تاريخ الانتهاء:</strong> @Model.EndDate.ToShortDateString()</p>
-                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString()</p>
                             </div>
                         </div>
                     </div>
