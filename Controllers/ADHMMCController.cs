@@ -67,14 +67,42 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     /// Displays the dashboard with aggregate KPIs.
     /// KPIs include project status distribution, counts per year, budgets for not fully done projects,
     /// budgets by year, and overdue projects with incomplete tasks.
+    /// Results are filtered by ResponsibleForImplementing when provided.
     /// </summary>
     [Authorize]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? responsible = null)
     {
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();
 
-        var vm = _statisticsService.CalculateDashboard(projects, allTasks);
+        // Build distinct list of ResponsibleForImplementing values (non-empty)
+        var responsibleList = projects
+            .Select(p => p.ResponsibleForImplementing)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+
+        // If no selection provided, choose first available as default
+        string? selectedResponsible = responsible;
+        if (string.IsNullOrWhiteSpace(selectedResponsible) && responsibleList.Count > 0)
+        {
+            selectedResponsible = responsibleList[0];
+        }
+
+        // Filter projects based on selected responsible (if any)
+        var filteredProjects = string.IsNullOrWhiteSpace(selectedResponsible)
+            ? projects
+            : projects.Where(p => string.Equals(p.ResponsibleForImplementing, selectedResponsible, StringComparison.Ordinal)).ToList();
+
+        // Calculate dashboard for filtered projects
+        var vm = _statisticsService.CalculateDashboard(filteredProjects, allTasks);
+
+        // Pass filter data to the view
+        ViewBag.ResponsibleList = responsibleList;
+        ViewBag.SelectedResponsible = selectedResponsible;
+        ViewBag.HasResponsibleOptions = responsibleList.Count > 0;
+
         return View(vm);
     }
 

@@ -37,9 +37,55 @@
     var ar = new CultureInfo("ar-EG");
     var totalBudgetCompact = totalBudget.ToString("N0", ar);
     var totalBudgetExact   = totalBudget.ToString("N2", ar);
+
+    // Added: Responsible filter data from ViewBag
+    var responsibleList = ViewBag.ResponsibleList as List<string> ?? new List<string>();
+    string? selectedResponsible = ViewBag.SelectedResponsible as string;
+    bool hasResponsibleOptions = (ViewBag.HasResponsibleOptions as bool?) ?? false;
 }
 <div class="content-body">
     <div class="container-fluid">
+        <!-- Added: Filter toolbar for ResponsibleForImplementing -->
+        <div class="row g-3 align-items-center mt-2">
+            <div class="col-12">
+                <div class="card card-modern">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+                        <div class="d-flex align-items-center mb-2 mb-md-0">
+                            <i class="fas fa-filter me-2 text-primary"></i>
+                            <strong class="me-2">تصفية حسب القطاع المسؤول</strong>
+                        </div>
+                        <div class="ms-auto" style="min-width:260px;">
+                            @if (hasResponsibleOptions && responsibleList.Any())
+                            {
+                                <select id="responsibleFilter"
+                                        class="selectpicker form-select"
+                                        data-style="btn-primary"
+                                        data-live-search="true"
+                                        title="اختر جهة مسؤولة">
+                                    @foreach (var resp in responsibleList)
+                                    {
+                                        if (string.Equals(resp, selectedResponsible, StringComparison.Ordinal))
+                                        {
+                                            <option value="@resp" selected>@resp</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@resp">@resp</option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mb-0 empty-message">
+                                    لا توجد جهات مسؤولة متاحة.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Modern KPI row -->
         <div class="row kpi-row g-3 mt-2">
             <div class="col-12 col-md-6 col-xl-3">
@@ -105,10 +151,17 @@
                 <div class="card card-modern mt-4">
                     <div class="card-header border-0 pb-0 d-flex align-items-center">
                         <h4 class="card-title mb-0">حالة المشاريع</h4>
-                        <span class="badge bg-info ms-2" style="font-size:0.7rem;">يتم احتساب حالة المشاريع فقط للمشاريع التي تحتوي على مهام</span>
+                        <span class="badge bg-light text-muted border ms-2" style="font-size:0.7rem;">يتم احتساب حالة المشاريع فقط للمشاريع التي تحتوي على مهام</span>
                     </div>
                     <div class="card-body pt-3">
-                        <div id="projectsStatusPie"></div>
+                        @if (total == 0)
+                        {
+                            <div class="alert alert-info text-center mb-0">لا توجد بيانات لعرضها.</div>
+                        }
+                        else
+                        {
+                            <div id="projectsStatusPie"></div>
+                        }
                     </div>
                 </div>
             </div>
@@ -123,7 +176,14 @@
                         }
                     </div>
                     <div class="card-body pt-3">
-                        <div id="projectsByYearBar"></div>
+                        @if (!orderedYears.Any())
+                        {
+                            <div class="alert alert-info text-center mb-0 empty-message ">لا توجد بيانات لعرضها.</div>
+                        }
+                        else
+                        {
+                            <div id="projectsByYearBar"></div>
+                        }
                     </div>
                 </div>
             </div>
@@ -141,7 +201,14 @@
                         }
                     </div>
                     <div class="card-body pt-3">
-                        <div id="projectsBudgetByYearBar"></div>
+                        @if (!orderedBudgetYears.Any())
+                        {
+                            <div class="alert alert-info text-center mb-0 empty-message ">لا توجد بيانات لعرضها.</div>
+                        }
+                        else
+                        {
+                            <div id="projectsBudgetByYearBar"></div>
+                        }
                     </div>
                 </div>
             </div>
@@ -209,7 +276,7 @@
                             </table>
                             @if(!Model.OverdueProjectsWithIncompleteTasks.Any())
                             {
-                                <div class="alert alert-info text-center mb-0 mt-3">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
+                                <div class="alert alert-info text-center mb-0 mt-3 empty-message ">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
                             }
                         </div>
                     </div>
@@ -225,6 +292,8 @@
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
     <link href="~/css/dashboard-modern.css" rel="stylesheet" />
+    <!-- Added: bootstrap-select CSS for modern dropdown -->
+    <link href="~/Jobick/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet" />
     <style>
         /* Force "in progress" KPI to #e16b16 */
         .kpi-inprogress {
@@ -255,6 +324,15 @@
         table.dataTable tbody td.dataTables_empty {
             text-align: center !important;
         }
+
+        /* Utility: center inline empty state messages */
+        .empty-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 42px;
+        }
     </style>
 }
 
@@ -278,6 +356,18 @@
     </script>
     <script>
         (function(){
+            // Added: initialize responsible filter and navigate on change
+            const respSel = document.getElementById('responsibleFilter');
+            if(respSel){
+                $('.selectpicker').selectpicker();
+                respSel.addEventListener('change', function(){
+                    const v = this.value;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('responsible', v);
+                    window.location.href = url.toString();
+                });
+            }
+
             const years  = @Html.Raw(yearsJson);
             const counts = @Html.Raw(countsJson);
 
