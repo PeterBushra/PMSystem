@@ -1,9 +1,6 @@
-﻿using Jobick.Services;
-using Jobick.Services.Interfaces;
+﻿using Jobick.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Jobick.Controllers;
 
@@ -38,10 +35,9 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         };
 
         var project = await _projectService.GetProjectAsync(projectId);
-        var tasks = await _taskService.GetTaskListAsync();
 
-        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
-        decimal existingWeight = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Weight ?? 0);
+        decimal existingCost = _taskService.GetTotalTasksCost(projectId);
+        decimal existingWeight = _taskService.GetTotalTasksWeights(projectId);
 
         ViewBag.ProjectTotalCost   = project?.TotalCost;                 // keep nullable
         ViewBag.HasProjectTotal    = project?.TotalCost.HasValue == true;
@@ -56,7 +52,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     [HttpPost]
     /// <summary>
     /// Handles create task submission, including attachment requirement when DoneRatio is 100%.
-    /// Converts DoneRatio from percentage (0..100) to fraction (0..1) before persistence.
+    /// Expects DoneRatio from the form as a percentage (0..100) and converts it to fraction (0..1) before persistence.
     /// Also validates that the sum of weights across project tasks does not exceed 100.
     /// </summary>
     public async Task<IActionResult> PostTask(Models.Task model)
@@ -83,7 +79,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
 
         // Handle Attachment
         var file = Request.Form.Files["Attachment"];
-        if (model.DoneRatio == 100.0m) // 100% (already converted to fraction)
+        if (model.DoneRatio == 100.0m) // 100% (from form as percentage)
         {
             if (file == null || file.Length == 0)
             {
@@ -118,9 +114,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         model.DoneRatio = ClampToFraction(model.DoneRatio);
 
         // Validate total weight
-        var tasks = await _taskService.GetTaskListAsync();
-        var projectTasks = tasks.Where(t => t.ProjectId == model.ProjectId);
-        decimal existingWeight = projectTasks.Sum(t => t.Weight ?? 0);
+        decimal existingWeight = _taskService.GetTotalTasksWeights(model.ProjectId);
         decimal totalWeight = existingWeight + (model.Weight ?? 0);
 
         if (totalWeight > 100)
@@ -160,16 +154,10 @@ public class TasksController(ITaskService _taskService, IProjectService _project
             task.DoneRatio = task.DoneRatio.Value * 100m;
 
         var project = await _projectService.GetProjectAsync(task.ProjectId);
-        var tasks = await _taskService.GetTaskListAsync();
 
-        decimal existingCostExcludingCurrent = tasks
-            .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
-            .Sum(t => t.Cost ?? 0);
-
+        decimal existingCostExcludingCurrent = _taskService.GetTotalTasksCostExcluding(task.ProjectId, task.Id);
         // Other tasks' weights (exclude current)
-        decimal otherTasksWeight = tasks
-            .Where(t => t.ProjectId == task.ProjectId && t.Id != task.Id)
-            .Sum(t => t.Weight ?? 0);
+        decimal otherTasksWeight = _taskService.GetTotalTasksWeights(task.ProjectId) - _taskService.GetTaskWeight(task.Id);
 
         ViewBag.ProjectTotalCost   = project?.TotalCost;                 // keep nullable
         ViewBag.HasProjectTotal    = project?.TotalCost.HasValue == true;
@@ -209,7 +197,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
 
         // Handle Attachment
         var file = Request.Form.Files["Attachment"];
-        if (model.DoneRatio == 100.0m) // 100% (already converted to fraction)
+        if (model.DoneRatio == 100.0m) // 100% (from form as percentage)
         {
             if ((file == null || file.Length == 0) && (model.AttachmentData == null || model.AttachmentData.Length == 0))
             {
@@ -325,10 +313,9 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     private async Task PopulateCreateViewBagsAsync(int projectId)
     {
         var project = await _projectService.GetProjectAsync(projectId);
-        var tasks = await _taskService.GetTaskListAsync();
 
-        decimal existingCost = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Cost ?? 0);
-        decimal existingWeight = tasks.Where(t => t.ProjectId == projectId).Sum(t => t.Weight ?? 0);
+        decimal existingCost = _taskService.GetTotalTasksCost(projectId);
+        decimal existingWeight = _taskService.GetTotalTasksWeights(projectId);
 
         ViewBag.ProjectTotalCost  = project?.TotalCost;
         ViewBag.HasProjectTotal   = project?.TotalCost.HasValue == true;
@@ -340,15 +327,9 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     private async Task PopulateEditViewBagsAsync(Models.Task model, decimal? otherWeightsOverride = null)
     {
         var project = await _projectService.GetProjectAsync(model.ProjectId);
-        var tasks = await _taskService.GetTaskListAsync();
 
-        decimal existingCostExcludingCurrent = tasks
-            .Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id)
-            .Sum(t => t.Cost ?? 0);
-
-        decimal otherTasksWeight = otherWeightsOverride ?? tasks
-            .Where(t => t.ProjectId == model.ProjectId && t.Id != model.Id)
-            .Sum(t => t.Weight ?? 0);
+        decimal existingCostExcludingCurrent = _taskService.GetTotalTasksCostExcluding(model.ProjectId, model.Id);
+        decimal otherTasksWeight = otherWeightsOverride ?? (_taskService.GetTotalTasksWeights(model.ProjectId) - _taskService.GetTaskWeight(model.Id));
 
         ViewBag.ProjectTotalCost  = project?.TotalCost;
         ViewBag.HasProjectTotal   = project?.TotalCost.HasValue == true;

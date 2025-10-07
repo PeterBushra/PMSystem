@@ -74,7 +74,7 @@ public class TaskService : ITaskService
     /// </summary>
     public decimal GetTotalTasksWeights(int projectId)
     {
-        return _context.Tasks.Where(x=>x.ProjectId == projectId).Sum(x => x.Weight ?? 0);
+        return _context.Tasks.AsNoTracking().Where(x => x.ProjectId == projectId).Sum(x => x.Weight ?? 0);
     }
 
     /// <summary>
@@ -82,6 +82,22 @@ public class TaskService : ITaskService
     /// </summary>
     public decimal GetTaskWeight(int taskID)
     {
-        return _context.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskID)?.Weight ?? 0;
+        return _context.Tasks.AsNoTracking().Where(x => x.Id == taskID).Select(x => x.Weight ?? 0).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Gets the sum of costs for all tasks in a project.
+    /// </summary>
+    public decimal GetTotalTasksCost(int projectId)
+    {
+        return _context.Tasks.AsNoTracking().Where(x => x.ProjectId == projectId).Sum(x => x.Cost ?? 0);
+    }
+
+    /// <summary>
+    /// Gets the sum of costs for all tasks in a project excluding a specific task.
+    /// </summary>
+    public decimal GetTotalTasksCostExcluding(int projectId, int excludeTaskId)
+    {
+        return _context.Tasks.AsNoTracking().Where(x => x.ProjectId == projectId && x.Id != excludeTaskId).Sum(x => x.Cost ?? 0);
     }
 }

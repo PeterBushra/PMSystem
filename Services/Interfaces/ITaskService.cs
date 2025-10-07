@@ -13,4 +13,7 @@ public interface ITaskService
     System.Threading.Tasks.Task DeleteTaskAsync(int id);
     decimal GetTotalTasksWeights(int projectId);
     decimal GetTaskWeight(int taskID);
+    // New helpers to avoid loading full task lists for simple aggregations
+    decimal GetTotalTasksCost(int projectId);
+    decimal GetTotalTasksCostExcluding(int projectId, int excludeTaskId);
 }

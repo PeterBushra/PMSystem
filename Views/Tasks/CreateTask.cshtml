@@ -3,13 +3,11 @@
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = Model.Id == 0 ? "إضافة مهمة" : "تعديل مهمة";
 
-    // Safe extraction: handle boxed decimal and nullable
-    decimal? projectTotalCost = ViewBag.ProjectTotalCost is decimal d ? d : ViewBag.ProjectTotalCost as decimal?;
-    bool hasProjectTotal = ViewBag.HasProjectTotal is bool b && b;
-    decimal existingTasksCost = ViewBag.ExistingTasksCost is decimal e ? e : 0m;
-
-    // Sum of weights of all OTHER tasks in the same project (controller should provide this)
-    decimal otherTasksWeight = ViewBag.OtherTasksWeight is decimal ew ? ew : 0m;
+    // Safe extraction with concise casting
+    decimal? projectTotalCost = ViewBag.ProjectTotalCost as decimal?;
+    bool hasProjectTotal = (ViewBag.HasProjectTotal as bool?) ?? false;
+    decimal existingTasksCost = (ViewBag.ExistingTasksCost as decimal?) ?? 0m;
+    decimal otherTasksWeight = (ViewBag.OtherTasksWeight as decimal?) ?? 0m;
 
     // Determine initial visibility for attachment container (percentage value expected)
     var initialShowAttachment = Model.DoneRatio.HasValue && Model.DoneRatio.Value >= 100m;
@@ -34,7 +32,7 @@
                         <form asp-action="@(Model.Id == 0 ? "PostTask" : "EditTask")" method="post" enctype="multipart/form-data" class="needs-validation" novalidate
                               data-project-total="@(hasProjectTotal ? projectTotalCost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")"
                               data-has-total="@hasProjectTotal.ToString().ToLower()"
-                              data-existing-cost="@existingTasksCost"
+                              data-existing-cost="@existingTasksCost.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                               data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                               data-has-existing-attachment="@((Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0).ToString().ToLower())">
                             <!-- Hidden fields -->
@@ -179,166 +177,172 @@
             const form = document.querySelector('form.needs-validation');
             if (!form) return;
 
-            // ---- Weight validation (Total must not exceed 100%) ----
-            const weightInput = document.getElementById('weightInput');
-            const weightError = document.getElementById('weightError');
-            const remainingWeightSpan = document.getElementById('remainingWeightSpan');
-            const saveBtn = document.getElementById('saveBtn');
+            // Cache elements once
+            const els = {
+                weightInput: document.getElementById('weightInput'),
+                weightError: document.getElementById('weightError'),
+                remainingWeightSpan: document.getElementById('remainingWeightSpan'),
+                saveBtn: document.getElementById('saveBtn'),
+                doneRatioInput: document.getElementById('doneRatioInput'),
+                attachmentContainer: document.getElementById('attachmentContainer'),
+                actualEndDateContainer: document.getElementById('actualEndDateContainer'),
+                actualEndDateInput: document.getElementById('actualEndDateInput'),
+                attachmentInput: document.getElementById('Attachment'),
+                attachmentError: document.getElementById('attachmentError'),
+                costInput: document.getElementById('costInput'),
+                costWarning: document.getElementById('costWarning'),
+                remainingBeforeSpan: document.getElementById('remainingBeforeSpan')
+            };
 
-            const otherWeight = parseFloat(form.getAttribute('data-other-weight-sum')) || 0; // sum of other tasks' weights
-            const limit = 100;
+            // Centralized state
+            const state = {
+                otherWeight: parseFloat(form.dataset.otherWeightSum) || 0,
+                weightLimit: 100,
+                hasTotal: form.dataset.hasTotal === 'true',
+                projectTotal: parseFloat(form.dataset.projectTotal) || 0,
+                existingCost: parseFloat(form.dataset.existingCost) || 0,
+                hasExistingAttachment: form.dataset.hasExistingAttachment === 'true',
+                weightInvalid: false,
+                completionInvalid: false
+            };
 
-            let weightInvalid = false;
-            let completionInvalid = false;
-            function applySaveState() {
-                if (!saveBtn) return;
-                saveBtn.disabled = !!(weightInvalid || completionInvalid);
-            }
-
-            function formatPct(n) {
+            // Format helpers
+            function fmtPercent(n) {
                 try { return n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
                 catch { return (Math.round(n * 100) / 100).toString(); }
             }
+            function fmtNumber(n) {
+                try { return n.toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+                catch { return Math.round(n).toString(); }
+            }
+            function applySaveState() {
+                if (els.saveBtn) els.saveBtn.disabled = !!(state.weightInvalid || state.completionInvalid);
+            }
 
-            function updateWeightValidation() {
-                if (!weightInput) return;
+            // Weight validation
+            function validateWeight() {
+                if (!els.weightInput) return;
 
-                const entered = parseFloat(weightInput.value);
+                const entered = parseFloat(els.weightInput.value);
                 const weight = isNaN(entered) ? 0 : entered;
-                const total = otherWeight + weight;
-                const remainingBefore = Math.max(limit - otherWeight, 0);
+                const total = state.otherWeight + weight;
+                const remainingBefore = Math.max(state.weightLimit - state.otherWeight, 0);
 
-                if (remainingWeightSpan) remainingWeightSpan.textContent = formatPct(remainingBefore);
+                if (els.remainingWeightSpan) els.remainingWeightSpan.textContent = fmtPercent(remainingBefore);
 
-                if (total > limit) {
-                    const exceededBy = total - limit;
-                    weightInput.classList.add('is-invalid');
-                    weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
-                    if (weightError) {
-                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.\u200f';
+                if (total > state.weightLimit) {
+                    const exceededBy = total - state.weightLimit;
+                    els.weightInput.classList.add('is-invalid');
+                    els.weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
+                    if (els.weightError) {
+                        els.weightError.textContent = 'خطأ: مجموع الأوزان (' + fmtPercent(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + fmtPercent(exceededBy) + '%.\u200f';
                     }
-                    weightInvalid = true;
+                    state.weightInvalid = true;
                 } else {
-                    weightInput.classList.remove('is-invalid');
-                    weightInput.setCustomValidity('');
-                    if (weightError) weightError.textContent = '';
-                    weightInvalid = false;
+                    els.weightInput.classList.remove('is-invalid');
+                    els.weightInput.setCustomValidity('');
+                    if (els.weightError) els.weightError.textContent = '';
+                    state.weightInvalid = false;
                 }
                 applySaveState();
             }
 
-            if (weightInput) {
-                weightInput.addEventListener('input', updateWeightValidation);
-                updateWeightValidation();
-            }
-
-            // ---- Cost Warning Logic ----
-            const hasTotal = form.getAttribute('data-has-total') === 'true';
-            const projectTotal = hasTotal ? (parseFloat(form.getAttribute('data-project-total')) || 0) : NaN;
-            const existingCost = parseFloat(form.getAttribute('data-existing-cost')) || 0;
-            const costInput = document.getElementById('costInput');
-            const warningDiv = document.getElementById('costWarning');
-            const remainingBeforeSpan2 = document.getElementById('remainingBeforeSpan');
-
-            function formatNumber(n) { return n.toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-            function showInfo(msg) { warningDiv.classList.remove('d-none', 'alert-warning'); warningDiv.classList.add('alert-info'); warningDiv.textContent = msg; }
-            function showWarn(html) { warningDiv.classList.remove('d-none', 'alert-info'); warningDiv.classList.add('alert-warning'); warningDiv.innerHTML = html; }
-            function hideWarning() { warningDiv.classList.add('d-none'); warningDiv.classList.remove('alert-warning', 'alert-info'); warningDiv.textContent = ''; }
-
+            // Cost warning
             function updateCostWarning() {
-                if (!costInput || !warningDiv) return;
-                const entered = parseFloat(costInput.value) || 0;
-                if (!hasTotal) { showInfo('لم يتم تحديد التكلفة الإجمالية للمشروع. لن يتم التحقق من تجاوز الميزانية. يُفضل تحديدها من تفاصيل المشروع أولاً.'); if (remainingBeforeSpan2) remainingBeforeSpan2.textContent = 'غير محدد'; return; }
-                const newTotal = existingCost + entered;
-                const remaining = Math.max(projectTotal - existingCost, 0);
-                if (remainingBeforeSpan2) remainingBeforeSpan2.textContent = formatNumber(remaining);
-                if (newTotal > projectTotal) { const exceededBy = newTotal - projectTotal; showWarn('تنبيه: مجموع تكاليف المهام بعد إضافة هذه المهمة (' + formatNumber(newTotal) + ') سيتجاوز تكلفة المشروع (' + formatNumber(projectTotal) + '). مقدار التجاوز: ' + formatNumber(exceededBy) + '.'); } else { hideWarning(); }
+                if (!els.costInput || !els.costWarning) return;
+                const entered = parseFloat(els.costInput.value) || 0;
+                if (!state.hasTotal) {
+                    els.costWarning.classList.remove('d-none', 'alert-warning');
+                    els.costWarning.classList.add('alert-info');
+                    els.costWarning.textContent = 'لم يتم تحديد التكلفة الإجمالية للمشروع. لن يتم التحقق من تجاوز الميزانية. يُفضل تحديدها من تفاصيل المشروع أولاً.';
+                    if (els.remainingBeforeSpan) els.remainingBeforeSpan.textContent = 'غير محدد';
+                    return;
+                }
+                const newTotal = state.existingCost + entered;
+                const remaining = Math.max(state.projectTotal - state.existingCost, 0);
+                if (els.remainingBeforeSpan) els.remainingBeforeSpan.textContent = fmtNumber(remaining);
+                if (newTotal > state.projectTotal) {
+                    const exceededBy = newTotal - state.projectTotal;
+                    els.costWarning.classList.remove('d-none', 'alert-info');
+                    els.costWarning.classList.add('alert-warning');
+                    els.costWarning.innerHTML = 'تنبيه: مجموع تكاليف المهام بعد إضافة هذه المهمة (' + fmtNumber(newTotal) + ') سيتجاوز تكلفة المشروع (' + fmtNumber(state.projectTotal) + '). مقدار التجاوز: ' + fmtNumber(exceededBy) + '.';
+                } else {
+                    els.costWarning.classList.add('d-none');
+                    els.costWarning.classList.remove('alert-warning', 'alert-info');
+                    els.costWarning.textContent = '';
+                }
             }
 
-            if (costInput) { costInput.addEventListener('input', updateCostWarning); updateCostWarning(); }
+            // Completion (attachment + actual end date)
+            function toggleCompletion() {
+                const ratio = parseFloat(els.doneRatioInput?.value) || 0;
+                const show = ratio >= 100;
 
-            // ---- Attachment and Actual End Date toggle on done ratio ----
-            const doneRatioInput = document.getElementById('doneRatioInput');
-            const attachmentContainer = document.getElementById('attachmentContainer');
-            const actualEndDateContainer = document.getElementById('actualEndDateContainer');
-            const actualEndDateInput = document.getElementById('actualEndDateInput');
-            const hasExistingAttachment = form.getAttribute('data-has-existing-attachment') === 'true';
+                if (els.attachmentContainer) {
+                    els.attachmentContainer.style.display = show ? 'block' : 'none';
+                    if (!show && els.attachmentInput) {
+                        els.attachmentInput.value = '';
+                      }
+                    if (!show && els.attachmentError) {
+                        els.attachmentError.textContent = '';
+                      }
+                }
 
-            function validateCompletionRequired() {
-                const ratio = parseFloat(doneRatioInput?.value) || 0;
+                if (els.actualEndDateContainer && els.actualEndDateInput) {
+                    els.actualEndDateContainer.style.display = show ? 'block' : 'none';
+                    if (show) {
+                        els.actualEndDateInput.setAttribute('required', 'required');
+                        els.actualEndDateInput.setCustomValidity('');
+                    } else {
+                        els.actualEndDateInput.removeAttribute('required');
+                        els.actualEndDateInput.value = '';
+                        els.actualEndDateInput.setCustomValidity('');
+                    }
+                }
+
                 let actualOk = true;
                 let attachOk = true;
+                if (show) {
+                    actualOk = !!(els.actualEndDateInput && els.actualEndDateInput.value);
+                    attachOk = state.hasExistingAttachment || (els.attachmentInput && els.attachmentInput.files && els.attachmentInput.files.length > 0);
 
-                if (ratio >= 100) {
-                    actualOk = !!(actualEndDateInput && actualEndDateInput.value);
-
-                    const att = document.getElementById('Attachment');
-                    attachOk = hasExistingAttachment || (att && att.files && att.files.length > 0);
-
-                    // Show field-level feedback
-                    if (actualEndDateInput) {
+                    if (els.actualEndDateInput) {
                         if (!actualOk) {
-                            actualEndDateInput.classList.add('is-invalid');
-                            actualEndDateInput.setCustomValidity('مطلوب عند اكتمال المهمة');
+                            els.actualEndDateInput.classList.add('is-invalid');
+                            els.actualEndDateInput.setCustomValidity('مطلوب عند اكتمال المهمة');
                         } else {
-                            actualEndDateInput.classList.remove('is-invalid');
-                            actualEndDateInput.setCustomValidity('');
+                            els.actualEndDateInput.classList.remove('is-invalid');
+                            els.actualEndDateInput.setCustomValidity('');
                         }
                     }
-                    const attErr = document.getElementById('attachmentError');
-                    if (attErr) attErr.textContent = attachOk ? '' : 'المرفق مطلوب عند اكتمال المهمة بنسبة 100%.';
-                } else {
-                    if (actualEndDateInput) {
-                        actualEndDateInput.classList.remove('is-invalid');
-                        actualEndDateInput.setCustomValidity('');
+                    if (els.attachmentError) {
+                        els.attachmentError.textContent = attachOk ? '' : 'المرفق مطلوب عند اكتمال المهمة بنسبة 100%.';
                     }
-                    const attErr = document.getElementById('attachmentError');
-                    if (attErr) attErr.textContent = '';
+                } else {
+                    if (els.actualEndDateInput) {
+                        els.actualEndDateInput.classList.remove('is-invalid');
+                        els.actualEndDateInput.setCustomValidity('');
+                    }
+                    if (els.attachmentError) {
+                        els.attachmentError.textContent = '';
+                    }
                 }
 
-                completionInvalid = !(actualOk && attachOk);
+                state.completionInvalid = !(actualOk && attachOk);
                 applySaveState();
             }
 
-            if (doneRatioInput) {
-                function toggleCompletionFields() {
-                    const ratio = parseFloat(doneRatioInput.value) || 0;
-                    const show = ratio >= 100;
+            // Bind once
+            els.weightInput?.addEventListener('input', validateWeight);
+            els.costInput?.addEventListener('input', updateCostWarning);
+            els.doneRatioInput?.addEventListener('input', toggleCompletion);
+            els.attachmentInput?.addEventListener('change', toggleCompletion);
+            els.actualEndDateInput?.addEventListener('input', toggleCompletion);
 
-                    if (attachmentContainer) {
-                        attachmentContainer.style.display = show ? 'block' : 'none';
-                        if (!show) {
-                            const att = document.getElementById('Attachment');
-                            if (att) att.value = '';
-                            const err = document.getElementById('attachmentError');
-                            if (err) err.textContent = '';
-                        }
-                    }
-
-                    if (actualEndDateContainer && actualEndDateInput) {
-                        actualEndDateContainer.style.display = show ? 'block' : 'none';
-                        if (show) {
-                            actualEndDateInput.setAttribute('required', 'required');
-                            actualEndDateInput.setCustomValidity('');
-                        } else {
-                            actualEndDateInput.removeAttribute('required');
-                            actualEndDateInput.value = '';
-                            actualEndDateInput.setCustomValidity('');
-                        }
-                    }
-
-                    validateCompletionRequired();
-                }
-                doneRatioInput.addEventListener('input', toggleCompletionFields);
-                doneRatioInput.addEventListener('change', toggleCompletionFields);
-                toggleCompletionFields();
-            }
-
-            // Revalidate on attachment or actual end date changes
-            document.getElementById('Attachment')?.addEventListener('change', validateCompletionRequired);
-            actualEndDateInput?.addEventListener('input', validateCompletionRequired);
-            actualEndDateInput?.addEventListener('change', validateCompletionRequired);
-
+            // Initial state
+            validateWeight();
+            updateCostWarning();
+            toggleCompletion();
         })();
     </script>
 }
