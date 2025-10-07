@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Jobick.Services;
+using Jobick.Extensions;
 
 namespace Jobick.Controllers;
 
@@ -33,10 +34,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
     public IActionResult CreateProject()
     {
         // Get the user ID from claims and parse to int
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        int userId = 0;
-        if (!string.IsNullOrEmpty(userIdClaim))
-            int.TryParse(userIdClaim, out userId);
+        int userId = User.GetUserIdOrDefault();
 
         Project project = new Project
         {
@@ -46,9 +44,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         };
 
         // Populate departments for dropdown
-        ViewBag.Departments = DepartmentService.GetDepartments()
-            .Select(d => new SelectListItem { Text = d, Value = d })
-            .ToList();
+        ViewBag.Departments = DepartmentService.GetDepartments().ToSelectList();
 
         return View(project);
     }
@@ -70,8 +66,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         ModelState.Remove(nameof(Project.NameAr));
         ModelState.Remove(nameof(Project.DescriptionAr));
         // Ensure Arabic fields mirror the provided English values if not explicitly provided
-        project.NameAr = project.Name;
-        project.DescriptionAr = project.Description;
+        project.MirrorArabicFromEnglish();
 
         if (ModelState.IsValid)
         {
@@ -90,9 +85,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         }
 
         // Repopulate departments on validation errors
-        ViewBag.Departments = DepartmentService.GetDepartments()
-            .Select(d => new SelectListItem { Text = d, Value = d })
-            .ToList();
+        ViewBag.Departments = DepartmentService.GetDepartments().ToSelectList();
 
         return View("CreateProject", project);
     }
@@ -142,9 +135,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         ViewData["Title"] = "Edit Project";
 
         // Populate departments for dropdown
-        ViewBag.Departments = DepartmentService.GetDepartments()
-            .Select(d => new SelectListItem { Text = d, Value = d })
-            .ToList();
+        ViewBag.Departments = DepartmentService.GetDepartments().ToSelectList();
 
         return View("CreateProject", project);
     }
@@ -184,9 +175,7 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         ViewData["Title"] = "Edit Project";
 
         // Repopulate departments on validation errors
-        ViewBag.Departments = DepartmentService.GetDepartments()
-            .Select(d => new SelectListItem { Text = d, Value = d })
-            .ToList();
+        ViewBag.Departments = DepartmentService.GetDepartments().ToSelectList();
 
         return View("CreateProject", model);
     }

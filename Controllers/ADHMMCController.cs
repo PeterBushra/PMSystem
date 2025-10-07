@@ -72,6 +72,8 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     [Authorize]
     public async Task<IActionResult> Index(string? responsible = null)
     {
+        const string AllOption = "كل المشاريع";
+
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();
 
@@ -83,15 +85,17 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
             .OrderBy(s => s)
             .ToList();
 
-        // If no selection provided, choose first available as default
-        string? selectedResponsible = responsible;
-        if (string.IsNullOrWhiteSpace(selectedResponsible) && responsibleList.Count > 0)
+        // Ensure the "All projects" option exists at the top
+        if (!responsibleList.Contains(AllOption))
         {
-            selectedResponsible = responsibleList[0];
+            responsibleList.Insert(0, AllOption);
         }
 
-        // Filter projects based on selected responsible (if any)
-        var filteredProjects = string.IsNullOrWhiteSpace(selectedResponsible)
+        // Default selection: All projects if none provided
+        string? selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
+
+        // Filter projects based on selected responsible; when "All projects" is chosen, do not filter
+        var filteredProjects = string.Equals(selectedResponsible, AllOption, StringComparison.Ordinal)
             ? projects
             : projects.Where(p => string.Equals(p.ResponsibleForImplementing, selectedResponsible, StringComparison.Ordinal)).ToList();
 

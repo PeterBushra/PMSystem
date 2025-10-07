@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using System.IO;
 using System.Text;
+using Jobick.Extensions;
 
 namespace Jobick.Controllers;
 
@@ -103,10 +104,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     public async Task<IActionResult> PostTask(Models.Task model)
     {
         // Get the user ID from claims and parse to int
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        int userId = 0;
-        if (!string.IsNullOrEmpty(userIdClaim))
-            int.TryParse(userIdClaim, out userId);
+        int userId = User.GetUserIdOrDefault();
 
         // Remove validation for properties not posted in the form
         ModelState.Remove(nameof(Models.Task.Project));
@@ -119,8 +117,8 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         ModelState.Remove(nameof(Models.Task.StageNameAr));
         ModelState.Remove(nameof(Models.Task.TaskAr));
 
-        model.TaskAr = model.Task1!;
-        model.StageNameAr = model.StageName!;
+        // Mirror bilingual fields when needed
+        model.MirrorArabicFromEnglish();
 
         // Handle Attachment
         var file = Request.Form.Files["Attachment"];
@@ -233,8 +231,8 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         ModelState.Remove(nameof(Models.Task.StageNameAr));
         ModelState.Remove(nameof(Models.Task.TaskAr));
 
-        model.TaskAr = model.Task1!;
-        model.StageNameAr = model.StageName!;
+        // Mirror bilingual fields when needed
+        model.MirrorArabicFromEnglish();
 
         // Handle Attachment
         var file = Request.Form.Files["Attachment"];
