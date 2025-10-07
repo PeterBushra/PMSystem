@@ -10,6 +10,11 @@
     var projectCost = Model.TotalCost ?? 0;
     var allTasksCompleted = Model.Tasks.Count > 0 && completed == Model.Tasks.Count;
 
+    // Total weight across all tasks in this project.
+    // Supports both 0..100 (percentage) and 0..1 (fraction) scales.
+    var totalWeightRaw = Model.Tasks.Sum(t => t.Weight ?? 0m);
+    var isWeightsFull = totalWeightRaw >= 100m;
+
     ViewData["Title"] = allTasksCompleted
         ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
         : $"تفاصيل المشروع - {Model.Name}";
@@ -271,7 +276,16 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="card-title">مهام المشروع</h4>
-                        <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
+                        @if (isWeightsFull)
+                        {
+                            <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%">
+                                <a class="btn    btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a>
+                            </span>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
+                        }
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">

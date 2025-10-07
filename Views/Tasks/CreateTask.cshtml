@@ -11,6 +11,11 @@
     // Sum of weights of all OTHER tasks in the same project (controller should provide this)
     // For Add: sum of all existing tasks' weights. For Edit: sum excluding current task weight.
     decimal otherTasksWeight = ViewBag.OtherTasksWeight is decimal ew ? ew : 0m;
+
+    // Edit-mode 100% done warning (support 1.0 and 100.0 scales)
+    bool isEditMode = Model.Id != 0;
+    decimal done = Model.DoneRatio ?? 0m;
+    bool isFullDone = (done >= 1.0m);
 }
 
 <div class="content-body" dir="rtl" style="text-align:right;">
@@ -70,12 +75,12 @@
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="ExpectedStartDate" class="form-label fw-bold">تاريخ البدء المتوقع</label>
-                                        <input asp-for="ExpectedStartDate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
+                                        <input asp-for="ExpectedStartDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
                                         <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء المتوقع</label>
-                                        <input asp-for="ExpectedEndDate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
+                                        <input asp-for="ExpectedEndDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
                                         <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                                     </div>
 
@@ -88,7 +93,7 @@
                                         </div>
                                         <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
                                             <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
-                                            <input asp-for="ActualEndDate" type="date" class="form-control" dir="rtl" style="text-align:right;" />
+                                            <input asp-for="ActualEndDate" type="date" class="form-control js-date" dir="rtl" style="text-align:right;" />
                                             <span asp-validation-for="ActualEndDate" class="text-danger"></span>
                                             <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
                                         </div>
@@ -113,6 +118,12 @@
                                         <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                         <span asp-validation-for="DoneRatio" class="text-danger"></span>
                                         <small class="form-text text-muted">أدخل قيمة بين 0 - 100</small>
+                                        @if (isEditMode && isFullDone)
+                                        {
+                                            <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
+                                                <strong>تحذير !</strong> - سيتم حذف المرفق اذا تم تغيير نسبة الانجاز
+                                            </div>
+                                        }
                                     </div>
                                     <div class="mb-3" id="attachmentContainer" style="display:none;">
                                         <label for="Attachment" class="form-label fw-bold">رفع المرفق (مطلوب عند اكتمال المهمة)</label>
@@ -214,7 +225,7 @@
                     weightInput.classList.add('is-invalid');
                     weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
                     if (weightError) {
-                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.';
+                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.',
                     }
                     if (saveBtn) saveBtn.disabled = true;
                 } else {
