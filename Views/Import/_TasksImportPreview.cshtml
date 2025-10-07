@@ -1,0 +1,124 @@
+﻿@model Jobick.ViewModels.TaskImportPreviewVM
+@{
+    var hasErrors = Model.Rows.Any(r => r.Errors.Any());
+}
+<style>
+    /* Widen all inputs in this import preview */
+    .import-preview-modal table input.form-control { min-width: 220px; }
+</style>
+<div class="modal-header">
+    <h5 class="modal-title">معاينة الاستيراد</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body import-preview-modal" dir="rtl" style="text-align:right;">
+    @* Server-side validation message placeholder *@
+    <div id="importErrorBox" class="alert alert-danger d-none" role="alert"></div>
+
+    @if (hasErrors)
+    {
+        <div class="alert alert-danger">توجد أخطاء في بعض الصفوف. يرجى مراجعتها قبل التأكيد.</div>
+    }
+    <div class="table-responsive" style="max-height:60vh; overflow:auto;">
+        <table class="table table-bordered table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>المراحل</th>
+                    <th>المهام</th>
+                    <th>القسم المنفذ</th>
+                    <th>الإدارة المسؤولة</th>
+                    <th>المخرجات (DOD)</th>
+                    <th>المدة المطلوبة للإنتهاء (أيام عمل)</th>
+                    <th>تاريخ البدء</th>
+                    <th>تاريخ الانتهاء</th>
+                    <th>النسبة الفعلية</th>
+                    <th>النسبة المخطط</th>
+                    <th>الصرف المخطط</th>
+                    <th>الأخطاء</th>
+                </tr>
+            </thead>
+            <tbody>
+            @for (var i = 0; i < Model.Rows.Count; i++)
+            {
+                var r = Model.Rows[i];
+                <tr class="@(r.Errors.Any() ? "table-danger" : "")">
+                    <td><input class="form-control form-control-sm" value="@r.StageName" data-field="StageName" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.TaskName" data-field="TaskName" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ImplementorDepartment" data-field="ImplementorDepartment" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DepartmentResponsible" data-field="DepartmentResponsible" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DefinitionOfDone" data-field="DefinitionOfDone" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ManyDaysToComplete" data-field="ManyDaysToComplete" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ExpectedStartDate?.ToString("yyyy-MM-dd")" data-field="ExpectedStartDate" data-index="@i" type="date" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ExpectedEndDate?.ToString("yyyy-MM-dd")" data-field="ExpectedEndDate" data-index="@i" type="date" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DoneRatio" data-field="DoneRatio" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.PlannedPercent" data-field="PlannedPercent" data-index="@i" /></td>
+                    <td><input class="form-control form-control-sm" value="@r.PlannedCost" data-field="PlannedCost" data-index="@i" /></td>
+                    <td>
+                        @if (r.Errors.Any())
+                        {
+                            <ul class="mb-0 small">
+                                @foreach (var e in r.Errors) { <li>@e</li> }
+                            </ul>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+    <button type="button"
+            class="btn btn-primary"
+            id="confirmImportBtn"
+            data-project-id="@Model.ProjectId"
+            data-confirm-url="@Url.Action("ConfirmImport","Import")">
+        تأكيد الحفظ
+    </button>
+</div>
+<script>
+
+(function(){
+    // Collect edited data and post back
+    document.getElementById('confirmImportBtn')?.addEventListener('click', function(){
+        var projectId = this.getAttribute('data-project-id');
+        var confirmUrl = this.getAttribute('data-confirm-url');
+        var rows = [];
+        var inputs = document.querySelectorAll('table input[data-index]');
+        var maxIndex = -1;
+        inputs.forEach(function(inp){ maxIndex = Math.max(maxIndex, parseInt(inp.getAttribute('data-index'))); });
+        for (var i=0;i<=maxIndex;i++){
+            var get = function(field){ var el = document.querySelector('input[data-index="'+i+'\"][data-field="'+field+'\"]'); return el ? el.value : ''; };
+            rows.push({
+                stageName: get('StageName'),
+                taskName: get('TaskName'),
+                implementorDepartment: get('ImplementorDepartment'),
+                departmentResponsible: get('DepartmentResponsible'),
+                definitionOfDone: get('DefinitionOfDone'),
+                manyDaysToComplete: parseInt(get('ManyDaysToComplete')) || null,
+                expectedStartDate: get('ExpectedStartDate') || null,
+                expectedEndDate: get('ExpectedEndDate') || null,
+                doneRatio: parseFloat(get('DoneRatio')) || 0,
+                plannedPercent: parseFloat(get('PlannedPercent')) || null,
+                plannedCost: parseFloat(get('PlannedCost')) || null
+            });
+        }
+        fetch(confirmUrl,{
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ projectId: parseInt(projectId), rows: rows })
+        }).then(r=>{
+            if(!r.ok) throw new Error('فشل الحفظ');
+            return r.json();
+        }).then(_=>{
+            // Close modal and reload page to show new tasks
+            var modalEl = document.getElementById('importPreviewModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            modal?.hide();
+            window.location.reload();
+        }).catch(err=>{
+            alert(err.message || 'حدث خطأ أثناء الحفظ');
+        });
+    });
+})();
+</script>

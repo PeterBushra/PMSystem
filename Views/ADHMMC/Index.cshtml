@@ -248,42 +248,47 @@
                         <h4 class="card-title mb-0">المشاريع المتأخرة أو المعرضة للخطر</h4>
                     </div>
                     <div class="card-body pt-3">
-                        <div class="table-responsive">
-                            <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width:900px">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center">اسم المشروع</th>
-                                        <th class="text-center">تاريخ الانتهاء</th>
-                                        <th class="text-center">الحالة</th>
-                                        <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
-                                {
-                                    <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
-                                        <td class="text-center">@p.Name</td>
-                                        <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
-                                        <td class="text-center">
-                                            @if (p.EndDate.Date < DateTime.Today)
-                                            {
-                                                <span class="badge bg-danger">متأخر</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-warning text-dark">مُعرض للتأخير</span>
-                                            }
-                                        </td>
-                                        <td class="text-center">@p.IncompleteTasksCount</td>
-                                    </tr>
-                                }
-                                </tbody>
-                            </table>
-                            @if(!Model.OverdueProjectsWithIncompleteTasks.Any())
-                            {
-                                <div class="alert alert-info text-center mb-0 mt-3 empty-message ">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
-                            }
-                        </div>
+
+                        @if (!Model.OverdueProjectsWithIncompleteTasks.Any())
+                        {
+                            <div class="alert alert-info text-center mb-0 mt-3 empty-message ">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width:900px">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">اسم المشروع</th>
+                                            <th class="text-center">تاريخ الانتهاء</th>
+                                            <th class="text-center">الحالة</th>
+                                            <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
+                                        {
+                                            <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
+                                                <td class="text-center">@p.Name</td>
+                                                <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
+                                                <td class="text-center">
+                                                    @if (p.EndDate.Date < DateTime.Today)
+                                                    {
+                                                        <span class="badge bg-danger">متأخر</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark">مُعرض للتأخير</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">@p.IncompleteTasksCount</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        }
                     </div>
                 </div>
             </div>

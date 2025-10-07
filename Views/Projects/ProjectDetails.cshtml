@@ -34,7 +34,7 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="card-title">معلومات المشروع</h4>
                     </div>
                     <div class="card-body">
@@ -199,8 +199,8 @@
                         <div class="card-body">
                             @{
                                 var stagesOrdered = Model.KPIs.StageCompletionByWeight
-                                    .OrderByDescending(s => s.Value)
-                                    .ToList();
+                                .OrderByDescending(s => s.Value)
+                                .ToList();
                             }
                             @foreach (var s in stagesOrdered)
                             {
@@ -210,13 +210,13 @@
 
                                 // Sum of raw weights (project-based) for this stage
                                 var stageWeightSum = Model.Tasks
-                                    .Where(t => (t.StageName ?? "").Trim() == stageName)
-                                    .Sum(t => t.Weight ?? 0m);
+                                .Where(t => (t.StageName ?? "").Trim() == stageName)
+                                .Sum(t => t.Weight ?? 0m);
 
                                 // Stage weight share of project (if totalProjectWeight != 100)
                                 var stageWeightPercentOfProject = totalProjectWeight > 0
-                                    ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2)
-                                    : 0m;
+                                ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2)
+                                : 0m;
 
                                 // Decide where to render text (inside/outside)
                                 var showInside = relativePercent >= 18m;
@@ -224,44 +224,44 @@
 
                                 // Only two colors: green when complete (>=100%), yellow otherwise
                                 var barColorClass = (relativeFraction >= 1m || relativePercent >= 100m)
-                                    ? "bg-success"
-                                    : "bg-warning";
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="font-w500">@stageName</span>
-                                    <span class="small">
-                                        وزن المرحلة: 
-                                        <strong>@stageWeightSum@("%")</strong>
-                                        @if (totalProjectWeight != 100)
-                                        {
-                                            <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
-                                        }
-                                        &nbsp;|&nbsp; إنجاز داخل المرحلة: <strong>@relativePercent%</strong>
-                                    </span>
-                                </div>
+                                ? "bg-success"
+                                : "bg-warning";
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="font-w500">@stageName</span>
+                                        <span class="small">
+                                            وزن المرحلة:
+                                            <strong>@stageWeightSum@("%")</strong>
+                                            @if (totalProjectWeight != 100)
+                                            {
+                                                <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
+                                            }
+                                            &nbsp;|&nbsp; إنجاز داخل المرحلة: <strong>@relativePercent%</strong>
+                                        </span>
+                                    </div>
 
-                                <div class="progress default-progress position-relative" style="height:16px; overflow:visible;">
-                                    <div class="progress-bar @barColorClass d-flex align-items-center @textClass"
-                                         style="width:@relativePercent%; height:16px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
-                                        @if (showInside)
+                                    <div class="progress default-progress position-relative" style="height:16px; overflow:visible;">
+                                        <div class="progress-bar @barColorClass d-flex align-items-center @textClass"
+                                             style="width:@relativePercent%; height:16px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
+                                            @if (showInside)
+                                            {
+                                                <span class="w-100 text-center" style="line-height:1;">
+                                                    @relativePercent% | وزن: @stageWeightSum%
+                                                </span>
+                                            }
+                                        </div>
+                                        @if (!showInside)
                                         {
-                                            <span class="w-100 text-center" style="line-height:1;">
+                                            <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
+                                                  style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
                                                 @relativePercent% | وزن: @stageWeightSum%
                                             </span>
                                         }
                                     </div>
-                                    @if (!showInside)
-                                    {
-                                        <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
-                                              style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
-                                            @relativePercent% | وزن: @stageWeightSum%
-                                        </span>
-                                    }
                                 </div>
-                            </div>
                             }
                             <small class="text-muted d-block mt-2">
-                                يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.  
+                                يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.
                                 الوزن المعروض هو مجموع أوزان مهام المرحلة (من إجمالي أوزان المشروع).
                             </small>
                         </div>
@@ -276,16 +276,26 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="card-title">مهام المشروع</h4>
-                        @if (isWeightsFull)
-                        {
-                            <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%">
-                                <a class="btn    btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a>
-                            </span>
-                        }
-                        else
-                        {
-                            <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
-                        }
+                        <div class="d-flex align-items-center gap-2">
+                            @if (isWeightsFull)
+                            {
+                                <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%">
+                                    <a class="btn    btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a>
+                                </span>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
+                            }
+                            <button type="button" id="btnImportExcel" class="btn btn-outline-primary">
+                                <i class="fas fa-file-excel me-1"></i>
+                                استيراد مهام من إكسل
+                            </button>
+                            <a href="@Url.Content("~/Template/Template.xlsx")" class="small mt-1 text-decoration-underline" download>
+                                تحميل قالب الإكسل
+                            </a>
+                            <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;" />
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -309,12 +319,12 @@
                                     @foreach (var task in Model.Tasks)
                                     {
                                         var statusClass = task.DoneRatio >= 1.0m ? "badge-success" :
-                                            task.ExpectedEndDate < DateTime.Today ? "badge-danger" :
-                                            task.DoneRatio > 0 ? "badge-info" : "badge-warning";
+                                        task.ExpectedEndDate < DateTime.Today ? "badge-danger" :
+                                        task.DoneRatio > 0 ? "badge-info" : "badge-warning";
 
                                         var statusText = task.DoneRatio >= 1.0m ? "مكتملة" :
-                                            task.ExpectedEndDate < DateTime.Today ? "متأخرة" :
-                                            task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
+                                        task.ExpectedEndDate < DateTime.Today ? "متأخرة" :
+                                        task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
 
                                         <tr>
                                             <td data-order="@((task.DoneRatio ?? 0m) >= 1 ? 3 : (task.ExpectedEndDate < DateTime.Today ? 0 : (task.DoneRatio > 0 ? 2 : 1)))"><span class="badge @statusClass">@statusText</span></td>
@@ -361,7 +371,25 @@
             </div>
         </div>
 
-   
+
+    </div>
+</div>
+
+<!-- Import Preview Modal -->
+<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" id="importPreviewContent">
+            <div class="modal-header">
+                <h5 class="modal-title">معاينة الاستيراد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center text-muted">يرجى اختيار ملف إكسل لعرض المعاينة هنا.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -391,7 +419,7 @@
 
     <!-- Apex Chart -->
     <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script> 
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
 
     <!-- Chart piety plugin files -->
     <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
@@ -462,71 +490,202 @@
                     infoFiltered: '(مصفاة من إجمالي _MAX_ مُدخل)'
                 }
             });
+
+            // Import button + upload flow
+            const btn = document.getElementById('btnImportExcel');
+            const fileInput = document.getElementById('excelFileInput');
+            const modalEl = document.getElementById('importPreviewModal');
+            const modal = new bootstrap.Modal(modalEl);
+            btn?.addEventListener('click', function(){ fileInput?.click(); });
+            fileInput?.addEventListener('change', function(){
+                if (!fileInput.files || fileInput.files.length === 0) return;
+                var formData = new FormData();
+                formData.append('projectId', '@Model.Id');
+                formData.append('file', fileInput.files[0]);
+                fetch('@Url.Action("UploadExcel", "Import")', {
+                    method: 'POST',
+                    body: formData
+                }).then(async r => {
+                    if (!r.ok) {
+                        const t = await r.text();
+                        throw new Error(t || 'فشل رفع الملف.');
+                    }
+                    return r.json();
+                }).then(data => {
+                    document.getElementById('importPreviewContent').innerHTML = data.html;
+                    bindTasksImportConfirm();
+                    modal.show();
+                }).catch(err => {
+                    alert('خطأ: ' + (err.message || 'فشل معالجة الملف'));
+                }).finally(() => {
+                    fileInput.value = '';
+                });
+            });
         });
     </script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-        var options = {
-            chart: {
-                type: 'pie',
-                height: 250
-            },
-            series: [
-                @completed,
-                @inProgress,
-                @notStarted,
-                @overdue
-            ],
-            labels: ['مكتملة', 'قيد التنفيذ', 'لم تبدأ', 'متأخرة'],
-            colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
-            legend:
-            {
-                position: 'bottom',
-                fontFamily: 'inherit',
-                labels: { colors: 'inherit' }
-            },
-            dataLabels: {
-                enabled: true,
-                formatter: function (val, opts) {
-                    return opts.w.globals.series[opts.seriesIndex];
+            document.addEventListener("DOMContentLoaded", function () {
+            var options = {
+                chart: {
+                    type: 'pie',
+                    height: 250
+                },
+                series: [
+                    @completed,
+                    @inProgress,
+                    @notStarted,
+                    @overdue
+                ],
+                labels: ['مكتملة', 'قيد التنفيذ', 'لم تبدأ', 'متأخرة'],
+                colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
+                legend:
+                {
+                    position: 'bottom',
+                    fontFamily: 'inherit',
+                    labels: { colors: 'inherit' }
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        return opts.w.globals.series[opts.seriesIndex];
+                    }
                 }
-            }
-        };
-        var chart = new ApexCharts(document.querySelector("#tasksPieChart"), options);
-        chart.render();
-    });
+            };
+            var chart = new ApexCharts(document.querySelector("#tasksPieChart"), options);
+            chart.render();
+        });
     </script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-        var options = {
-            chart: {
-                type: 'pie',
-                height: 250
-            },
-            series: [
-                @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0),
-                @(projectCost > 0 ? 100 - Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)
-            ],
-            labels: ['تكلفة المهام', 'بقية تكلفة المشروع'],
-                colors: ['#00c292', '#e0cb09'],
-            legend: {
-                position: 'bottom',
-                fontFamily: 'inherit',
-                labels: { colors: 'inherit' }
-            },
-            dataLabels: {
-                enabled: true,
-                formatter: function (val) {
-                    return val + '%';
+            document.addEventListener("DOMContentLoaded", function () {
+            var options = {
+                chart: {
+                    type: 'pie',
+                    height: 250
+                },
+                series: [
+                    @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0),
+                    @(projectCost > 0 ? 100 - Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)
+                ],
+                labels: ['تكلفة المهام', 'بقية تكلفة المشروع'],
+                    colors: ['#00c292', '#e0cb09'],
+                legend: {
+                    position: 'bottom',
+                    fontFamily: 'inherit',
+                    labels: { colors: 'inherit' }
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val) {
+                        return val + '%';
+                    }
                 }
-            }
-        };
-        var chart = new ApexCharts(document.querySelector("#costPieChart"), options);
-        chart.render();
-    });
+            };
+            var chart = new ApexCharts(document.querySelector("#costPieChart"), options);
+            chart.render();
+        });
     </script>
 
- 
+    <script>
+        // Bind confirm handler after preview HTML is injected
+        function bindTasksImportConfirm() {
+            const btn = document.getElementById('confirmImportBtn');
+            if (!btn) return;
+
+            const showImportError = (message) => {
+                const box = document.querySelector('#importPreviewModal #importErrorBox');
+                if (box) {
+                    box.textContent = message || 'حدث خطأ أثناء الحفظ';
+                    box.classList.remove('d-none');
+                    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // fallback
+                    console.error(message);
+                }
+            };
+
+            const clearImportError = () => {
+                const box = document.querySelector('#importPreviewModal #importErrorBox');
+                if (box) {
+                    box.textContent = '';
+                    box.classList.add('d-none');
+                }
+            };
+
+            const readErrorMessage = async (r) => {
+                try {
+                    const ct = r.headers.get('content-type') || '';
+                    if (ct.includes('application/json')) {
+                        const j = await r.json();
+                        return j?.message || JSON.stringify(j);
+                    }
+                    return await r.text();
+                } catch {
+                    return 'حدث خطأ أثناء الحفظ';
+                }
+            };
+
+            btn.onclick = async function () {
+                clearImportError();
+
+                const projectId = parseInt(btn.getAttribute('data-project-id')) || 0;
+                const confirmUrl = btn.getAttribute('data-confirm-url') || '@Url.Action("ConfirmImport", "Import")';
+
+                const table = document.querySelector('#importPreviewModal table');
+                const inputs = table ? table.querySelectorAll('input[data-index]') : [];
+                let maxIndex = -1;
+                inputs.forEach(inp => {
+                    const idx = parseInt(inp.getAttribute('data-index'));
+                    if (!isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
+                });
+
+                const getVal = (i, field) => {
+                    const el = document.querySelector('input[data-index="' + i + '"][data-field="' + field + '"]');
+                    return el ? el.value : '';
+                };
+
+                const rows = [];
+                for (let i = 0; i <= maxIndex; i++) {
+                    rows.push({
+                        stageName: getVal(i, 'StageName'),
+                        taskName: getVal(i, 'TaskName'),
+                        implementorDepartment: getVal(i, 'ImplementorDepartment'),
+                        departmentResponsible: getVal(i, 'DepartmentResponsible'),
+                        definitionOfDone: getVal(i, 'DefinitionOfDone'),
+                        manyDaysToComplete: parseInt(getVal(i, 'ManyDaysToComplete')) || null,
+                        expectedStartDate: getVal(i, 'ExpectedStartDate') || null,
+                        expectedEndDate: getVal(i, 'ExpectedEndDate') || null,
+                        doneRatio: parseFloat(getVal(i, 'DoneRatio')) || 0,
+                        plannedPercent: parseFloat(getVal(i, 'PlannedPercent')) || null,
+                        plannedCost: parseFloat(getVal(i, 'PlannedCost')) || null
+                    });
+                }
+
+                try {
+                    const r = await fetch(confirmUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ projectId, rows })
+                    });
+
+                    if (!r.ok) {
+                        const msg = await readErrorMessage(r);
+                        showImportError(msg);
+                        return;
+                    }
+
+                    // Success
+                    const modalEl = document.getElementById('importPreviewModal');
+                    const instance = bootstrap.Modal.getInstance(modalEl);
+                    instance?.hide();
+                    window.location.reload();
+
+                } catch (err) {
+                    showImportError(err?.message || 'حدث خطأ أثناء الحفظ');
+                }
+            };
+        }
+    </script>
 }
