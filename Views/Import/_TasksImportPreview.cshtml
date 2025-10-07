@@ -5,6 +5,15 @@
 <style>
     /* Widen all inputs in this import preview */
     .import-preview-modal table input.form-control { min-width: 220px; }
+    /* Wider errors column */
+    .import-preview-modal table th.errors-col,
+    .import-preview-modal table td.errors-col {
+        min-width: 360px;
+        width: 360px;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
 </style>
 <div class="modal-header">
     <h5 class="modal-title">معاينة الاستيراد</h5>
@@ -16,7 +25,7 @@
 
     @if (hasErrors)
     {
-        <div class="alert alert-danger">توجد أخطاء في بعض الصفوف. يرجى مراجعتها قبل التأكيد.</div>
+        <div class="alert alert-danger">توجد أخطاء في بعض الصفوف. لا يمكن تعديل الصفوف التي تحتوي أخطاء هنا. يرجى تصحيح الأخطاء في ملف الاستيراد ثم إعادة رفع الملف.</div>
     }
     <div class="table-responsive" style="max-height:60vh; overflow:auto;">
         <table class="table table-bordered table-sm align-middle">
@@ -33,26 +42,28 @@
                     <th>النسبة الفعلية</th>
                     <th>النسبة المخطط</th>
                     <th>الصرف المخطط</th>
-                    <th>الأخطاء</th>
+                    <th class="errors-col">الأخطاء</th>
                 </tr>
             </thead>
             <tbody>
             @for (var i = 0; i < Model.Rows.Count; i++)
             {
                 var r = Model.Rows[i];
-                <tr class="@(r.Errors.Any() ? "table-danger" : "")">
-                    <td><input class="form-control form-control-sm" value="@r.StageName" data-field="StageName" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.TaskName" data-field="TaskName" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.ImplementorDepartment" data-field="ImplementorDepartment" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.DepartmentResponsible" data-field="DepartmentResponsible" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.DefinitionOfDone" data-field="DefinitionOfDone" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.ManyDaysToComplete" data-field="ManyDaysToComplete" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.ExpectedStartDate?.ToString("yyyy-MM-dd")" data-field="ExpectedStartDate" data-index="@i" type="date" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.ExpectedEndDate?.ToString("yyyy-MM-dd")" data-field="ExpectedEndDate" data-index="@i" type="date" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.DoneRatio" data-field="DoneRatio" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.PlannedPercent" data-field="PlannedPercent" data-index="@i" /></td>
-                    <td><input class="form-control form-control-sm" value="@r.PlannedCost" data-field="PlannedCost" data-index="@i" /></td>
-                    <td>
+                var rowHasErrors = r.Errors.Any();
+                var rowDisableNote = "هذا الصف يحتوي على أخطاء؛ لا يمكن تعديله هنا. يرجى تصحيح الأخطاء في ملف الاستيراد ثم إعادة رفع الملف.";
+                <tr class="@(rowHasErrors ? "table-danger" : "")">
+                    <td><input class="form-control form-control-sm" value="@r.StageName" data-field="StageName" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.TaskName" data-field="TaskName" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ImplementorDepartment" data-field="ImplementorDepartment" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DepartmentResponsible" data-field="DepartmentResponsible" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DefinitionOfDone" data-field="DefinitionOfDone" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ManyDaysToComplete" data-field="ManyDaysToComplete" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ExpectedStartDate?.ToString("yyyy-MM-dd")" data-field="ExpectedStartDate" data-index="@i" type="date" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.ExpectedEndDate?.ToString("yyyy-MM-dd")" data-field="ExpectedEndDate" data-index="@i" type="date" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.DoneRatio" data-field="DoneRatio" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.PlannedPercent" data-field="PlannedPercent" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td><input class="form-control form-control-sm" value="@r.PlannedCost" data-field="PlannedCost" data-index="@i" @(rowHasErrors ? $"disabled title='{rowDisableNote}'" : "") /></td>
+                    <td class="errors-col">
                         @if (r.Errors.Any())
                         {
                             <ul class="mb-0 small">
@@ -69,18 +80,32 @@
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
     <button type="button"
-            class="btn btn-primary"
+            class="btn btn-primary @(hasErrors ? "disabled" : "")"
             id="confirmImportBtn"
             data-project-id="@Model.ProjectId"
-            data-confirm-url="@Url.Action("ConfirmImport","Import")">
+            data-confirm-url="@Url.Action("ConfirmImport","Import")" @(hasErrors ? "disabled" : "")>
         تأكيد الحفظ
     </button>
 </div>
 <script>
 
 (function(){
+    // Ensure confirm button appears dimmed/disabled when there are server-detected errors
+    var confirmBtn = document.getElementById('confirmImportBtn');
+    if(confirmBtn){
+        var hasErrorRows = document.querySelectorAll('tr.table-danger').length > 0;
+        if(hasErrorRows){
+            confirmBtn.classList.add('disabled');
+            confirmBtn.setAttribute('aria-disabled','true');
+        }
+    }
+
     // Collect edited data and post back
     document.getElementById('confirmImportBtn')?.addEventListener('click', function(){
+        var isDisabled = this.classList.contains('disabled') || this.hasAttribute('disabled');
+        if(isDisabled){
+            return; // Prevent submission when disabled
+        }
         var projectId = this.getAttribute('data-project-id');
         var confirmUrl = this.getAttribute('data-confirm-url');
         var rows = [];
