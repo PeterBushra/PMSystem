@@ -60,7 +60,6 @@ public partial class AdhmmcPmContext : DbContext
             entity.ToTable("Task");
 
             entity.Property(e => e.AttachementFilePath).HasMaxLength(1050);
-            entity.Property(e => e.AttachmentContentType).HasMaxLength(150);
             entity.Property(e => e.Cost).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.DefinationOfDone).HasMaxLength(4000);

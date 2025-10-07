@@ -1,6 +1,11 @@
 ﻿using Jobick.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+using System.IO;
+using System.Text;
 
 namespace Jobick.Controllers;
 
@@ -8,7 +13,7 @@ namespace Jobick.Controllers;
 /// Handles creation, editing, deletion and attachment download for tasks.
 /// Uses services to interact with EF Core context and keeps controller slim.
 /// </summary>
-public class TasksController(ITaskService _taskService, IProjectService _projectService) : Controller
+public class TasksController(ITaskService _taskService, IProjectService _projectService, IWebHostEnvironment _env, IAttachmentService _attachmentService) : Controller
 {
     // Static, readonly map for common content types to file extensions used during downloads.
     private static readonly IReadOnlyDictionary<string, string> _contentTypeToExtension = new Dictionary<string, string>
@@ -21,6 +26,46 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         { "application/vnd.ms-excel", ".xls" },
         { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx" }
     };
+
+    private string GetAttachmentsRoot()
+    {
+        // Create under content root: <project>/Attachments
+        var root = Path.Combine(_env.ContentRootPath, "Attachments");
+        if (!Directory.Exists(root))
+        {
+            Directory.CreateDirectory(root);
+        }
+        return root;
+    }
+
+    private static string SanitizeFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return "file";
+
+        // Take only the file name part and replace invalid chars
+        var name = Path.GetFileName(fileName);
+        var invalid = Path.GetInvalidFileNameChars();
+        var sb = new StringBuilder(name.Length);
+        foreach (var ch in name)
+        {
+            sb.Append(invalid.Contains(ch) ? '_' : ch);
+        }
+
+        // collapse spaces
+        var sanitized = sb.ToString().Trim();
+        if (sanitized.Length == 0)
+            sanitized = "file";
+
+        // guard against extremely long names
+        return sanitized.Length > 180 ? sanitized[^180..] : sanitized; // keep last 180 chars to preserve extension
+    }
+
+    private async System.Threading.Tasks.Task<string> SaveAttachmentAsync(IFormFile file)
+    {
+        // Delegate to the shared service
+        return await _attachmentService.SaveAsync(file);
+    }
 
     /// <summary>
     /// Returns the create form for a task with defaults and cost context in ViewBag.
@@ -83,24 +128,20 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         {
             if (file == null || file.Length == 0)
             {
-                // Repopulate ViewBag context for the UI before returning
                 await PopulateCreateViewBagsAsync(model.ProjectId);
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
                 return View("CreateTask", model);
             }
-            using (var ms = new MemoryStream())
-            {
-                await file.CopyToAsync(ms);
-                model.AttachmentData = ms.ToArray();
-                model.AttachmentFileName = file.FileName.GetHashCode();
-                model.AttachmentContentType = file.ContentType;
-            }
+            // Save to disk and store relative path
+            model.AttachmentFilePath = await SaveAttachmentAsync(file);
+            // Clear legacy fields (no DB binary storage going forward)
+            model.AttachmentFileName = null;
         }
         else
         {
-            model.AttachmentData = null;
+            // Detach any previous association; do not delete any file
+            model.AttachmentFilePath = null;
             model.AttachmentFileName = null;
-            model.AttachmentContentType = null;
         }
 
         if (!ModelState.IsValid)
@@ -199,7 +240,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         var file = Request.Form.Files["Attachment"];
         if (model.DoneRatio == 100.0m) // 100% (from form as percentage)
         {
-            if ((file == null || file.Length == 0) && (model.AttachmentData == null || model.AttachmentData.Length == 0))
+            if ((file == null || file.Length == 0) && string.IsNullOrWhiteSpace(model.AttachmentFilePath))
             {
                 await PopulateEditViewBagsAsync(model);
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
@@ -207,21 +248,17 @@ public class TasksController(ITaskService _taskService, IProjectService _project
             }
             if (file != null && file.Length > 0)
             {
-                using (var ms = new MemoryStream())
-                {
-                    await file.CopyToAsync(ms);
-                    model.AttachmentData = ms.ToArray();
-                    model.AttachmentFileName = file.FileName.GetHashCode();
-                    model.AttachmentContentType = file.ContentType;
-                }
+                // Save a new file; do not delete existing file
+                model.AttachmentFilePath = await SaveAttachmentAsync(file);
             }
-            // else: keep existing attachment if present
+            // Clear legacy fields
+            model.AttachmentFileName = null;
         }
         else
         {
-            model.AttachmentData = null;
+            // Disassociate file when not complete (do not delete physical file)
+            model.AttachmentFilePath = null;
             model.AttachmentFileName = null;
-            model.AttachmentContentType = null;
         }
 
         if (!ModelState.IsValid)
@@ -275,25 +312,17 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     [Authorize(Roles = "Admin")]
     /// <summary>
     /// Allows users to download the stored attachment for the given task id.
-    /// Chooses a best-effort file name based on the task id and content type.
+    /// Chooses a best-effort file name based on the task id and stored path.
     /// </summary>
     public async Task<IActionResult> DownloadAttachment(int id)
     {
         var task = await _taskService.GetTaskAsync(id);
-        if (task?.AttachmentData == null || task.AttachmentData.Length == 0)
+        var relPath = task?.AttachmentFilePath;
+        if (!_attachmentService.TryGetDownloadInfo(relPath, id, out var info) || info == null)
             return NotFound();
 
-        // Try to get the extension from the content type
-        string extension = "";
-        if (!string.IsNullOrEmpty(task.AttachmentContentType))
-        {
-            if (_contentTypeToExtension.TryGetValue(task.AttachmentContentType, out var ext))
-                extension = ext;
-        }
-
-        // If you stored the original file name, use its extension
-        string fileName = "Attachment_" + id + extension;
-        return File(task.AttachmentData, task.AttachmentContentType ?? "application/octet-stream", fileName);
+        var stream = new System.IO.FileStream(info.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(stream, info.ContentType, info.DownloadName);
     }
 
     /// <summary>

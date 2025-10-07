@@ -15,7 +15,7 @@ namespace Jobick.Controllers;
 /// All actions require authentication; some require Admin role.
 /// </summary>
 [Authorize]
-public class ProjectsController(IProjectService _projectService, IProjectKpiService _kpiService) : Controller
+public class ProjectsController(IProjectService _projectService, IProjectKpiService _kpiService, IAttachmentService _attachmentService) : Controller
 {
     /// <summary>
     /// Lists all projects with their related data using the backing service.

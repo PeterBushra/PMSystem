@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jobick.Models;
 
@@ -50,11 +51,9 @@ public partial class Task
 
     public DateTime CreatedDate { get; set; }
 
+    // Legacy fields (kept for backward compatibility; not used for storage going forward)
     public int? AttachmentFileName { get; set; }
 
-    public byte[]? AttachmentData { get; set; }
-
-    public string? AttachmentContentType { get; set; }
     public virtual User? CreatedByNavigation { get; set; }
 
     public virtual Project Project { get; set; } = null!;
@@ -62,6 +61,15 @@ public partial class Task
     public decimal? Weight { get; set; }
 
     public decimal? Cost { get; set; }
+
+    // Existing column with a typo - used as the backing store in the database
     public string? AttachementFilePath { get; set; }
 
+    // New property for cleaner API; proxies to the existing DB column to avoid migrations
+    [NotMapped]
+    public string? AttachmentFilePath
+    {
+        get => AttachementFilePath;
+        set => AttachementFilePath = value;
+    }
 }

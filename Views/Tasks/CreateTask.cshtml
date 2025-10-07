@@ -34,7 +34,7 @@
                               data-has-total="@hasProjectTotal.ToString().ToLower()"
                               data-existing-cost="@existingTasksCost.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                               data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                              data-has-existing-attachment="@((Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0).ToString().ToLower())">
+                              data-has-existing-attachment="@((!string.IsNullOrEmpty(Model.AttachmentFilePath) && Model.Id != 0).ToString().ToLower())">
                             <!-- Hidden fields -->
                             <input type="hidden" asp-for="Id" />
                             <input type="hidden" asp-for="ProjectId" />
@@ -42,9 +42,8 @@
                             <input type="hidden" asp-for="CreatedBy" />
                             <input type="hidden" asp-for="Project" />
                             <input type="hidden" asp-for="CreatedByNavigation" />
-                            <input type="hidden" asp-for="AttachmentData" />
-                            <input type="hidden" asp-for="AttachmentContentType" />
                             <input type="hidden" asp-for="AttachmentFileName" />
+                            <input type="hidden" asp-for="AttachmentFilePath" />
 
                             <div class="row">
                                 <div class="col-md-6">
@@ -115,7 +114,7 @@
                                     <div class="mb-3" id="attachmentContainer" style="display:@(initialShowAttachment ? "block" : "none");">
                                         <label for="Attachment" class="form-label fw-bold">رفع المرفق (مطلوب عند اكتمال المهمة)</label>
                                         <small class="form-text text-muted d-block mb-2">الامتدادات المدعومة: PDF، JPG، PNG، DOC، DOCX، XLS، XLSX</small>
-                                        @if (Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0)
+                                        @if (!string.IsNullOrEmpty(Model.AttachmentFilePath) && Model.Id != 0)
                                         {
                                             <div class="mb-2">
                                                 <span class="text-success">تم إرفاق ملف بالفعل.</span>

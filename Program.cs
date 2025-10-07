@@ -15,6 +15,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IProjectKpiService, ProjectKpiService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IAttachmentService, AttachmentService>(); // Centralized attachment handling
 
 // --- ADD AUTHENTICATION ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

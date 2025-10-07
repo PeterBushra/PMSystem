@@ -327,7 +327,7 @@
                                             <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
                                             <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
                                             <td class="text-center">
-                                                @if ((task.DoneRatio ?? 0m) >= 1.0m && task.AttachmentData != null && task.AttachmentData.Length > 0)
+                                                @if ((task.DoneRatio ?? 0m) >= 1.0m && !string.IsNullOrEmpty(task.AttachmentFilePath))
                                                 {
                                                     <a asp-controller="Tasks" asp-action="DownloadAttachment" asp-route-id="@task.Id" class="btn btn-success shadow btn-xs sharp" title="تحميل المرفق">
                                                         <i class="fa fa-download"></i>
