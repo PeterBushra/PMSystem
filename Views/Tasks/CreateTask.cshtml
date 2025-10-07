@@ -35,7 +35,8 @@
                               data-project-total="@(hasProjectTotal ? projectTotalCost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")"
                               data-has-total="@hasProjectTotal.ToString().ToLower()"
                               data-existing-cost="@existingTasksCost"
-                              data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                              data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                              data-has-existing-attachment="@((Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0).ToString().ToLower())">
                             <!-- Hidden fields -->
                             <input type="hidden" asp-for="Id" />
                             <input type="hidden" asp-for="ProjectId" />
@@ -81,17 +82,11 @@
                                         <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="showActualEndDate" @(Model.ActualEndDate != DateTime.MinValue ? "checked" : "") />
-                                            <label class="form-check-label" for="showActualEndDate">تعيين تاريخ الانتهاء الفعلي</label>
-                                        </div>
-                                        <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
-                                            <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
-                                            <input asp-for="ActualEndDate" type="date" class="form-control js-date" dir="rtl" style="text-align:right;" />
-                                            <span asp-validation-for="ActualEndDate" class="text-danger"></span>
-                                            <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
-                                        </div>
+                                    <div class="mb-3" id="actualEndDateContainer" style="display:@(initialShowAttachment ? "block" : "none");">
+                                        <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
+                                        <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date" dir="rtl" style="text-align:right;" />
+                                        <span asp-validation-for="ActualEndDate" class="text-danger"></span>
+                                        <small class="form-text text-muted">مطلوب عند اكتمال المهمة بنسبة 100%.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -193,6 +188,13 @@
             const otherWeight = parseFloat(form.getAttribute('data-other-weight-sum')) || 0; // sum of other tasks' weights
             const limit = 100;
 
+            let weightInvalid = false;
+            let completionInvalid = false;
+            function applySaveState() {
+                if (!saveBtn) return;
+                saveBtn.disabled = !!(weightInvalid || completionInvalid);
+            }
+
             function formatPct(n) {
                 try { return n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
                 catch { return (Math.round(n * 100) / 100).toString(); }
@@ -215,13 +217,14 @@
                     if (weightError) {
                         weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.\u200f';
                     }
-                    if (saveBtn) saveBtn.disabled = true;
+                    weightInvalid = true;
                 } else {
                     weightInput.classList.remove('is-invalid');
                     weightInput.setCustomValidity('');
                     if (weightError) weightError.textContent = '';
-                    if (saveBtn) saveBtn.disabled = false;
+                    weightInvalid = false;
                 }
+                applySaveState();
             }
 
             if (weightInput) {
@@ -254,37 +257,88 @@
 
             if (costInput) { costInput.addEventListener('input', updateCostWarning); updateCostWarning(); }
 
-            // ---- Attachment toggle on done ratio ----
+            // ---- Attachment and Actual End Date toggle on done ratio ----
             const doneRatioInput = document.getElementById('doneRatioInput');
             const attachmentContainer = document.getElementById('attachmentContainer');
-            if (doneRatioInput && attachmentContainer) {
-                function toggleAttachment() {
-                    const ratio = parseFloat(doneRatioInput.value) || 0;
-                    attachmentContainer.style.display = (ratio >= 100) ? 'block' : 'none';
-                    if (ratio < 100) {
-                        const att = document.getElementById('Attachment');
-                        if (att) att.value = '';
-                        const err = document.getElementById('attachmentError');
-                        if (err) err.textContent = '';
+            const actualEndDateContainer = document.getElementById('actualEndDateContainer');
+            const actualEndDateInput = document.getElementById('actualEndDateInput');
+            const hasExistingAttachment = form.getAttribute('data-has-existing-attachment') === 'true';
+
+            function validateCompletionRequired() {
+                const ratio = parseFloat(doneRatioInput?.value) || 0;
+                let actualOk = true;
+                let attachOk = true;
+
+                if (ratio >= 100) {
+                    actualOk = !!(actualEndDateInput && actualEndDateInput.value);
+
+                    const att = document.getElementById('Attachment');
+                    attachOk = hasExistingAttachment || (att && att.files && att.files.length > 0);
+
+                    // Show field-level feedback
+                    if (actualEndDateInput) {
+                        if (!actualOk) {
+                            actualEndDateInput.classList.add('is-invalid');
+                            actualEndDateInput.setCustomValidity('مطلوب عند اكتمال المهمة');
+                        } else {
+                            actualEndDateInput.classList.remove('is-invalid');
+                            actualEndDateInput.setCustomValidity('');
+                        }
                     }
+                    const attErr = document.getElementById('attachmentError');
+                    if (attErr) attErr.textContent = attachOk ? '' : 'المرفق مطلوب عند اكتمال المهمة بنسبة 100%.';
+                } else {
+                    if (actualEndDateInput) {
+                        actualEndDateInput.classList.remove('is-invalid');
+                        actualEndDateInput.setCustomValidity('');
+                    }
+                    const attErr = document.getElementById('attachmentError');
+                    if (attErr) attErr.textContent = '';
                 }
-                doneRatioInput.addEventListener('input', toggleAttachment);
-                doneRatioInput.addEventListener('change', toggleAttachment);
-                toggleAttachment();
+
+                completionInvalid = !(actualOk && attachOk);
+                applySaveState();
             }
 
-            // ---- Show / hide actual end date ----
-            const checkbox = document.getElementById('showActualEndDate');
-            const container = document.getElementById('actualEndDateContainer');
-            if (checkbox && container) {
-                checkbox.addEventListener('change', function () {
-                    container.style.display = this.checked ? 'block' : 'none';
-                    if (!this.checked) {
-                        const input = container.querySelector('input[type="text"]');
-                        if (input) input.value = "";
+            if (doneRatioInput) {
+                function toggleCompletionFields() {
+                    const ratio = parseFloat(doneRatioInput.value) || 0;
+                    const show = ratio >= 100;
+
+                    if (attachmentContainer) {
+                        attachmentContainer.style.display = show ? 'block' : 'none';
+                        if (!show) {
+                            const att = document.getElementById('Attachment');
+                            if (att) att.value = '';
+                            const err = document.getElementById('attachmentError');
+                            if (err) err.textContent = '';
+                        }
                     }
-                });
+
+                    if (actualEndDateContainer && actualEndDateInput) {
+                        actualEndDateContainer.style.display = show ? 'block' : 'none';
+                        if (show) {
+                            actualEndDateInput.setAttribute('required', 'required');
+                            actualEndDateInput.setCustomValidity('');
+                        } else {
+                            actualEndDateInput.removeAttribute('required');
+                            actualEndDateInput.value = '';
+                            actualEndDateInput.setCustomValidity('');
+                        }
+                    }
+
+                    validateCompletionRequired();
+                }
+                doneRatioInput.addEventListener('input', toggleCompletionFields);
+                doneRatioInput.addEventListener('change', toggleCompletionFields);
+                toggleCompletionFields();
             }
+
+            // Revalidate on attachment or actual end date changes
+            document.getElementById('Attachment')?.addEventListener('change', validateCompletionRequired);
+            actualEndDateInput?.addEventListener('input', validateCompletionRequired);
+            actualEndDateInput?.addEventListener('change', validateCompletionRequired);
+
         })();
     </script>
 }
