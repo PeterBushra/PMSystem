@@ -49,12 +49,12 @@
                                 <div class="col-md-6">
                                     <!-- Inputs -->
                                     <div class="mb-3">
-                                        <label asp-for="Task1" class="form-label fw-bold">المهمة</label>
+                                        <label asp-for="Task1" class="form-label fw-bold">المهام</label>
                                         <input asp-for="Task1" class="form-control" required maxlength="50" />
                                         <span asp-validation-for="Task1" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
-                                        <label asp-for="StageName" class="form-label fw-bold">اسم المرحلة</label>
+                                        <label asp-for="StageName" class="form-label fw-bold">المراحل</label>
                                         <input asp-for="StageName" class="form-control" required maxlength="50" />
                                         <span asp-validation-for="StageName" class="text-danger"></span>
                                     </div>
@@ -64,17 +64,17 @@
                                         <span asp-validation-for="ImplementorDepartment" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
-                                        <label asp-for="DepartmentResponsible" class="form-label fw-bold">القسم المسؤول</label>
+                                        <label asp-for="DepartmentResponsible" class="form-label fw-bold">الادارة المسؤولة</label>
                                         <input asp-for="DepartmentResponsible" class="form-control" required maxlength="50" />
                                         <span asp-validation-for="DepartmentResponsible" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
-                                        <label asp-for="ExpectedStartDate" class="form-label fw-bold">تاريخ البدء المتوقع</label>
+                                        <label asp-for="ExpectedStartDate" class="form-label fw-bold">تاريخ البدء </label>
                                         <input asp-for="ExpectedStartDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
                                         <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
-                                        <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء المتوقع</label>
+                                        <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء </label>
                                         <input asp-for="ExpectedEndDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
                                         <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                                     </div>
@@ -88,7 +88,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label asp-for="Weight" class="form-label fw-bold">الوزن</label>
+                                        <label asp-for="Weight" class="form-label fw-bold">النسبة المخطط (الوزن)</label>
                                         <input asp-for="Weight" id="weightInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                         <span asp-validation-for="Weight" class="text-danger"></span>
                                         <small class="form-text text-muted">ادخل وزن المهمة بحد اقصي 100</small>
@@ -99,7 +99,7 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="DoneRatio" class="form-label fw-bold">نسبة الإنجاز</label>
+                                        <label asp-for="DoneRatio" class="form-label fw-bold">النسبة الفعلية </label>
                                         <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                         <span asp-validation-for="DoneRatio" class="text-danger"></span>
                                         <small class="form-text text-muted">أدخل قيمة بين 0 - 100</small>
@@ -135,13 +135,13 @@
                                         <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
-                                        <label asp-for="ManyDaysToComplete" class="form-label fw-bold">عدد الأيام لإكمال المهمة</label>
+                                        <label asp-for="ManyDaysToComplete" class="form-label fw-bold">المدة المطلوبة للانتهاء (ايام عمل)</label>
                                         <input asp-for="ManyDaysToComplete" type="number" class="form-control" required />
                                         <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="Cost" class="form-label fw-bold">التكلفة</label>
+                                        <label asp-for="Cost" class="form-label fw-bold">الصرف المخطط</label>
                                         <input asp-for="Cost" id="costInput" type="number" step="0.01" class="form-control" min="0" required />
                                         <span asp-validation-for="Cost" class="text-danger"></span>
                                         <small class="form-text text-muted d-block">
