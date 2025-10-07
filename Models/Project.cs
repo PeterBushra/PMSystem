@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace Jobick.Models;
 
-/// <summary>
-/// EF Core entity representing a project. Holds metadata and navigation to related tasks.
-/// </summary>
 public partial class Project
 {
     public int Id { get; set; }

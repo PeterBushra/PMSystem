@@ -9,13 +9,10 @@
     decimal existingTasksCost = ViewBag.ExistingTasksCost is decimal e ? e : 0m;
 
     // Sum of weights of all OTHER tasks in the same project (controller should provide this)
-    // For Add: sum of all existing tasks' weights. For Edit: sum excluding current task weight.
     decimal otherTasksWeight = ViewBag.OtherTasksWeight is decimal ew ? ew : 0m;
 
-    // Edit-mode 100% done warning (support 1.0 and 100.0 scales)
-    bool isEditMode = Model.Id != 0;
-    decimal done = Model.DoneRatio ?? 0m;
-    bool isFullDone = (done >= 1.0m);
+    // Determine initial visibility for attachment container (percentage value expected)
+    var initialShowAttachment = Model.DoneRatio.HasValue && Model.DoneRatio.Value >= 100m;
 }
 
 <div class="content-body" dir="rtl" style="text-align:right;">
@@ -39,7 +36,7 @@
                               data-has-total="@hasProjectTotal.ToString().ToLower()"
                               data-existing-cost="@existingTasksCost"
                               data-other-weight-sum="@otherTasksWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                            <!-- حقول مخفية للسمات غير القابلة للتحرير -->
+                            <!-- Hidden fields -->
                             <input type="hidden" asp-for="Id" />
                             <input type="hidden" asp-for="ProjectId" />
                             <input type="hidden" asp-for="CreatedDate" />
@@ -52,7 +49,7 @@
 
                             <div class="row">
                                 <div class="col-md-6">
-                                    <!-- حقول الإدخال المرئية -->
+                                    <!-- Inputs -->
                                     <div class="mb-3">
                                         <label asp-for="Task1" class="form-label fw-bold">المهمة</label>
                                         <input asp-for="Task1" class="form-control" required maxlength="50" />
@@ -87,9 +84,7 @@
                                     <div class="mb-3">
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" id="showActualEndDate" @(Model.ActualEndDate != DateTime.MinValue ? "checked" : "") />
-                                            <label class="form-check-label" for="showActualEndDate">
-                                                تعيين تاريخ الانتهاء الفعلي
-                                            </label>
+                                            <label class="form-check-label" for="showActualEndDate">تعيين تاريخ الانتهاء الفعلي</label>
                                         </div>
                                         <div id="actualEndDateContainer" style="display:@(Model.ActualEndDate != DateTime.MinValue ? "block" : "none");">
                                             <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
@@ -98,10 +93,8 @@
                                             <small class="form-text text-muted">اتركه فارغًا إذا لم تكتمل المهمة.</small>
                                         </div>
                                     </div>
-                                
                                 </div>
                                 <div class="col-md-6">
-
                                     <div class="mb-3">
                                         <label asp-for="Weight" class="form-label fw-bold">الوزن</label>
                                         <input asp-for="Weight" id="weightInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
@@ -118,18 +111,17 @@
                                         <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
                                         <span asp-validation-for="DoneRatio" class="text-danger"></span>
                                         <small class="form-text text-muted">أدخل قيمة بين 0 - 100</small>
-                                        @if (isEditMode && isFullDone)
+                                        @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
                                         {
                                             <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
                                                 <strong>تحذير !</strong> - سيتم حذف المرفق اذا تم تغيير نسبة الانجاز
                                             </div>
                                         }
                                     </div>
-                                    <div class="mb-3" id="attachmentContainer" style="display:none;">
+
+                                    <div class="mb-3" id="attachmentContainer" style="display:@(initialShowAttachment ? "block" : "none");">
                                         <label for="Attachment" class="form-label fw-bold">رفع المرفق (مطلوب عند اكتمال المهمة)</label>
-                                        <small class="form-text text-muted d-block mb-2">
-                                            الامتدادات المدعومة: PDF، JPG، PNG، DOC، DOCX، XLS، XLSX
-                                        </small>
+                                        <small class="form-text text-muted d-block mb-2">الامتدادات المدعومة: PDF، JPG، PNG، DOC، DOCX، XLS، XLSX</small>
                                         @if (Model.AttachmentData != null && Model.AttachmentData.Length > 0 && Model.Id != 0)
                                         {
                                             <div class="mb-2">
@@ -139,11 +131,11 @@
                                         }
                                         else
                                         {
-                                            <input type="file" name="Attachment" id="Attachment" class="form-control"
-                                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
+                                            <input type="file" name="Attachment" id="Attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
                                             <span class="text-danger" id="attachmentError"></span>
                                         }
                                     </div>
+
                                     <div class="mb-3">
                                         <label asp-for="DefinationOfDone" class="form-label fw-bold">المخرجات (DOD)</label>
                                         <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000"></textarea>
@@ -154,16 +146,14 @@
                                         <input asp-for="ManyDaysToComplete" type="number" class="form-control" required />
                                         <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
                                     </div>
-                                 
+
                                     <div class="mb-3">
                                         <label asp-for="Cost" class="form-label fw-bold">التكلفة</label>
                                         <input asp-for="Cost" id="costInput" type="number" step="0.01" class="form-control" min="0" required />
                                         <span asp-validation-for="Cost" class="text-danger"></span>
                                         <small class="form-text text-muted d-block">
                                             التكلفة المتبقية قبل هذه المهمة:
-                                            <span id="remainingBeforeSpan">
-                                                @(hasProjectTotal ? Math.Max(projectTotalCost.GetValueOrDefault() - existingTasksCost, 0).ToString("N2") : "غير محدد")
-                                            </span>
+                                            <span id="remainingBeforeSpan">@(hasProjectTotal ? Math.Max(projectTotalCost.GetValueOrDefault() - existingTasksCost, 0).ToString("N2") : "غير محدد")</span>
                                         </small>
                                         <div id="costWarning" class="alert alert-warning d-none mt-2 mb-0 py-2 px-3" style="font-size:0.85rem;"></div>
                                     </div>
@@ -197,7 +187,6 @@
             // ---- Weight validation (Total must not exceed 100%) ----
             const weightInput = document.getElementById('weightInput');
             const weightError = document.getElementById('weightError');
-            const otherWeightSpan = document.getElementById('otherWeightSpan');
             const remainingWeightSpan = document.getElementById('remainingWeightSpan');
             const saveBtn = document.getElementById('saveBtn');
 
@@ -216,7 +205,6 @@
                 const weight = isNaN(entered) ? 0 : entered;
                 const total = otherWeight + weight;
                 const remainingBefore = Math.max(limit - otherWeight, 0);
-                const remainingAfter = Math.max(limit - total, 0);
 
                 if (remainingWeightSpan) remainingWeightSpan.textContent = formatPct(remainingBefore);
 
@@ -225,7 +213,7 @@
                     weightInput.classList.add('is-invalid');
                     weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
                     if (weightError) {
-                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.',
+                        weightError.textContent = 'خطأ: مجموع الأوزان (' + formatPct(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + formatPct(exceededBy) + '%.\u200f';
                     }
                     if (saveBtn) saveBtn.disabled = true;
                 } else {
@@ -237,101 +225,55 @@
             }
 
             if (weightInput) {
-                weightInput.addEventListener('input', updateWeightValidation, { once: false });
+                weightInput.addEventListener('input', updateWeightValidation);
                 updateWeightValidation();
             }
 
-            // ---- Cost Warning Logic (with null vs. zero distinction) ----
+            // ---- Cost Warning Logic ----
             const hasTotal = form.getAttribute('data-has-total') === 'true';
             const projectTotal = hasTotal ? (parseFloat(form.getAttribute('data-project-total')) || 0) : NaN;
             const existingCost = parseFloat(form.getAttribute('data-existing-cost')) || 0;
             const costInput = document.getElementById('costInput');
             const warningDiv = document.getElementById('costWarning');
-            const remainingBeforeSpan = document.getElementById('remainingBeforeSpan');
+            const remainingBeforeSpan2 = document.getElementById('remainingBeforeSpan');
 
-            function formatNumber(n) {
-                return n.toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-            }
-            function showInfo(msg) {
-                warningDiv.classList.remove('d-none', 'alert-warning');
-                warningDiv.classList.add('alert-info');
-                warningDiv.textContent = msg;
-            }
-            function showWarn(html) {
-                warningDiv.classList.remove('d-none', 'alert-info');
-                warningDiv.classList.add('alert-warning');
-                warningDiv.innerHTML = html;
-            }
-            function hideWarning() {
-                warningDiv.classList.add('d-none');
-                warningDiv.classList.remove('alert-warning', 'alert-info');
-                warningDiv.textContent = '';
-            }
+            function formatNumber(n) { return n.toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+            function showInfo(msg) { warningDiv.classList.remove('d-none', 'alert-warning'); warningDiv.classList.add('alert-info'); warningDiv.textContent = msg; }
+            function showWarn(html) { warningDiv.classList.remove('d-none', 'alert-info'); warningDiv.classList.add('alert-warning'); warningDiv.innerHTML = html; }
+            function hideWarning() { warningDiv.classList.add('d-none'); warningDiv.classList.remove('alert-warning', 'alert-info'); warningDiv.textContent = ''; }
 
             function updateCostWarning() {
                 if (!costInput || !warningDiv) return;
                 const entered = parseFloat(costInput.value) || 0;
-
-                if (!hasTotal) {
-                    showInfo('لم يتم تحديد التكلفة الإجمالية للمشروع. لن يتم التحقق من تجاوز الميزانية. يُفضل تحديدها من تفاصيل المشروع أولاً.');
-                    if (remainingBeforeSpan) remainingBeforeSpan.textContent = 'غير محدد';
-                    return;
-                }
-
+                if (!hasTotal) { showInfo('لم يتم تحديد التكلفة الإجمالية للمشروع. لن يتم التحقق من تجاوز الميزانية. يُفضل تحديدها من تفاصيل المشروع أولاً.'); if (remainingBeforeSpan2) remainingBeforeSpan2.textContent = 'غير محدد'; return; }
                 const newTotal = existingCost + entered;
                 const remaining = Math.max(projectTotal - existingCost, 0);
-                if (remainingBeforeSpan) remainingBeforeSpan.textContent = formatNumber(remaining);
-
-                if (newTotal > projectTotal) {
-                    const exceededBy = newTotal - projectTotal;
-                    showWarn(
-                        'تنبيه: مجموع تكاليف المهام بعد إضافة هذه المهمة (' + formatNumber(newTotal) +
-                        ') سيتجاوز تكلفة المشروع (' + formatNumber(projectTotal) +
-                        '). مقدار التجاوز: ' + formatNumber(exceededBy) + '.'
-                    );
-                } else {
-                    hideWarning();
-                }
+                if (remainingBeforeSpan2) remainingBeforeSpan2.textContent = formatNumber(remaining);
+                if (newTotal > projectTotal) { const exceededBy = newTotal - projectTotal; showWarn('تنبيه: مجموع تكاليف المهام بعد إضافة هذه المهمة (' + formatNumber(newTotal) + ') سيتجاوز تكلفة المشروع (' + formatNumber(projectTotal) + '). مقدار التجاوز: ' + formatNumber(exceededBy) + '.'); } else { hideWarning(); }
             }
 
-            if (costInput) {
-                costInput.addEventListener('input', updateCostWarning, { once: false });
-                updateCostWarning();
-            }
+            if (costInput) { costInput.addEventListener('input', updateCostWarning); updateCostWarning(); }
 
-            // ---- Submit handler ----
-            form.addEventListener('submit', function (event) {
-                const doneRatioInput = document.getElementById('doneRatioInput');
-                const attachmentInput = document.getElementById('Attachment');
-                const attachmentError = document.getElementById('attachmentError');
-                const attachmentContainer = document.getElementById('attachmentContainer');
-
-                // Enforce attachment when 100% done
-                if (doneRatioInput) {
-                    const doneRatio = parseFloat(doneRatioInput.value);
-                    if (doneRatio === 100 && attachmentInput && !attachmentInput.value && !(attachmentInput.hasAttribute('data-existing'))) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (attachmentError) attachmentError.textContent = "يرجى إرفاق ملف عند اكتمال المهمة.";
-                        if (attachmentContainer) attachmentContainer.style.display = 'block';
-                        attachmentInput.classList.add('is-invalid');
-                        return;
+            // ---- Attachment toggle on done ratio ----
+            const doneRatioInput = document.getElementById('doneRatioInput');
+            const attachmentContainer = document.getElementById('attachmentContainer');
+            if (doneRatioInput && attachmentContainer) {
+                function toggleAttachment() {
+                    const ratio = parseFloat(doneRatioInput.value) || 0;
+                    attachmentContainer.style.display = (ratio >= 100) ? 'block' : 'none';
+                    if (ratio < 100) {
+                        const att = document.getElementById('Attachment');
+                        if (att) att.value = '';
+                        const err = document.getElementById('attachmentError');
+                        if (err) err.textContent = '';
                     }
                 }
+                doneRatioInput.addEventListener('input', toggleAttachment);
+                doneRatioInput.addEventListener('change', toggleAttachment);
+                toggleAttachment();
+            }
 
-                // Block submit if weight invalid (>100% total)
-                updateWeightValidation();
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    form.classList.add('was-validated');
-                    return;
-                }
-
-                form.classList.add('was-validated');
-            }, { once: false });
-
-            // Show / hide actual end date
+            // ---- Show / hide actual end date ----
             const checkbox = document.getElementById('showActualEndDate');
             const container = document.getElementById('actualEndDateContainer');
             if (checkbox && container) {
@@ -342,33 +284,6 @@
                         if (input) input.value = "";
                     }
                 });
-            }
-
-            // Datepicker init if needed
-            if (window.jQuery) {
-                $('.datepicker').datepicker({
-                    format: 'dd/mm/yyyy',
-                    autoclose: true,
-                    todayHighlight: true
-                });
-            }
-
-            // Attachment toggle on done ratio
-            const doneRatioInput2 = document.getElementById('doneRatioInput');
-            const attachmentContainer2 = document.getElementById('attachmentContainer');
-            if (doneRatioInput2 && attachmentContainer2) {
-                function toggleAttachment() {
-                    const ratio = parseFloat(doneRatioInput2.value) || 0;
-                    attachmentContainer2.style.display = (ratio === 100) ? 'block' : 'none';
-                    if (ratio !== 100) {
-                        const att = document.getElementById('Attachment');
-                        if (att) att.value = '';
-                        const err = document.getElementById('attachmentError');
-                        if (err) err.textContent = '';
-                    }
-                }
-                doneRatioInput2.addEventListener('input', toggleAttachment);
-                toggleAttachment();
             }
         })();
     </script>

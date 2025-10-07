@@ -28,6 +28,11 @@
     <Content Update="wwwroot\Fonts\TheSansArabicPlain.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Attachments\DUMMY.png">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Data\departments.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

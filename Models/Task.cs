@@ -62,4 +62,6 @@ public partial class Task
     public decimal? Weight { get; set; }
 
     public decimal? Cost { get; set; }
+    public string? AttachementFilePath { get; set; }
+
 }
