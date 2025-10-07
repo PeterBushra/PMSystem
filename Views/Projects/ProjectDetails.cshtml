@@ -301,6 +301,7 @@
                                         <th class="text-center">الوزن</th>
                                         <th class="text-center">النسبة الفعلية</th>
                                         <th class="text-center">التكلفة</th>
+                                        <th class="text-center">المرفق</th>
                                         <th class="text-center" style="text-align: center !important;">الإجراءات</th>
                                     </tr>
                                 </thead>
@@ -325,6 +326,18 @@
                                             <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
                                             <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
+                                            <td class="text-center">
+                                                @if ((task.DoneRatio ?? 0m) >= 1.0m && task.AttachmentData != null && task.AttachmentData.Length > 0)
+                                                {
+                                                    <a asp-controller="Tasks" asp-action="DownloadAttachment" asp-route-id="@task.Id" class="btn btn-success shadow btn-xs sharp" title="تحميل المرفق">
+                                                        <i class="fa fa-download"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                            </td>
                                             <td>
                                                 <div class="d-flex">
                                                     <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id"
@@ -434,7 +447,7 @@
             $('#tasksTable').DataTable({
                 order: [],
                 responsive: true,
-                columnDefs: [ { targets: -1, orderable: false } ],
+                columnDefs: [ { targets: [-1, -2], orderable: false } ],
                 language: {
                     // Localize search and length menu
                     search: 'بحث:',
