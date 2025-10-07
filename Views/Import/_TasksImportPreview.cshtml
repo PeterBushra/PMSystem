@@ -14,6 +14,12 @@
         word-break: break-word;
         overflow-wrap: anywhere;
     }
+    /* Ensure borders between all columns from header to data */
+    .import-preview-modal table { border-collapse: collapse; }
+    .import-preview-modal table th,
+    .import-preview-modal table td { border: 1px solid #dee2e6; }
+    /* Center align column names (table headers) */
+    .import-preview-modal table thead th { text-align: center; vertical-align: middle; }
 </style>
 <div class="modal-header">
     <h5 class="modal-title">معاينة الاستيراد</h5>
