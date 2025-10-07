@@ -58,8 +58,10 @@
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">الإدارة المسؤولة</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="ResponsibleForImplementing" class="form-control" placeholder="الإدارة المسؤولة" required maxlength="150" />
-                                                <div class="invalid-feedback">يرجى إدخال الإدارة المسؤولة عن التنفيذ.</div>
+                                                <select asp-for="ResponsibleForImplementing" class="form-control" asp-items="@ViewBag.Departments" required>
+                                                    <option value="">-- اختر الإدارة --</option>
+                                                </select>
+                                                <div class="invalid-feedback">يرجى اختيار الإدارة المسؤولة عن التنفيذ.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">

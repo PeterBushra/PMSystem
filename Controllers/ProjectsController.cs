@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Jobick.Services;
 
 namespace Jobick.Controllers;
 
@@ -42,6 +44,12 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
             EndDate = DateTime.Now.AddMonths(1),
             CreatedBy = userId
         };
+
+        // Populate departments for dropdown
+        ViewBag.Departments = DepartmentService.GetDepartments()
+            .Select(d => new SelectListItem { Text = d, Value = d })
+            .ToList();
+
         return View(project);
     }
 
@@ -80,6 +88,11 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
             }
             return RedirectToAction(nameof(Index));
         }
+
+        // Repopulate departments on validation errors
+        ViewBag.Departments = DepartmentService.GetDepartments()
+            .Select(d => new SelectListItem { Text = d, Value = d })
+            .ToList();
 
         return View("CreateProject", project);
     }
@@ -127,6 +140,12 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
             return NotFound();
         // Reuse the CreateProject view for editing
         ViewData["Title"] = "Edit Project";
+
+        // Populate departments for dropdown
+        ViewBag.Departments = DepartmentService.GetDepartments()
+            .Select(d => new SelectListItem { Text = d, Value = d })
+            .ToList();
+
         return View("CreateProject", project);
     }
 
@@ -163,6 +182,12 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
         }
 
         ViewData["Title"] = "Edit Project";
+
+        // Repopulate departments on validation errors
+        ViewBag.Departments = DepartmentService.GetDepartments()
+            .Select(d => new SelectListItem { Text = d, Value = d })
+            .ToList();
+
         return View("CreateProject", model);
     }
 
