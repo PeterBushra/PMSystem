@@ -3,6 +3,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
     ViewData["Title"] = "المشاريع";
+    var today = DateTime.Today;
 }
 
 <div class="content-body">
@@ -37,7 +38,7 @@
                             <table id="projectsTable" class="table table-hover table-striped" style="min-width: 1000px">
                                 <thead>
                                     <tr>
-                                        @* <th class="text-center">الحالة</th> *@
+                                        <th class="text-center">الحالة</th>
                                         <th class="text-center">الاسم</th>
                                         <th class="text-center">الوصف</th>
                                         <th class="text-center">المسؤول</th>
@@ -52,9 +53,37 @@
                                 <tbody>
                                     @foreach (var project in Model)
                                     {
+                                        // Determine project status and style
+                                        var hasTasks = project?.Tasks != null && project.Tasks.Any();
+                                        var allTasksDone = hasTasks && project!.Tasks.All(t => (t.DoneRatio ?? 0m) >= 1.0m);
+
+                                        string statusText;
+                                        string badgeClass;
+
+                                        if (allTasksDone)
+                                        {
+                                            statusText = "مكتمل";         // Completed
+                                            badgeClass = "badge bg-success"; // green
+                                        }
+                                        else if (project.StartSate > today)
+                                        {
+                                            statusText = "لم تبدأ";       // Not started
+                                            badgeClass = "badge bg-secondary"; // gray
+                                        }
+                                        else if (project.EndDate < today)
+                                        {
+                                            statusText = "متأخر";         // Delayed
+                                            badgeClass = "badge bg-danger"; // red
+                                        }
+                                        else
+                                        {
+                                            statusText = "قيد التنفيذ";   // In progress
+                                            badgeClass = "badge bg-warning text-dark"; // yellow
+                                        }
+
                                         <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
                                             style="cursor:pointer;">
-                                            @* <td><span class="badge light badge-warning">قيد التنفيذ</span></td> *@
+                                            <td class="text-center"><span class="@badgeClass">@statusText</span></td>
                                             <td>@project.Name</td>
                                             <td>@project.Description</td>
                                             <td>@project.ResponsibleForImplementing</td>
