@@ -95,7 +95,7 @@ public class ImportController(ITaskService taskService, IProjectService projectS
             row.ExpectedEndDate = TryGetCellDate(ws.Cell(r, 8), row.ExpectedEndDateRaw, errors, "تاريخ الانتهاء");
 
             // Percentages and cost
-            if (TryParseDecimalPercent(row.DoneRatioRaw, out var done)) row.DoneRatio = done;
+            if (TryParseDecimalPercent(row.DoneRatioRaw, out var done)) row.DoneRatio = done * 100;
             else if (!string.IsNullOrWhiteSpace(row.DoneRatioRaw)) errors.Add("قيمة النسبة الفعلية غير صالحة");
 
             if (TryParseDecimalPercent(row.PlannedPercentRaw, out var planned)) row.PlannedPercent = planned * 100;
@@ -167,7 +167,7 @@ public class ImportController(ITaskService taskService, IProjectService projectS
                 ManyDaysToComplete = row.ManyDaysToComplete ?? 0,
                 ExpectedStartDate = (row.ExpectedStartDate ?? DateTime.Now).Date,
                 ExpectedEndDate = (row.ExpectedEndDate ?? DateTime.Now).Date,
-                DoneRatio = row.DoneRatio,
+                DoneRatio = row.DoneRatio / 100,
                 Weight = row.PlannedPercent, // still stored as percent in your app
                 Cost = row.PlannedCost,
                 CreatedDate = DateTime.Now,
