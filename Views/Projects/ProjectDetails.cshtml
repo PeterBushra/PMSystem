@@ -308,8 +308,8 @@
                                         <th class="text-center">القسم المنفذ</th>
                                         <th class="text-center">تاريخ البدء </th>
                                         <th class="text-center">تاريخ الانتهاء </th>
-                                        <th class="text-center">النسبة المخطط (الوزن)</th>
                                         <th class="text-center">النسبة الفعلية</th>
+                                        <th class="text-center">النسبة المخطط (الوزن)</th>
                                         <th class="text-center">الصرف المخطط</th>
                                         <th class="text-center">المرفق</th>
                                         <th class="text-center" style="text-align: center !important;"></th>
@@ -333,8 +333,8 @@
                                             <td>@task.ImplementorDepartment</td>
                                             <td data-order="@task.ExpectedStartDate.ToString("yyyy-MM-dd")">@task.ExpectedStartDate.ToShortDateString()</td>
                                             <td data-order="@task.ExpectedEndDate.ToString("yyyy-MM-dd")">@task.ExpectedEndDate.ToShortDateString()</td>
-                                            <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
+                                            <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
                                             <td class="text-center">
                                                 @if ((task.DoneRatio ?? 0m) >= 1.0m && !string.IsNullOrEmpty(task.AttachmentFilePath))
