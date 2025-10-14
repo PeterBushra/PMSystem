@@ -1,0 +1,24 @@
+/* Project Details Page Specific Styles */
+.rtl-text-right { text-align:right; }
+.kpi-box { min-width:180px; }
+.progress-h22 { height:22px; }
+.progress-h20 { height:20px; }
+.progress-fs-xs { font-size:.70rem; line-height:1; }
+.badge-floating-small { font-size:.65rem; background:rgba(255,255,255,.65); padding:2px 6px; border-radius:4px; }
+.inline-form { display:inline; }
+.progress.default-progress { min-height: 18px; }
+.progress.default-progress .progress-bar { align-items:center; display:flex; justify-content:center; }
+/* Force inside bar labels to white for consistency */
+.progress-bar, .progress-bar span { color:#fff !important; }
+/* Vertically & horizontally center inner span text */
+.progress-bar span { display:flex; align-items:center; justify-content:center; height:100%; line-height:1; }
+#tasksTable tbody td.dataTables_empty { text-align:center !important; }
+#stacked-bar-chart { width:100%; min-height:180px; border-radius:1px; overflow:hidden; }
+#stacked-bar-chart .ct-grid { display:none; }
+.chartist-tooltip { border-radius:6px; padding:6px 8px; background:rgba(33,37,41,.92); color:#fff; border:none; box-shadow:0 4px 14px rgba(0,0,0,.15); }
+/* ApexCharts legend spacing */
+.apexcharts-legend { gap:8px !important; }
+.apexcharts-legend-series { margin:0 8px 4px !important; }
+/* Chartist legend (if present) */
+.ct-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.ct-legend li { margin:0 8px 4px 0; }

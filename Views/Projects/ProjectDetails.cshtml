@@ -1,37 +1,102 @@
 ﻿@model Jobick.ViewModels.ProjectDetailsVM
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
+
+    // ==========================================================
+    // Centralized Calculations & Constants (Single Location)
+    // ==========================================================
     var today = DateTime.Today;
-    var completed = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
-    var overdue = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
-    var inProgress = Model.Tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m && t.ExpectedEndDate >= today);
-    var notStarted = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
+
+    const decimal PERCENT_TEXT_INSIDE_THRESHOLD = 18m;   // When to show text inside progress bar
+    const decimal PERCENT_LIGHT_TEXT_THRESHOLD  = 55m;   // When to switch to light text color over bar
+    const decimal COMPLETION_SUCCESS_THRESHOLD  = 100m;  // 100% completion
+    const decimal PROJECT_WEIGHT_CAP            = 100m;  // Project task weights sum target
+
+    var completed      = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
+    var overdue        = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
+    var inProgress     = Model.Tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m && t.ExpectedEndDate >= today);
+    var notStarted     = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
+    var tasksCount     = Model.Tasks.Count;
+
     var totalTasksCost = Model.Tasks.Sum(t => t.Cost ?? 0);
-    var projectCost = Model.TotalCost ?? 0;
-    var allTasksCompleted = Model.Tasks.Count > 0 && completed == Model.Tasks.Count;
+    var projectCost    = Model.TotalCost ?? 0;
 
-    // Total weight across all tasks in this project.
-    // Supports both 0..100 (percentage) and 0..1 (fraction) scales.
-    var totalWeightRaw = Model.Tasks.Sum(t => t.Weight ?? 0m);
-    var isWeightsFull = totalWeightRaw >= 100m;
+    var allTasksCompleted = tasksCount > 0 && completed == tasksCount;
+    var totalWeightRaw    = Model.Tasks.Sum(t => t.Weight ?? 0m);
+    var isWeightsFull     = totalWeightRaw >= PROJECT_WEIGHT_CAP;
 
-    // Overall project completion by weight = Sum(Weight * DoneRatio)
-    // Weight: 0..100, DoneRatio: 0..1
     var projectCompletionWeighted = Math.Round(
-        Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)),
-        2
-    );
-    if (projectCompletionWeighted < 0m) projectCompletionWeighted = 0m;
-    if (projectCompletionWeighted > 100m) projectCompletionWeighted = 100m;
+        Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)), 2);
+    projectCompletionWeighted = Math.Clamp(projectCompletionWeighted, 0m, PROJECT_WEIGHT_CAP);
+
+    var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
+    var stageInfos = Model.KPIs.StageCompletionByWeight
+        .Select(s => {
+            var name = s.Key;
+            var fraction = s.Value; // 0..1 relative inside stage
+            var percent  = Math.Round(fraction * 100m, 2);
+            var stageWeightSum = Model.Tasks.Where(t => (t.StageName ?? string.Empty).Trim() == name).Sum(t => t.Weight ?? 0m);
+            var stageWeightPercentOfProject = totalProjectWeight > 0 ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2) : 0m;
+            return new {
+                Name = name,
+                Fraction = fraction,
+                Percent = percent,
+                WeightSum = stageWeightSum,
+                WeightPercentOfProject = stageWeightPercentOfProject,
+                ShowInside = percent >= PERCENT_TEXT_INSIDE_THRESHOLD,
+                BarSuccess = (fraction >= 1m || percent >= COMPLETION_SUCCESS_THRESHOLD)
+            };
+        })
+        .OrderByDescending(s => s.Percent)
+        .ToList();
+
+    var projectStartYear = Model.StartSate.Year;
+    var projectEndYear   = Model.EndDate.Year;
+    var hasTasks         = Model.Tasks?.Any() == true;
+    var minTaskYear      = hasTasks ? Model.Tasks.Min(t => t.ExpectedEndDate.Year) : projectStartYear;
+    var maxTaskYear      = hasTasks ? Model.Tasks.Max(t => t.ExpectedEndDate.Year) : projectEndYear;
+    var minYear          = Math.Min(projectStartYear, minTaskYear);
+    var maxYear          = Math.Max(projectEndYear,   maxTaskYear);
+    var yearsAsc         = Enumerable.Range(minYear, maxYear - minYear + 1).ToList();
+    var weightPerYearAsc = yearsAsc
+        .Select(y => Math.Round(Model.Tasks.Where(t => t.ExpectedEndDate.Year == y).Sum(t => t.Weight ?? 0m), 2))
+        .ToList();
+    yearsAsc.Reverse();
+    weightPerYearAsc.Reverse();
+    var years         = yearsAsc;          // reversed years
+    var weightPerYear = weightPerYearAsc;  // reversed weights
+    var totalAllYears = Math.Round(weightPerYear.Sum(), 2);
+
+    // Client config object for external JS
+    var clientConfig = new {
+        years,
+        weights = weightPerYear,
+        totalAllYears,
+        completed,
+        inProgress,
+        notStarted,
+        overdue,
+        totalTasksCostPercent = projectCost>0? Math.Round(totalTasksCost*100/projectCost,2):0,
+        remainingCostPercent = projectCost>0? 100 - Math.Round(totalTasksCost*100/projectCost,2):0,
+        projectCompletionWeighted,
+        projectId = Model.Id,
+        uploadExcelUrl = Url.Action("UploadExcel","Import"),
+        thresholds = new {
+            textInside = PERCENT_TEXT_INSIDE_THRESHOLD,
+            lightText = PERCENT_LIGHT_TEXT_THRESHOLD,
+            completionSuccess = COMPLETION_SUCCESS_THRESHOLD
+        }
+    };
+    var clientConfigJson = System.Text.Json.JsonSerializer.Serialize(clientConfig);
 
     ViewData["Title"] = allTasksCompleted
         ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
         : $"تفاصيل المشروع - {Model.Name}";
 }
 
-<div class="content-body" dir="rtl" style="text-align:right;">
+<div class="content-body rtl-text-right" dir="rtl">
     <div class="container-fluid">
-        <!-- Breadcrumb -->
+        <!-- ===================== Breadcrumb ===================== -->
         <div class="row page-titles">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">المشاريع</a></li>
@@ -39,7 +104,7 @@
             </ol>
         </div>
 
-        <!-- Project Information -->
+        <!-- ===================== Project Information ===================== -->
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
@@ -49,10 +114,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-xl-6">
-                                <p>
-                                    <strong>الاسم:</strong>
-                                    <span class="ms-2">@Model.Name</span>
-                                </p>
+                                <p><strong>الاسم:</strong><span class="ms-2">@Model.Name</span></p>
                                 <p><strong>الوصف:</strong> @Model.Description</p>
                                 <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
                                 <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("N0")</p>
@@ -69,35 +131,35 @@
             </div>
         </div>
 
-        <!-- KPI Summary Statistics -->
+        <!-- ===================== KPI Summary Statistics ===================== -->
         <div class="row">
             <div class="col-xl-12">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex flex-row flex-wrap justify-content-between align-items-stretch">
-                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                            <div class="static-icon text-center flex-fill m-2 kpi-box">
                                 <span><i class="fas fa-tasks"></i></span>
                                 <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
                                 <p class="mb-0">إجمالي المهام</p>
                             </div>
-                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                            <div class="static-icon text-center flex-fill m-2 kpi-box">
                                 <span><i class="fas fa-check-circle text-success"></i></span>
                                 <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
                                 <p class="mb-0">المهام المكتملة</p>
                             </div>
-                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                            <div class="static-icon text-center flex-fill m-2 kpi-box">
                                 <span><i class="fas fa-clock text-warning"></i></span>
                                 <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
                                 <p class="mb-0">لم تبدأ</p>
                             </div>
-                            <div class="static-icon text-center flex-fill م-2" style="min-width:180px;">
+                            <div class="static-icon text-center flex-fill m-2 kpi-box">
                                 <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
                                 <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
                                 <p class="mb-0">متأخرة</p>
                             </div>
                             @if (!allTasksCompleted)
                             {
-                                <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                                <div class="static-icon text-center flex-fill m-2 kpi-box">
                                     <span><i class="fas fa-calendar-alt"></i></span>
                                     <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
                                     <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p>
@@ -109,201 +171,95 @@
             </div>
         </div>
 
-        <!-- Department & Stage Distribution -->
+        <!-- ===================== Task Status & Cost Charts ===================== -->
         <div class="row">
-            <!-- Task Status Card -->
+            <!-- Task Status -->
             <div class="card mt-4">
-                <div class="card-header border-0 pb-0">
-                    <h4 class="card-title mb-0">حالة المهام</h4>
-                </div>
+                <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">حالة المهام</h4></div>
                 <div class="card-body pt-3">
                     <div class="row align-items-center">
                         <div class="col-xl-6 col-sm-6">
-                            <div class="progress default-progress">
-                                <div class="progress-bar bg-success progress-animated" style="width: @(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
-                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)% مكتملة</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                <span class="font-w500">المهام المكتملة</span>
-                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (completed * 100 / Model.Tasks.Count) : 0)%</h6>
-                            </div>
-                            <div class="progress default-progress">
-                                <div class="progress-bar bg-info progress-animated" style="width: @(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
-                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)% قيد التنفيذ</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                <span class="font-w500">قيد التشغيل</span>
-                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (inProgress * 100 / Model.Tasks.Count) : 0)%</h6>
-                            </div>
-                            <div class="progress default-progress">
-                                <div class="progress-bar bg-warning progress-animated" style="width: @(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
-                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)% لم تبدأ</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                <span class="font-w500">لم تبدأ</span>
-                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (notStarted * 100 / Model.Tasks.Count) : 0)%</h6>
-                            </div>
-                            <div class="progress default-progress">
-                                <div class="progress-bar bg-danger progress-animated" style="width: @(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)%;" role="progressbar">
-                                    <span class="sr-only">@(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)% متأخرة</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 justify-content-between">
-                                <span class="font-w500">متأخرة</span>
-                                <h6 class="mb-0">@(Model.Tasks.Count > 0 ? (overdue * 100 / Model.Tasks.Count) : 0)%</h6>
-                            </div>
+                            <!-- Completed -->
+                            <div class="progress default-progress"><div class="progress-bar bg-success progress-animated" style="width:@(tasksCount>0?(completed*100/tasksCount):0)%"></div></div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">المهام المكتملة</span><h6 class="mb-0">@(tasksCount>0?(completed*100/tasksCount):0)%</h6></div>
+                            <!-- In progress -->
+                            <div class="progress default-progress"><div class="progress-bar bg-info progress-animated" style="width:@(tasksCount>0?(inProgress*100/tasksCount):0)%"></div></div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">قيد التنفيذ</span><h6 class="mb-0">@(tasksCount>0?(inProgress*100/tasksCount):0)%</h6></div>
+                            <!-- Not started -->
+                            <div class="progress default-progress"><div class="progress-bar bg-warning progress-animated" style="width:@(tasksCount>0?(notStarted*100/tasksCount):0)%"></div></div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">لم تبدأ</span><h6 class="mb-0">@(tasksCount>0?(notStarted*100/tasksCount):0)%</h6></div>
+                            <!-- Overdue -->
+                            <div class="progress default-progress"><div class="progress-bar bg-danger progress-animated" style="width:@(tasksCount>0?(overdue*100/tasksCount):0)%"></div></div>
+                            <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">متأخرة</span><h6 class="mb-0">@(tasksCount>0?(overdue*100/tasksCount):0)%</h6></div>
                         </div>
-                        <div class="col-xl-6 col-sm-6">
-                            <div id="tasksPieChart"></div>
-                        </div>
+                        <div class="col-xl-6 col-sm-6"><div id="tasksPieChart"></div></div>
                     </div>
                 </div>
             </div>
 
-
+            <!-- Cost vs Project -->
             <div class="card mt-4">
-                <div class="card-header border-0 pb-0">
-                    <h4 class="card-title mb-0">تكلفة المهام مقابل تكلفة المشروع</h4>
-                </div>
+                <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">تكلفة المهام مقابل تكلفة المشروع</h4></div>
                 <div class="card-body pt-3">
                     <div class="row align-items-center">
                         <div class="col-xl-6 col-sm-6">
-                            <div class="progress default-progress">
-                                <div class="progress-bar bg-primary progress-animated"
-                                     style="width: @(projectCost > 0 ? (totalTasksCost * 100 / projectCost) : 0)%;" role="progressbar">
-                                    <span class="sr-only">
-                                        @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)% من تكلفة المشروع
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between">
-                                <span class="font-w500">إجمالي تكلفة المهام</span>
-                                <h6 class="mb-0">@totalTasksCost.ToString("N2")</h6>
-                            </div>
-                            <div class="d-flex align-items-end mt-2 justify-content-between">
-                                <span class="font-w500">تكلفة المشروع</span>
-                                <h6 class="mb-0">@projectCost.ToString("N2")</h6>
-                            </div>
+                            <div class="progress default-progress"><div class="progress-bar bg-primary progress-animated" style="width:@(projectCost>0?(totalTasksCost*100/projectCost):0)%"></div></div>
+                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">إجمالي تكلفة المهام</span><h6 class="mb-0">@totalTasksCost.ToString("N2")</h6></div>
+                            <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">تكلفة المشروع</span><h6 class="mb-0">@projectCost.ToString("N2")</h6></div>
                         </div>
-                        <div class="col-xl-6 col-sm-6">
-                            <div id="costPieChart"></div>
-                        </div>
+                        <div class="col-xl-6 col-sm-6"><div id="costPieChart"></div></div>
                     </div>
                 </div>
             </div>
 
-            @if (Model.KPIs.StageCompletionByWeight.Any())
+            @* ============= Stage Completion By Weight (Per Stage Progress) ============= *@
+            @if (stageInfos.Any())
             {
-                // Pre-calculate total project weight (should normally be 100, but calculated for safety)
-                var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
-
-                <div id="StageCompletionByWeightBar" class="col-xl-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4>
-                        </div>
+                <div class="col-xl-6">
+                    <div class="card mt-4">
+                        <div class="card-header"><h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4></div>
                         <div class="card-body">
-                            @{
-                                var stagesOrdered = Model.KPIs.StageCompletionByWeight
-                                .OrderByDescending(s => s.Value)
-                                .ToList();
-                            }
-                            @foreach (var s in stagesOrdered)
+                            @foreach (var s in stageInfos)
                             {
-                                var stageName = s.Key;
-                                var relativeFraction = s.Value;              // 0..1
-                                var relativePercent = Math.Round(relativeFraction * 100m, 2);
-
-                                // Sum of raw weights (project-based) for this stage
-                                var stageWeightSum = Model.Tasks
-                                .Where(t => (t.StageName ?? "").Trim() == stageName)
-                                .Sum(t => t.Weight ?? 0m);
-
-                                // Stage weight share of project (if totalProjectWeight != 100)
-                                var stageWeightPercentOfProject = totalProjectWeight > 0
-                                ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2)
-                                : 0m;
-
-                                // Decide where to render text (inside/outside)
-                                var showInside = relativePercent >= 18m;
-                                var textClass = relativePercent >= 55m ? "text-white" : "text-dark";
-
-                                // Only two colors: green when complete (>=100%), yellow otherwise
-                                var barColorClass = (relativeFraction >= 1m || relativePercent >= 100m)
-                                ? "bg-success"
-                                : "bg-warning";
+                                var barColorClass = s.BarSuccess ? "bg-success" : "bg-warning";
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="font-w500">@stageName</span>
-                                        <span class="small">
-                                            وزن المرحلة:
-                                            <strong>@stageWeightSum@( "%")</strong>
-                                            @if (totalProjectWeight != 100)
-                                            {
-                                                <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
-                                            }
-                                            &nbsp;|&nbsp; إنجاز داخل المرحلة: <strong>@relativePercent%</strong>
+                                        <span class="font-w500">@s.Name</span>
+                                        <span class="small">وزن المرحلة: <strong>@s.WeightSum%</strong>
+                                            @if (totalProjectWeight != PROJECT_WEIGHT_CAP) { <span class="text-muted">(= @s.WeightPercentOfProject% من المشروع)</span> }
+                                            &nbsp;|&nbsp; إنجاز: <strong>@s.Percent%</strong>
                                         </span>
                                     </div>
-
-                                    <div class="progress default-progress position-relative" style="height:16px; overflow:visible;">
-                                        <div class="progress-bar @barColorClass d-flex align-items-center @textClass"
-                                             style="width:@relativePercent%; height:16px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
-                                            @if (showInside)
-                                            {
-                                                <span class="w-100 text-center" style="line-height:1;">
-                                                    @relativePercent% | وزن: @stageWeightSum%
-                                                </span>
-                                            }
+                                    <div class="progress default-progress progress-h22 position-relative">
+                                        <div class="progress-bar @barColorClass progress-h22 progress-fs-xs text-white" style="width:@s.Percent%">
+                                            @if (s.ShowInside) { <span class="w-100 text-center">@s.Percent% | وزن: @s.WeightSum%</span> }
                                         </div>
-                                        @if (!showInside)
+                                        @if (!s.ShowInside)
                                         {
-                                            <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
-                                                  style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
-                                                @relativePercent% | وزن: @stageWeightSum%
-                                            </span>
+                                            <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@s.Percent% | وزن: @s.WeightSum%</span>
                                         }
                                     </div>
                                 </div>
                             }
-                            <small class="text-muted d-block mt-2">
-                                يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.
-                                الوزن المعروض هو مجموع أوزان مهام المرحلة (من إجمالي أوزان المشروع).
-                            </small>
+                            <small class="text-muted d-block mt-2">يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.</small>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-6 col-lg-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">النسبة المخططة لكل سنة</h4>
-                        </div>
+                <!-- Overall weighted completion bar -->
+                <div class="col-xl-6">
+                    <div class="card mt-4">
+                        <div class="card-header"><h4 class="card-title">النسبة المخططة لكل سنة</h4></div>
                         <div class="card-body">
                             <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
-
                             <div class="mt-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="font-w500">اكتمال المشروع الكلي</span>
-                                    <span class="small"><strong>@projectCompletionWeighted%</strong></span>
-                                </div>
-                                <div class="progress default-progress position-relative" style="height:14px; overflow:visible;">
-                                    <div class="progress-bar @(projectCompletionWeighted >= 100 ? "bg-success" : "bg-warning") d-flex align-items-center @(projectCompletionWeighted >= 55 ? "text-white" : "text-dark")"
-                                         style="width:@projectCompletionWeighted%; height:14px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
-                                        @if (projectCompletionWeighted >= 18)
-                                        {
-                                            <span class="w-100 text-center" style="line-height:1;">@projectCompletionWeighted%</span>
-                                        }
+                                <div class="d-flex justify-content-between align-items-center mb-1"><span class="font-w500">اكتمال المشروع الكلي</span><span class="small"><strong>@projectCompletionWeighted%</strong></span></div>
+                                <div class="progress default-progress progress-h20 position-relative">
+                                    <div class="progress-bar @(projectCompletionWeighted>=COMPLETION_SUCCESS_THRESHOLD?"bg-success":"bg-warning") progress-h20 progress-fs-xs text-white" style="width:@projectCompletionWeighted%">
+                                        @if (projectCompletionWeighted >= PERCENT_TEXT_INSIDE_THRESHOLD) { <span class="w-100 text-center">@projectCompletionWeighted%</span> }
                                     </div>
-                                    @if (projectCompletionWeighted < 18)
-                                    {
-                                        <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
-                                              style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
-                                            @projectCompletionWeighted%
-                                        </span>
+                                    @if (projectCompletionWeighted < PERCENT_TEXT_INSIDE_THRESHOLD) {
+                                        <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@projectCompletionWeighted%</span>
                                     }
                                 </div>
                             </div>
@@ -311,11 +267,9 @@
                     </div>
                 </div>
             }
-
-       
         </div>
 
-        <!-- Tasks Grid -->
+        <!-- ===================== Tasks Grid ===================== -->
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
@@ -324,22 +278,15 @@
                         <div class="d-flex align-items-center gap-2">
                             @if (isWeightsFull)
                             {
-                                <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%">
-                                    <a class="btn    btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a>
-                                </span>
+                                <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%"><a class="btn btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a></span>
                             }
                             else
                             {
                                 <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
                             }
-                            <button type="button" id="btnImportExcel" class="btn btn-outline-primary">
-                                <i class="fas fa-file-excel me-1"></i>
-                                استيراد مهام من إكسل
-                            </button>
-                            <a href="@Url.Content("~/Template/Template.xlsx")" class="small mt-1 text-decoration-underline" download>
-                                تحميل قالب الإكسل
-                            </a>
-                            <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;" />
+                            <button type="button" id="btnImportExcel" class="btn btn-outline-primary"><i class="fas fa-file-excel me-1"></i>استيراد مهام من إكسل</button>
+                            <a href="@Url.Content("~/Template/Template.xlsx")" class="small mt-1 text-decoration-underline" download>تحميل قالب الإكسل</a>
+                            <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="d-none" />
                         </div>
                     </div>
                     <div class="card-body">
@@ -351,26 +298,20 @@
                                         <th class="text-center">المراحل</th>
                                         <th class="text-center">المهام</th>
                                         <th class="text-center">القسم المنفذ</th>
-                                        <th class="text-center">تاريخ البدء </th>
-                                        <th class="text-center">تاريخ الانتهاء </th>
+                                        <th class="text-center">تاريخ البدء</th>
+                                        <th class="text-center">تاريخ الانتهاء</th>
                                         <th class="text-center">النسبة الفعلية</th>
                                         <th class="text-center">النسبة المخطط (الوزن)</th>
                                         <th class="text-center">الصرف المخطط</th>
                                         <th class="text-center">المرفق</th>
-                                        <th class="text-center" style="text-align: center !important;"></th>
+                                        <th class="text-center"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var task in Model.Tasks)
                                     {
-                                        var statusClass = task.DoneRatio >= 1.0m ? "badge-success" :
-                                        task.ExpectedEndDate < DateTime.Today ? "badge-danger" :
-                                        task.DoneRatio > 0 ? "badge-info" : "badge-warning";
-
-                                        var statusText = task.DoneRatio >= 1.0m ? "مكتملة" :
-                                        task.ExpectedEndDate < DateTime.Today ? "متأخرة" :
-                                        task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
-
+                                        var statusClass = task.DoneRatio >= 1.0m ? "badge-success" : task.ExpectedEndDate < DateTime.Today ? "badge-danger" : task.DoneRatio > 0 ? "badge-info" : "badge-warning";
+                                        var statusText  = task.DoneRatio >= 1.0m ? "مكتملة" : task.ExpectedEndDate < DateTime.Today ? "متأخرة" : task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
                                         <tr>
                                             <td data-order="@((task.DoneRatio ?? 0m) >= 1 ? 3 : (task.ExpectedEndDate < DateTime.Today ? 0 : (task.DoneRatio > 0 ? 2 : 1)))"><span class="badge @statusClass">@statusText</span></td>
                                             <td>@task.StageName</td>
@@ -384,25 +325,15 @@
                                             <td class="text-center">
                                                 @if ((task.DoneRatio ?? 0m) >= 1.0m && !string.IsNullOrEmpty(task.AttachmentFilePath))
                                                 {
-                                                    <a asp-controller="Tasks" asp-action="DownloadAttachment" asp-route-id="@task.Id" class="btn btn-success shadow btn-xs sharp" title="تحميل المرفق">
-                                                        <i class="fa fa-download"></i>
-                                                    </a>
+                                                    <a asp-controller="Tasks" asp-action="DownloadAttachment" asp-route-id="@task.Id" class="btn btn-success shadow btn-xs sharp" title="تحميل المرفق"><i class="fa fa-download"></i></a>
                                                 }
-                                                else
-                                                {
-                                                    <span class="text-muted">—</span>
-                                                }
+                                                else { <span class="text-muted">—</span> }
                                             </td>
                                             <td>
                                                 <div class="d-flex">
-                                                    <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id"
-                                                       class="btn btn-primary shadow btn-xs sharp me-1">
-                                                        <i class="fas fa-pencil-alt"></i>
-                                                    </a>
-                                                    <form asp-controller="Tasks" asp-action="DeleteTask" asp-route-id="@task.Id" asp-route-projectId="@Model.Id" method="post" style="display:inline;">
-                                                        <button type="submit" class="btn btn-danger shadow btn-xs sharp">
-                                                            <i class="fa fa-trash"></i>
-                                                        </button>
+                                                    <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id" class="btn btn-primary shadow btn-xs sharp me-1"><i class="fas fa-pencil-alt"></i></a>
+                                                    <form asp-controller="Tasks" asp-action="DeleteTask" asp-route-id="@task.Id" asp-route-projectId="@Model.Id" method="post" class="inline-form">
+                                                        <button type="submit" class="btn btn-danger shadow btn-xs sharp"><i class="fa fa-trash"></i></button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -416,912 +347,45 @@
             </div>
         </div>
 
-
     </div>
 </div>
 
-<!-- Import Preview Modal -->
+<div id="project-details-root" data-config='@Html.Raw(clientConfigJson)'></div>
+
+<!-- ===================== Import Preview Modal ===================== -->
 <div class="modal fade" id="importPreviewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content" id="importPreviewContent">
-            <div class="modal-header">
-                <h5 class="modal-title">معاينة الاستيراد</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center text-muted">يرجى اختيار ملف إكسل لعرض المعاينة هنا.</div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-            </div>
+            <div class="modal-header"><h5 class="modal-title">معاينة الاستيراد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div class="text-center text-muted">يرجى اختيار ملف إكسل لعرض المعاينة هنا.</div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div>
         </div>
     </div>
 </div>
 
 @section Jobick_style {
+    <!-- Styles: DataTables, Chartist, Datepicker -->
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
-    <link href="~/css/datatables-rtl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="~/Jobick/vendor/chartist/css/chartist.min.css">
-    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
-    <style>
-        /* Center DataTables "لا توجد نتائج مطابقة" message */
-        #tasksTable tbody td.dataTables_empty,
-        table.dataTable tbody td.dataTables_empty {
-            text-align: center !important;
-        }
-        /* Make the stacked bar area flex-responsively fill the width */
-        #stacked-bar-chart {
-            width: 100%;
-            min-height: 180px;
-            border-radius: 1px; /* requested radius */
-            overflow: hidden;   /* clip chart corners to radius */
-        }
-        /* Slightly modern feel for Chartist tooltip */
-        .chartist-tooltip { 
-            border-radius: 6px;
-            padding: 6px 8px;
-            background: rgba(33, 37, 41, 0.92);
-            color: #fff;
-            border: none;
-            box-shadow: 0 4px 14px rgba(0,0,0,.15);
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/datatables-rtl.css" />
+    <link rel="stylesheet" href="~/Jobick/vendor/chartist/css/chartist.min.css" />
+    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/project-details.css" />
 }
 
 @section Jobick_script {
+    <!-- Core / Vendors (kept only once each) -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
-    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
-
-    <!-- Required vendors -->
     <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
     <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
-
-    <!-- Apex Chart -->
     <script src="~/Jobick/vendor/apexchart/apexchart.js"></script>
     <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
-
-    <!-- Chart piety plugin files -->
-    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
-
-    <!-- Dashboard 1 -->
-    <script src="~/Jobick/js/dashboard/dashboard-1.js"></script>
-
-    <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
-
-    <!-- DataTables -->
-    <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
-
-
-    <!-- Required vendors -->
-    <script src="~/Jobick/vendor/global/global.min.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
-
-    <!-- Chart sparkline plugin files -->
-    <script src="~/Jobick/vendor/jquery-sparkline/jquery.sparkline.min.js"></script>
-
-    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
-    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
-
-    <script src="~/Jobick/js/plugins-init/sparkline-init.js"></script>
-
-    <script src="~/Jobick/js/custom.min.js"></script>
-    <script src="~/Jobick/js/dlabnav-init.js"></script>
-
-    <script src="~/Jobick/vendor/global/global.min.js"></script>
-    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
-
-    <!-- Chart Chartist plugin files -->
     <script src="~/Jobick/vendor/chartist/js/chartist.min.js"></script>
     <script src="~/Jobick/vendor/chartist-plugin-tooltips/js/chartist-plugin-tooltip.min.js"></script>
-    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
-    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
-
-    <script src="~/Jobick/js/custom.min.js"></script>
-    <script src="~/Jobick/js/dlabnav-init.js"></script>
-
-
-    @* Build years and per-year weight sums (normalize per-task: 0..1 -> 0..100, 0..100 stays) *@
-    @{
-        var projectStartYear = Model.StartSate.Year;
-        var projectEndYear   = Model.EndDate.Year;
-
-        var hasTasks   = Model.Tasks?.Any() == true;
-        var minTaskYear = hasTasks ? Model.Tasks.Min(t => t.ExpectedEndDate.Year) : projectStartYear;
-        var maxTaskYear = hasTasks ? Model.Tasks.Max(t => t.ExpectedEndDate.Year) : projectEndYear;
-
-        var minYear = Math.Min(projectStartYear, minTaskYear);
-        var maxYear = Math.Max(projectEndYear,   maxTaskYear);
-
-        // Reverse years so the stacked bar builds from right to left
-        var years = Enumerable.Range(minYear, maxYear - minYear + 1).Reverse().ToList();
-
-        // Sum total weight per end year only, matching the reversed years order
-        var weightPerYear = years
-            .Select(y => Math.Round(
-                Model.Tasks.Where(t => t.ExpectedEndDate.Year == y)
-                           .Sum(t => t.Weight??0)))
-            .ToList();
-
-        var totalAllYears = Math.Round(weightPerYear.Sum(), 2);
-
-        var yearsJson   = System.Text.Json.JsonSerializer.Serialize(years);
-        var weightsJson = System.Text.Json.JsonSerializer.Serialize(weightPerYear);
-        var totalJson   = System.Text.Json.JsonSerializer.Serialize(totalAllYears);
-    }
-
-    <script>
-        // تفعيل التولتيب باستخدام Bootstrap
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            // Initialize donut charts
-            $(".donut").peity("donut");
-
-            // Animate counters
-            var counters = $(".count");
-            var countersQuantity = counters.length;
-            var counter = [];
-
-            for (var i = 0; i < countersQuantity; i++) {
-                counter[i] = parseInt(counters[i].innerHTML);
-            }
-
-            var count = function(start, value, id) {
-                var localStart = start;
-                var interval = setInterval(function() {
-                    if (localStart < value) {
-                        localStart++;
-                        counters[id].innerHTML = localStart;
-                    } else {
-                        clearInterval(interval);
-                    }
-                }, 40);
-            };
-
-            for (var j = 0; j < countersQuantity; j++) {
-                count(0, counter[j], j);
-            }
-
-            // DataTables init for tasks (Arabic UI)
-            $('#tasksTable').DataTable({
-                order: [],
-                responsive: true,
-                columnDefs: [ { targets: [-1, -2], orderable: false } ],
-                language: {
-                    // Localize search and length menu
-                    search: 'بحث:',
-                    searchPlaceholder: 'اكتب للبحث...',
-                    lengthMenu: 'إظهار _MENU_ مُدخل',
-                    // Keep your custom arrows
-                    paginate: { previous: '&lt;', next: '&gt;' },
-                    // Helpful Arabic strings
-                    info: 'إظهار _START_ إلى _END_ من أصل _TOTAL_ مُدخل',
-                    infoEmpty: 'لا توجد بيانات لعرضها',
-                    zeroRecords: 'لا توجد نتائج مطابقة',
-                    infoFiltered: '(مصفاة من إجمالي _MAX_ مُدخل)'
-                }
-            });
-
-            // Import button + upload flow
-            const btn = document.getElementById('btnImportExcel');
-            const fileInput = document.getElementById('excelFileInput');
-            const modalEl = document.getElementById('importPreviewModal');
-            const modal = new bootstrap.Modal(modalEl);
-            btn?.addEventListener('click', function(){ fileInput?.click(); });
-            fileInput?.addEventListener('change', function(){
-                if (!fileInput.files || fileInput.files.length === 0) return;
-                var formData = new FormData();
-                formData.append('projectId', '@Model.Id');
-                formData.append('file', fileInput.files[0]);
-                fetch('@Url.Action("UploadExcel", "Import")', {
-                    method: 'POST',
-                    body: formData
-                }).then(async r => {
-                    if (!r.ok) {
-                        const t = await r.text();
-                        throw new Error(t || 'فشل رفع الملف.');
-                    }
-                    return r.json();
-                }).then(data => {
-                    document.getElementById('importPreviewContent').innerHTML = data.html;
-                    bindTasksImportConfirm();
-                    modal.show();
-                }).catch(err => {
-                    alert('خطأ: ' + (err.message || 'فشل معالجة الملف'));
-                }).finally(() => {
-                    fileInput.value = '';
-                });
-            });
-        });
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var options = {
-                chart: {
-                    type: 'pie',
-                    height: 250
-                },
-                series: [
-                    @completed,
-                    @inProgress,
-                    @notStarted,
-                    @overdue
-                ],
-                labels: ['مكتملة', 'قيد التنفيذ', 'لم تبدأ', 'متأخرة'],
-                colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
-                legend:
-                {
-                    position: 'bottom',
-                    fontFamily: 'inherit',
-                    labels: { colors: 'inherit' }
-                },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function (val, opts) {
-                        return opts.w.globals.series[opts.seriesIndex];
-                    }
-                }
-            };
-            var chart = new ApexCharts(document.querySelector("#tasksPieChart"), options);
-            chart.render();
-        });
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var options = {
-                chart: {
-                    type: 'pie',
-                    height: 250
-                },
-                series: [
-                    @(projectCost > 0 ? Math.Round(totalTasksCost * 100 / projectCost, 2) : 0),
-                    @(projectCost > 0 ? 100 - Math.Round(totalTasksCost * 100 / projectCost, 2) : 0)
-                ],
-                labels: ['تكلفة المهام', 'بقية تكلفة المشروع'],
-                    colors: ['#00c292', '#e0cb09'],
-                legend: {
-                    position: 'bottom',
-                    fontFamily: 'inherit',
-                    labels: { colors: 'inherit' }
-                },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function (val) {
-                        return val + '%';
-                    }
-                }
-            };
-            var chart = new ApexCharts(document.querySelector("#costPieChart"), options);
-            chart.render();
-        });
-    </script>
-
-    <script>
-        // Bind confirm handler after preview HTML is injected
-        function bindTasksImportConfirm() {
-            const btn = document.getElementById('confirmImportBtn');
-            if (!btn) return;
-
-            const showImportError = (message) => {
-                const box = document.querySelector('#importPreviewModal #importErrorBox');
-                if (box) {
-                    box.textContent = message || 'حدث خطأ أثناء الحفظ';
-                    box.classList.remove('d-none');
-                    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } else {
-                    // fallback
-                    console.error(message);
-                }
-            };
-
-            const clearImportError = () => {
-                const box = document.querySelector('#importPreviewModal #importErrorBox');
-                if (box) {
-                    box.textContent = '';
-                    box.classList.add('d-none');
-                }
-            };
-
-            const readErrorMessage = async (r) => {
-                try {
-                    const ct = r.headers.get('content-type') || '';
-                    if (ct.includes('application/json')) {
-                        const j = await r.json();
-                        return j?.message || JSON.stringify(j);
-                    }
-                    return await r.text();
-                } catch {
-                    return 'حدث خطأ أثناء الحفظ';
-                }
-            };
-
-            btn.onclick = async function () {
-                clearImportError();
-
-                const projectId = parseInt(btn.getAttribute('data-project-id')) || 0;
-                const confirmUrl = btn.getAttribute('data-confirm-url') || '@Url.Action("ConfirmImport", "Import")';
-
-                const table = document.querySelector('#importPreviewModal table');
-                const inputs = table ? table.querySelectorAll('input[data-index]') : [];
-                let maxIndex = -1;
-                inputs.forEach(inp => {
-                    const idx = parseInt(inp.getAttribute('data-index'));
-                    if (!isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
-                });
-
-                const getVal = (i, field) => {
-                    const el = document.querySelector('input[data-index="' + i + '"][data-field="' + field + '"]');
-                    return el ? el.value : '';
-                };
-
-                const rows = [];
-                for (let i = 0; i <= maxIndex; i++) {
-                    rows.push({
-                        stageName: getVal(i, 'StageName'),
-                        taskName: getVal(i, 'TaskName'),
-                        implementorDepartment: getVal(i, 'ImplementorDepartment'),
-                        departmentResponsible: getVal(i, 'DepartmentResponsible'),
-                        definitionOfDone: getVal(i, 'DefinitionOfDone'),
-                        manyDaysToComplete: parseInt(getVal(i, 'ManyDaysToComplete')) || null,
-                        expectedStartDate: getVal(i, 'ExpectedStartDate') || null,
-                        expectedEndDate: getVal(i, 'ExpectedEndDate') || null,
-                        doneRatio: parseFloat(getVal(i, 'DoneRatio')) || 0,
-                        plannedPercent: parseFloat(getVal(i, 'PlannedPercent')) || null,
-                        plannedCost: parseFloat(getVal(i, 'PlannedCost')) || null
-                    });
-                }
-
-                try {
-                    const r = await fetch(confirmUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({ projectId, rows })
-                    });
-
-                    if (!r.ok) {
-                        const msg = await readErrorMessage(r);
-                        showImportError(msg);
-                        return;
-                    }
-
-                    // Success
-                    const modalEl = document.getElementById('importPreviewModal');
-                    const instance = bootstrap.Modal.getInstance(modalEl);
-                    instance?.hide();
-                    window.location.reload();
-
-                } catch (err) {
-                    showImportError(err?.message || 'حدث خطأ أثناء الحفظ');
-                }
-            };
-        }
-
-        // Render one horizontal bar per year with total normalized weight of tasks ending that year
-        document.addEventListener("DOMContentLoaded", function () {
-            var labels = @Html.Raw(yearsJson);   // e.g., [2025,2026,2027]
-            var weights = @Html.Raw(weightsJson); // e.g., [30,45,25]
-
-            // Choose a sensible upper bound: at least 100, or the next 10 above the max
-            var maxWeight = weights.length ? Math.max.apply(null, weights) : 0;
-            var high = Math.max(100, Math.ceil(maxWeight / 10) * 10);
-
-            var chart = new Chartist.Bar('#stacked-bar-chart', {
-                // Years on the vertical axis
-                labels: labels.map(String),
-                // Single series (one bar per year)
-                series: [weights]
-            }, {
-                horizontalBars: true,
-                axisX: {
-                    low: 0,
-                    high: high,
-                    onlyInteger: true,
-                    labelInterpolationFnc: function (value) { return value + '%'; }
-                },
-                axisY: {
-                    offset: 50 // make space for year labels
-                },
-                height: (labels.length * 54) + 'px', // wider rows for thicker bars
-                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
-                plugins: [
-                    Chartist.plugins.tooltip({
-                        appendToBody: true,
-                        transformTooltipTextFnc: function (v) { return v + '%'; }
-                    })
-                ]
-            });
-
-            // Modern, wider bars
-            chart.on('draw', function (data) {
-                if (data.type === 'bar') {
-                    data.element.attr({
-                        style: 'stroke:#3498db;stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
-                    });
-                }
-            });
-        });
-    </script>
-
-    <!-- Bullet Chart init -->
-    <script>
-        (function () {
-        var stackedBarChart = function(){
-            if(jQuery('#StackedBarChart').length > 0 ){
-                $('#StackedBarChart').sparkline([
-                    [1, 4, 2],
-                    [2, 3, 2],
-                    [3, 2, 2],
-                    [4, 1, 2]
-                ], {
-                        type: "bar",
-                        height: "200",
-                        barWidth: 10,
-                        barSpacing: 7,
-                        stackedBarColor: ['#f93a0b', '#145650', '#ff5c00']
-                    });
-            }
-        }
-
-            // Init and keep responsive
-            jQuery(function () { stackedBarChart(); });
-            jQuery(window).on('resize', function () { setTimeout(stackedBarChart, 300); });
-        })();
-    </script>
-
-    <script>
-        // Single stacked bar: each stack = sum of task weights (by EndYear)
-        document.addEventListener("DOMContentLoaded", function () {
-            var years   = @Html.Raw(yearsJson);     // numbers
-            var weights = @Html.Raw(weightsJson);   // numbers (sums per year)
-            var total   = @Html.Raw(totalJson);     // sum of all yearly sums
-
-            var high = (Number(total) > 0) ? Number(total) : 100;
-
-            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
-
-            // One bar, stacked by year. Each data point carries meta = year.
-            var series = years.map(function (y, i) {
-                return [{ value: Number(weights[i] || 0), meta: String(y) }];
-            });
-
-            var centers = []; // segment midpoints to draw year labels on X-axis
-
-            var chart = new Chartist.Bar('#stacked-bar-chart', {
-                // Years on the vertical axis
-                labels: labels.map(String),
-                // Single series (one bar per year)
-                series: [weights]
-            }, {
-                horizontalBars: true,
-                axisX: {
-                    low: 0,
-                    high: high,
-                    onlyInteger: true,
-                    labelInterpolationFnc: function (value) { return value + '%'; }
-                },
-                axisY: {
-                    offset: 50
-                },
-                height: (labels.length * 54) + 'px',
-                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
-                plugins: [
-                    Chartist.plugins.tooltip({
-                        appendToBody: true,
-                        transformTooltipTextFnc: function (v) { return v + '%'; }
-                    })
-                ]
-            });
-
-            // Wider, modern style
-            chart.on('draw', function (data) {
-                if (data.type === 'bar') {
-                    var color = colors[data.seriesIndex % colors.length];
-                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
-
-                    var w = Number(weights[data.seriesIndex] || 0);
-                    if (w > 0) {
-                        var cx = data.x1 + (data.x2 - data.x1) / 2;
-                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
-                    }
-                }
-            });
-
-            // Draw years on the X-axis under each segment
-            chart.on('created', function (ctx) {
-                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
-                var y = ctx.chartRect.y2 + 18; // below axis
-                var used = new Set();
-
-                centers.forEach(function (p) {
-                    if (used.has(p.label)) return;
-                    used.add(p.label);
-                    group.elem('text', {
-                        x: p.x,
-                        y: y,
-                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
-                    }).text(p.label);
-                });
-
-                centers = [];
-            });
-        });
-    </script>
-
-    <script>
-        // Single stacked bar: alternate labels above/below with margins and leader lines
-        document.addEventListener("DOMContentLoaded", function () {
-            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
-            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,25]
-            var total   = Number(@Html.Raw(totalJson)) || 0;
-
-            var high = total > 0 ? total : 100;
-
-            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
-
-            // One bar, stacked by year. Each data point carries meta = year
-            var series = years.map(function (y, i) {
-                return [{ value: Number(weights[i] || 0), meta: String(y) }];
-            });
-
-            var centers = []; // segment midpoints for year labels
-
-            var chart = new Chartist.Bar('#stacked-bar-chart', {
-                labels: [''],
-                series: series
-            }, {
-                stackBars: true,
-                horizontalBars: true,
-                axisX: {
-                    low: 0,
-                    high: high,
-                    onlyInteger: true,
-                    labelInterpolationFnc: function (value) { return value + '%'; }
-                },
-                axisY: {
-                    offset: 10
-                },
-                height: (labels.length * 54) + 'px',
-                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
-                plugins: [
-                    Chartist.plugins.tooltip({
-                        appendToBody: true,
-                        transformTooltipTextFnc: function (v) { return v + '%'; }
-                    })
-                ]
-            });
-
-            // Color segments, thicken bar, and collect centers
-            chart.on('draw', function (data) {
-                if (data.type === 'bar') {
-                    var color = colors[data.seriesIndex % colors.length];
-                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
-
-                    var w = Number(weights[data.seriesIndex] || 0);
-                    if (w > 0) {
-                        var cx = data.x1 + (data.x2 - data.x1) / 2;
-                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
-                    }
-                }
-            });
-
-            // Draw years on the X-axis under each segment
-            chart.on('created', function (ctx) {
-                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
-                var y = ctx.chartRect.y2 + 18; // below axis
-                var used = new Set();
-
-                centers.forEach(function (p) {
-                    if (used.has(p.label)) return;
-                    used.add(p.label);
-                    group.elem('text', {
-                        x: p.x,
-                        y: y,
-                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
-                    }).text(p.label);
-                });
-
-                centers = [];
-            });
-        });
-    </script>
-
-    <script>
-        // Single stacked bar: hide zero values; labels above with arrows, responsive
-        document.addEventListener("DOMContentLoaded", function () {
-            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
-            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
-            var total   = Number(@Html.Raw(totalJson)) || 0;
-
-            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
-
-            // Filter out zero values (don’t render 0% segments)
-            var items = years
-                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
-                .filter(function (it) { return it.value > 0; });
-
-            // If everything is zero, show a friendly message
-            if (items.length === 0) {
-                var host = document.querySelector('#stacked-bar-chart');
-                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
-                return;
-            }
-
-            var fYears   = items.map(function (it) { return it.year; });
-            var fWeights = items.map(function (it) { return it.value; });
-
-            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
-            var BAR_THICKNESS = 36; // increased thickness
-
-            // Build stacked series from filtered items
-            var series = fYears.map(function (y, i) {
-                return [{ value: fWeights[i], meta: y }];
-            });
-
-            var segments = []; // for label placement
-
-            var chart = new Chartist.Bar('#stacked-bar-chart', {
-                labels: [''],
-                series: series
-            }, {
-                stackBars: true,
-                horizontalBars: true,
-                fullWidth: true,
-                seriesBarDistance: 0,
-                axisX: {
-                    low: 0,
-                    high: total, // keep original total so proportions remain correct
-                    onlyInteger: true,
-                    labelInterpolationFnc: function () { return ''; }
-                },
-                axisY: { offset: 10 },
-                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
-                height: '240px',
-                plugins: [
-                    Chartist.plugins.tooltip({
-                        appendToBody: true,
-                        transformTooltipTextFnc: function (value) {
-                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
-                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
-                            var meta = active ? active.getAttribute('ct:meta') : '';
-                            return (meta ? meta + ': ' : '') + v + '%';
-                        }
-                    })
-                ]
-            });
-
-            chart.on('draw', function (data) {
-                if (data.type !== 'bar') return;
-
-                var idx = data.seriesIndex;
-                var color = colors[idx % colors.length];
-                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
-
-                // Wider, rounded bar per stack
-                data.element.attr({
-                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
-                });
-
-                // Compute geometry
-                var segW = Math.max(0, (data.x2 - data.x1));
-                var cx   = data.x1 + segW / 2;
-
-                segments.push({
-                    x: cx,
-                    color: color,
-                    year: String(fYears[idx]),
-                    value: value
-                });
-            });
-
-            chart.on('created', function (ctx) {
-                ctx.svg.querySelector('.ct-labels-above')?.remove();
-                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
-
-                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
-                var rowGap = 20;
-
-                // Left->right packing to avoid overlapping labels
-                segments.sort(function (a, b) { return a.x - b.x; });
-                var placed = []; // {row, x1, x2}
-
-                segments.forEach(function (s) {
-                    var text = s.year + ' • ' + s.value + '%';
-
-                    var approxWidth = Math.max(48, text.length * 7.2);
-                    var half = approxWidth / 2;
-
-                    var row = 0, tries = 0, x1, x2;
-                    while (true) {
-                        x1 = s.x - half; x2 = s.x + half;
-                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
-                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
-                        row++; if (++tries > 50) break;
-                    }
-
-                    var y = baseAbove - (row * rowGap);
-
-                    // Leader line + arrow
-                    layer.elem('line', {
-                        x1: s.x, y1: y + 6,
-                        x2: s.x, y2: ctx.chartRect.y2 - 6
-                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
-
-                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
-                    layer.elem('path', {
-                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
-                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
-
-                    layer.elem('text', {
-                        x: s.x, y: y,
-                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
-                    }).text(text);
-                });
-
-                segments = [];
-            });
-
-            // Responsive re-render
-            var t;
-            window.addEventListener('resize', function () {
-                clearTimeout(t);
-                t = setTimeout(function () { chart.update(); }, 150);
-            });
-        });
-    </script>
-
-    <script>
-        // Single stacked bar: hide zero values; labels above with arrows, responsive
-        document.addEventListener("DOMContentLoaded", function () {
-            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
-            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
-            var total   = Number(@Html.Raw(totalJson)) || 0;
-
-            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
-
-            // Filter out zero values (don’t render 0% segments)
-            var items = years
-                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
-                .filter(function (it) { return it.value > 0; });
-
-            // If everything is zero, show a friendly message
-            if (items.length === 0) {
-                var host = document.querySelector('#stacked-bar-chart');
-                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
-                return;
-            }
-
-            var fYears   = items.map(function (it) { return it.year; });
-            var fWeights = items.map(function (it) { return it.value; });
-
-            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
-            var BAR_THICKNESS = 36; // increased thickness
-
-            // Build stacked series from filtered items
-            var series = fYears.map(function (y, i) {
-                return [{ value: fWeights[i], meta: y }];
-            });
-
-            var segments = []; // for label placement
-
-            var chart = new Chartist.Bar('#stacked-bar-chart', {
-                labels: [''],
-                series: series
-            }, {
-                stackBars: true,
-                horizontalBars: true,
-                fullWidth: true,
-                seriesBarDistance: 0,
-                axisX: {
-                    low: 0,
-                    high: total, // keep original total so proportions remain correct
-                    onlyInteger: true,
-                    labelInterpolationFnc: function () { return ''; }
-                },
-                axisY: { offset: 10 },
-                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
-                height: '240px',
-                plugins: [
-                    Chartist.plugins.tooltip({
-                        appendToBody: true,
-                        transformTooltipTextFnc: function (value) {
-                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
-                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
-                            var meta = active ? active.getAttribute('ct:meta') : '';
-                            return (meta ? meta + ': ' : '') + v + '%';
-                        }
-                    })
-                ]
-            });
-
-            chart.on('draw', function (data) {
-                if (data.type !== 'bar') return;
-
-                var idx = data.seriesIndex;
-                var color = colors[idx % colors.length];
-                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
-
-                // Wider, rounded bar per stack
-                data.element.attr({
-                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
-                });
-
-                // Compute geometry
-                var segW = Math.max(0, (data.x2 - data.x1));
-                var cx   = data.x1 + segW / 2;
-
-                segments.push({
-                    x: cx,
-                    color: color,
-                    year: String(fYears[idx]),
-                    value: value
-                });
-            });
-
-            chart.on('created', function (ctx) {
-                ctx.svg.querySelector('.ct-labels-above')?.remove();
-                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
-
-                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
-                var rowGap = 20;
-
-                // Left->right packing to avoid overlapping labels
-                segments.sort(function (a, b) { return a.x - b.x; });
-                var placed = []; // {row, x1, x2}
-
-                segments.forEach(function (s) {
-                    var text = s.year + ' • ' + s.value + '%';
-
-                    var approxWidth = Math.max(48, text.length * 7.2);
-                    var half = approxWidth / 2;
-
-                    var row = 0, tries = 0, x1, x2;
-                    while (true) {
-                        x1 = s.x - half; x2 = s.x + half;
-                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
-                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
-                        row++; if (++tries > 50) break;
-                    }
-
-                    var y = baseAbove - (row * rowGap);
-
-                    // Leader line + arrow
-                    layer.elem('line', {
-                        x1: s.x, y1: y + 6,
-                        x2: s.x, y2: ctx.chartRect.y2 - 6
-                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
-
-                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
-                    layer.elem('path', {
-                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
-                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
-
-                    layer.elem('text', {
-                        x: s.x, y: y,
-                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
-                    }).text(text);
-                });
-
-                segments = [];
-            });
-
-            // Responsive re-render
-            var t;
-            window.addEventListener('resize', function () {
-                clearTimeout(t);
-                t = setTimeout(function () { chart.update(); }, 150);
-            });
-        });
-    </script>
-    }
+    <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
+    <script src="~/Jobick/vendor/peity/jquery.peity.min.js"></script>
+    <script src="~/js/project-details.js"></script>
+}
