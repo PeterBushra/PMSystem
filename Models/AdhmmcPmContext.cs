@@ -46,6 +46,8 @@ public partial class AdhmmcPmContext : DbContext
             entity.Property(e => e.NameAr).HasMaxLength(250);
             entity.Property(e => e.ProjectGoal).HasMaxLength(2500);
             entity.Property(e => e.ResponsibleForImplementing).HasMaxLength(150);
+            entity.Property(e => e.StrategicGoal).HasMaxLength(250);
+            entity.Property(e => e.StrategicProgramme).HasMaxLength(250);
             entity.Property(e => e.SystemOwner).HasMaxLength(150);
             entity.Property(e => e.TotalCost).HasColumnType("decimal(18, 4)");
 
