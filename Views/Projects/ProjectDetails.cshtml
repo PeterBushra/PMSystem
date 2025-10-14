@@ -271,7 +271,7 @@
                 <div class="col-xl-6 col-lg-12">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Stacked bar chart</h4>
+                            <h4 class="card-title">النسبة المخططة لكل سنة</h4>
                         </div>
                         <div class="card-body">
                             <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
@@ -611,7 +611,7 @@
     </script>
 
     <script>
-            document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
             var options = {
                 chart: {
                     type: 'pie',
@@ -644,7 +644,7 @@
     </script>
 
     <script>
-            document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
             var options = {
                 chart: {
                     type: 'pie',
@@ -783,7 +783,7 @@
             var maxWeight = weights.length ? Math.max.apply(null, weights) : 0;
             var high = Math.max(100, Math.ceil(maxWeight / 10) * 10);
 
-            new Chartist.Bar('#stacked-bar-chart', {
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
                 // Years on the vertical axis
                 labels: labels.map(String),
                 // Single series (one bar per year)
@@ -799,7 +799,7 @@
                 axisY: {
                     offset: 50 // make space for year labels
                 },
-                height: (labels.length * 38) + 'px',
+                height: (labels.length * 54) + 'px', // wider rows for thicker bars
                 chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
                 plugins: [
                     Chartist.plugins.tooltip({
@@ -807,6 +807,15 @@
                         transformTooltipTextFnc: function (v) { return v + '%'; }
                     })
                 ]
+            });
+
+            // Modern, wider bars
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    data.element.attr({
+                        style: 'stroke:#3498db;stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                    });
+                }
             });
         });
     </script>
@@ -856,38 +865,34 @@
             var centers = []; // segment midpoints to draw year labels on X-axis
 
             var chart = new Chartist.Bar('#stacked-bar-chart', {
-                labels: [''], // single category
-                series: series
+                // Years on the vertical axis
+                labels: labels.map(String),
+                // Single series (one bar per year)
+                series: [weights]
             }, {
-                stackBars: true,
                 horizontalBars: true,
                 axisX: {
                     low: 0,
                     high: high,
                     onlyInteger: true,
-                    labelInterpolationFnc: function () { return ''; } // hide numbers
+                    labelInterpolationFnc: function (value) { return value + '%'; }
                 },
-                axisY: { offset: 10 },
-                chartPadding: { top: 10, right: 15, bottom: 35, left: 10 },
-                height: '160px',
+                axisY: { offset: 50 },
+                height: (labels.length * 54) + 'px',
+                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
                 plugins: [
                     Chartist.plugins.tooltip({
                         appendToBody: true,
-                        // Show percentage on hover: "<year>: NN%"
-                        tooltipFnc: function (meta, value) {
-                            var v = Number(value) || 0;
-                            var p = total;
-                            return (meta ? meta + ': ' : '');
-                        }
+                        transformTooltipTextFnc: function (v) { return v + '%'; }
                     })
                 ]
             });
 
-            // Color segments and collect center positions
+            // Wider, modern style
             chart.on('draw', function (data) {
                 if (data.type === 'bar') {
                     var color = colors[data.seriesIndex % colors.length];
-                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:16px;' });
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
 
                     var w = Number(weights[data.seriesIndex] || 0);
                     if (w > 0) {
@@ -896,7 +901,6 @@
                     }
                 }
             });
-
 
             // Draw years on the X-axis under each segment
             chart.on('created', function (ctx) {
@@ -948,12 +952,12 @@
                     low: 0,
                     high: high,
                     onlyInteger: true,
-                    labelInterpolationFnc: function () { return ''; } // hide numeric ticks
+                    labelInterpolationFnc: function () { return ''; } // hide numbers
                 },
                 axisY: { offset: 10 },
                 // more space for above/below labels
                 chartPadding: { top: 36, right: 16, bottom: 56, left: 10 },
-                height: '170px',
+                height: '200px',
                 plugins: [
                     Chartist.plugins.tooltip({
                         appendToBody: true,
@@ -974,60 +978,321 @@
             chart.on('draw', function (data) {
                 if (data.type === 'bar') {
                     var color = colors[data.seriesIndex % colors.length];
-                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:22px;stroke-linecap:round;' });
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
 
                     var w = Number(weights[data.seriesIndex] || 0);
                     if (w > 0) {
                         var cx = data.x1 + (data.x2 - data.x1) / 2;
-                        centers.push({ x: cx, label: String(years[data.seriesIndex]), idx: data.seriesIndex, color: color });
+                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
                     }
                 }
             });
 
-            // Draw alternating labels with vertical margins and leader lines
+            // Draw years on the X-axis under each segment
             chart.on('created', function (ctx) {
                 var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
+                var y = ctx.chartRect.y2 + 18; // below axis
+                var used = new Set();
 
-                // Margins relative to axis line
-                var marginAbove = 16; // pixels above the axis
-                var marginBelow = 26; // pixels below the axis
-                var yBelow = ctx.chartRect.y2 + marginBelow;
-                var yAbove = ctx.chartRect.y2 - marginAbove;
-
-                centers
-                    .sort(function (a, b) { return a.idx - b.idx; })
-                    .forEach(function (p, i) {
-                        var isBelow = (i % 2 === 0);
-                        var y = isBelow ? yBelow : yAbove;
-
-                        // leader line for both positions
-                        group.elem('line', {
-                            x1: p.x, y1: ctx.chartRect.y2,
-                            x2: p.x, y2: isBelow ? (y - 10) : (y + 10),
-                            style: 'stroke:#c7c7c7;stroke-width:1;opacity:.85;'
-                        });
-
-                        // small colored marker
-                        group.elem('circle', {
-                            cx: p.x, cy: isBelow ? (y - 10) : (y + 10), r: 3,
-                            style: 'fill:' + p.color + ';stroke:#fff;stroke-width:1;'
-                        });
-
-                        // label text (year)
-                        group.elem('text', {
-                            x: p.x, y: y,
-                            style: 'fill:#495057;font-size:12px;font-weight:600;text-anchor:middle;'
-                        }).text(p.label);
-                    });
+                centers.forEach(function (p) {
+                    if (used.has(p.label)) return;
+                    used.add(p.label);
+                    group.elem('text', {
+                        x: p.x,
+                        y: y,
+                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
+                    }).text(p.label);
+                });
 
                 centers = [];
             });
+        });
+    </script>
 
-            // Responsive redraw
-            var resizeTimer;
-            window.addEventListener('resize', function(){
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function(){ chart.update(); }, 150);
+    <script>
+        // Single stacked bar: hide zero values; labels above with arrows, responsive
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
+
+            // Filter out zero values (don’t render 0% segments)
+            var items = years
+                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
+                .filter(function (it) { return it.value > 0; });
+
+            // If everything is zero, show a friendly message
+            if (items.length === 0) {
+                var host = document.querySelector('#stacked-bar-chart');
+                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
+                return;
+            }
+
+            var fYears   = items.map(function (it) { return it.year; });
+            var fWeights = items.map(function (it) { return it.value; });
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+            var BAR_THICKNESS = 36; // increased thickness
+
+            // Build stacked series from filtered items
+            var series = fYears.map(function (y, i) {
+                return [{ value: fWeights[i], meta: y }];
+            });
+
+            var segments = []; // for label placement
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                fullWidth: true,
+                seriesBarDistance: 0,
+                axisX: {
+                    low: 0,
+                    high: total, // keep original total so proportions remain correct
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; }
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
+                height: '240px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + v;
+                        }
+                    })
+                ]
+            });
+
+            chart.on('draw', function (data) {
+                if (data.type !== 'bar') return;
+
+                var idx = data.seriesIndex;
+                var color = colors[idx % colors.length];
+                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
+
+                // Wider, rounded bar per stack
+                data.element.attr({
+                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                });
+
+                // Compute geometry
+                var segW = Math.max(0, (data.x2 - data.x1));
+                var cx   = data.x1 + segW / 2;
+
+                segments.push({
+                    x: cx,
+                    color: color,
+                    year: String(fYears[idx]),
+                    value: value
+                });
+            });
+
+            chart.on('created', function (ctx) {
+                ctx.svg.querySelector('.ct-labels-above')?.remove();
+                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
+
+                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
+                var rowGap = 20;
+
+                // Left->right packing to avoid overlapping labels
+                segments.sort(function (a, b) { return a.x - b.x; });
+                var placed = []; // {row, x1, x2}
+
+                segments.forEach(function (s) {
+                    var text = s.year + ' • ' + s.value;
+
+                    var approxWidth = Math.max(48, text.length * 7.2);
+                    var half = approxWidth / 2;
+
+                    var row = 0, tries = 0, x1, x2;
+                    while (true) {
+                        x1 = s.x - half; x2 = s.x + half;
+                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
+                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
+                        row++; if (++tries > 50) break;
+                    }
+
+                    var y = baseAbove - (row * rowGap);
+
+                    // Leader line + arrow
+                    layer.elem('line', {
+                        x1: s.x, y1: y + 6,
+                        x2: s.x, y2: ctx.chartRect.y2 - 6
+                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
+
+                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
+                    layer.elem('path', {
+                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
+                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
+
+                    layer.elem('text', {
+                        x: s.x, y: y,
+                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
+                    }).text(text);
+                });
+
+                segments = [];
+            });
+
+            // Responsive re-render
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(function () { chart.update(); }, 150);
+            });
+        });
+    </script>
+
+    <script>
+        // Single stacked bar: hide zero values; labels above with arrows, responsive
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
+
+            // Filter out zero values (don’t render 0% segments)
+            var items = years
+                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
+                .filter(function (it) { return it.value > 0; });
+
+            // If everything is zero, show a friendly message
+            if (items.length === 0) {
+                var host = document.querySelector('#stacked-bar-chart');
+                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
+                return;
+            }
+
+            var fYears   = items.map(function (it) { return it.year; });
+            var fWeights = items.map(function (it) { return it.value; });
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+            var BAR_THICKNESS = 36; // increased thickness
+
+            // Build stacked series from filtered items
+            var series = fYears.map(function (y, i) {
+                return [{ value: fWeights[i], meta: y }];
+            });
+
+            var segments = []; // for label placement
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                fullWidth: true,
+                seriesBarDistance: 0,
+                axisX: {
+                    low: 0,
+                    high: total, // keep original total so proportions remain correct
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; }
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
+                height: '240px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + v;
+                        }
+                    })
+                ]
+            });
+
+            chart.on('draw', function (data) {
+                if (data.type !== 'bar') return;
+
+                var idx = data.seriesIndex;
+                var color = colors[idx % colors.length];
+                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
+
+                // Wider, rounded bar per stack
+                data.element.attr({
+                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                });
+
+                // Compute geometry
+                var segW = Math.max(0, (data.x2 - data.x1));
+                var cx   = data.x1 + segW / 2;
+
+                segments.push({
+                    x: cx,
+                    color: color,
+                    year: String(fYears[idx]),
+                    value: value
+                });
+            });
+
+            chart.on('created', function (ctx) {
+                ctx.svg.querySelector('.ct-labels-above')?.remove();
+                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
+
+                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
+                var rowGap = 20;
+
+                // Left->right packing to avoid overlapping labels
+                segments.sort(function (a, b) { return a.x - b.x; });
+                var placed = []; // {row, x1, x2}
+
+                segments.forEach(function (s) {
+                    var text = s.year + ' • ' + s.value;
+
+                    var approxWidth = Math.max(48, text.length * 7.2);
+                    var half = approxWidth / 2;
+
+                    var row = 0, tries = 0, x1, x2;
+                    while (true) {
+                        x1 = s.x - half; x2 = s.x + half;
+                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
+                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
+                        row++; if (++tries > 50) break;
+                    }
+
+                    var y = baseAbove - (row * rowGap);
+
+                    // Leader line + arrow
+                    layer.elem('line', {
+                        x1: s.x, y1: y + 6,
+                        x2: s.x, y2: ctx.chartRect.y2 - 6
+                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
+
+                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
+                    layer.elem('path', {
+                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
+                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
+
+                    layer.elem('text', {
+                        x: s.x, y: y,
+                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
+                    }).text(text);
+                });
+
+                segments = [];
+            });
+
+            // Responsive re-render
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(function () { chart.update(); }, 150);
             });
         });
     </script>
