@@ -78,6 +78,7 @@
                                                 <div class="invalid-feedback">يرجى إدخال هدف المشروع.</div>
                                             </div>
                                         </div>
+
                                     </div>
 
                                     <div class="col-xl-6">
@@ -100,6 +101,23 @@
                                             <div class="col-lg-6">
                                                 <input asp-for="TotalCost" type="number" step="0.01" class="form-control" placeholder="التكلفة الإجمالية" required />
                                                 <div class="invalid-feedback">يرجى إدخال التكلفة الإجمالية.</div>
+                                            </div>
+                                        </div>
+
+
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">البرنامج الاستراتيجي</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="StrategicProgramme" class="form-control" placeholder="البرنامج الاستراتيجي" required maxlength="150" />
+                                                <div class="invalid-feedback">يرجى إدخال البرنامج الاستراتيجي.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">الهدف الاستراتيجي</label>
+                                            <div class="col-lg-6">
+                                                <input asp-for="StrategicGoal" class="form-control" placeholder="الهدف الاستراتيجي" required maxlength="150" />
+                                                <div class="invalid-feedback">يرجى إدخال الهدف الاستراتيجي.</div>
                                             </div>
                                         </div>
 
