@@ -291,7 +291,7 @@
                                     <span class="small"><strong>@projectCompletionWeighted%</strong></span>
                                 </div>
                                 <div class="progress default-progress position-relative" style="height:14px; overflow:visible;">
-                                    <div class="progress-bar bg-success d-flex align-items-center @(projectCompletionWeighted >= 55 ? "text-white" : "text-dark")"
+                                    <div class="progress-bar @(projectCompletionWeighted >= 100 ? "bg-success" : "bg-warning") d-flex align-items-center @(projectCompletionWeighted >= 55 ? "text-white" : "text-dark")"
                                          style="width:@projectCompletionWeighted%; height:14px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
                                         @if (projectCompletionWeighted >= 18)
                                         {
@@ -536,10 +536,10 @@
         var minYear = Math.Min(projectStartYear, minTaskYear);
         var maxYear = Math.Max(projectEndYear,   maxTaskYear);
 
-        var years = Enumerable.Range(minYear, maxYear - minYear + 1).ToList();
+        // Reverse years so the stacked bar builds from right to left
+        var years = Enumerable.Range(minYear, maxYear - minYear + 1).Reverse().ToList();
 
- 
-        // Sum total weight per end year only
+        // Sum total weight per end year only, matching the reversed years order
         var weightPerYear = years
             .Select(y => Math.Round(
                 Model.Tasks.Where(t => t.ExpectedEndDate.Year == y)
@@ -1180,4 +1180,148 @@
             });
         });
     </script>
-}
+
+    <script>
+        // Single stacked bar: hide zero values; labels above with arrows, responsive
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
+
+            // Filter out zero values (don’t render 0% segments)
+            var items = years
+                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
+                .filter(function (it) { return it.value > 0; });
+
+            // If everything is zero, show a friendly message
+            if (items.length === 0) {
+                var host = document.querySelector('#stacked-bar-chart');
+                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
+                return;
+            }
+
+            var fYears   = items.map(function (it) { return it.year; });
+            var fWeights = items.map(function (it) { return it.value; });
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+            var BAR_THICKNESS = 36; // increased thickness
+
+            // Build stacked series from filtered items
+            var series = fYears.map(function (y, i) {
+                return [{ value: fWeights[i], meta: y }];
+            });
+
+            var segments = []; // for label placement
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                fullWidth: true,
+                seriesBarDistance: 0,
+                axisX: {
+                    low: 0,
+                    high: total, // keep original total so proportions remain correct
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; }
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
+                height: '240px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + v + '%';
+                        }
+                    })
+                ]
+            });
+
+            chart.on('draw', function (data) {
+                if (data.type !== 'bar') return;
+
+                var idx = data.seriesIndex;
+                var color = colors[idx % colors.length];
+                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
+
+                // Wider, rounded bar per stack
+                data.element.attr({
+                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                });
+
+                // Compute geometry
+                var segW = Math.max(0, (data.x2 - data.x1));
+                var cx   = data.x1 + segW / 2;
+
+                segments.push({
+                    x: cx,
+                    color: color,
+                    year: String(fYears[idx]),
+                    value: value
+                });
+            });
+
+            chart.on('created', function (ctx) {
+                ctx.svg.querySelector('.ct-labels-above')?.remove();
+                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
+
+                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
+                var rowGap = 20;
+
+                // Left->right packing to avoid overlapping labels
+                segments.sort(function (a, b) { return a.x - b.x; });
+                var placed = []; // {row, x1, x2}
+
+                segments.forEach(function (s) {
+                    var text = s.year + ' • ' + s.value + '%';
+
+                    var approxWidth = Math.max(48, text.length * 7.2);
+                    var half = approxWidth / 2;
+
+                    var row = 0, tries = 0, x1, x2;
+                    while (true) {
+                        x1 = s.x - half; x2 = s.x + half;
+                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
+                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
+                        row++; if (++tries > 50) break;
+                    }
+
+                    var y = baseAbove - (row * rowGap);
+
+                    // Leader line + arrow
+                    layer.elem('line', {
+                        x1: s.x, y1: y + 6,
+                        x2: s.x, y2: ctx.chartRect.y2 - 6
+                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
+
+                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
+                    layer.elem('path', {
+                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
+                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
+
+                    layer.elem('text', {
+                        x: s.x, y: y,
+                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
+                    }).text(text);
+                });
+
+                segments = [];
+            });
+
+            // Responsive re-render
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(function () { chart.update(); }, 150);
+            });
+        });
+    </script>
+    }
