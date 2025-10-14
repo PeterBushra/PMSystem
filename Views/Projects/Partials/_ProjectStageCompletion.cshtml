@@ -5,7 +5,6 @@
     var projectCompletionWeighted = (decimal)(ViewData["ProjectCompletionWeighted"] ?? 0m);
     var projectWeightCap = (decimal)(ViewData["ProjectWeightCap"] ?? 100m);
 
-    // Reconstruct minimal stage info (reuse original logic) to keep partial independent.
     var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
     var stageInfos = Model.KPIs.StageCompletionByWeight
         .Select(s => {

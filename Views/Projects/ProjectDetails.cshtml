@@ -4,30 +4,26 @@
 
     var today = DateTime.Today;
 
-    const decimal PERCENT_TEXT_INSIDE_THRESHOLD = 18m;   // When to show text inside progress bar
-    const decimal PERCENT_LIGHT_TEXT_THRESHOLD  = 55m;   // When to switch to light text color over bar (still used by JS config)
-    const decimal COMPLETION_SUCCESS_THRESHOLD  = 100m;  // 100% completion
-    const decimal PROJECT_WEIGHT_CAP            = 100m;  // Project task weights sum target
+    const decimal PERCENT_TEXT_INSIDE_THRESHOLD = 18m;
+    const decimal PERCENT_LIGHT_TEXT_THRESHOLD  = 55m;
+    const decimal COMPLETION_SUCCESS_THRESHOLD  = 100m;
+    const decimal PROJECT_WEIGHT_CAP            = 100m;
 
-    // Basic KPI counts
     var completed      = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
     var overdue        = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
     var inProgress     = Model.Tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m && t.ExpectedEndDate >= today);
     var notStarted     = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
     var tasksCount     = Model.Tasks.Count;
 
-    // Costs
     var totalTasksCost = Model.Tasks.Sum(t => t.Cost ?? 0);
     var projectCost    = Model.TotalCost ?? 0;
 
-    // Weights / completion
     var allTasksCompleted = tasksCount > 0 && completed == tasksCount;
     var totalWeightRaw    = Model.Tasks.Sum(t => t.Weight ?? 0m);
     var isWeightsFull     = totalWeightRaw >= PROJECT_WEIGHT_CAP;
     var projectCompletionWeighted = Math.Round(Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)), 2);
     projectCompletionWeighted = Math.Clamp(projectCompletionWeighted, 0m, PROJECT_WEIGHT_CAP);
 
-    // Year distribution (for client charts)
     var projectStartYear = Model.StartSate.Year;
     var projectEndYear   = Model.EndDate.Year;
     var hasTasks         = Model.Tasks?.Any() == true;
@@ -38,11 +34,10 @@
     var yearsAsc         = Enumerable.Range(minYear, maxYear - minYear + 1).ToList();
     var weightPerYearAsc = yearsAsc.Select(y => Math.Round(Model.Tasks.Where(t => t.ExpectedEndDate.Year == y).Sum(t => t.Weight ?? 0m), 2)).ToList();
     yearsAsc.Reverse(); weightPerYearAsc.Reverse();
-    var years            = yearsAsc; // reversed years
-    var weightPerYear    = weightPerYearAsc; // reversed weights
+    var years            = yearsAsc;
+    var weightPerYear    = weightPerYearAsc;
     var totalAllYears    = Math.Round(weightPerYear.Sum(), 2);
 
-    // Client config for external JS
     var clientConfig = new {
         years,
         weights = weightPerYear,
@@ -68,7 +63,6 @@
         ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
         : $"تفاصيل المشروع - {Model.Name}";
 
-    // Expose frequently used values to partials through ViewData (optional usage)
     ViewData["AllTasksCompleted"] = allTasksCompleted;
     ViewData["IsWeightsFull"] = isWeightsFull;
     ViewData["CompletedCount"] = completed;
@@ -86,19 +80,18 @@
 
 <div class="content-body rtl-text-right" dir="rtl">
     <div class="container-fluid">
-        @await Html.PartialAsync("_ProjectBreadcrumb")
-        @await Html.PartialAsync("_ProjectInfo", Model)
-        @await Html.PartialAsync("_ProjectKpis", Model)
-        @await Html.PartialAsync("_ProjectTaskCharts", Model)
-        @await Html.PartialAsync("_ProjectStageCompletion", Model)
-        @await Html.PartialAsync("_ProjectTasksTable", Model)
+        @await Html.PartialAsync("Partials/_ProjectBreadcrumb")
+        @await Html.PartialAsync("Partials/_ProjectInfo", Model)
+        @await Html.PartialAsync("Partials/_ProjectKpis", Model)
+        @await Html.PartialAsync("Partials/_ProjectTaskCharts", Model)
+        @await Html.PartialAsync("Partials/_ProjectStageCompletion", Model)
+        @await Html.PartialAsync("Partials/_ProjectTasksTable", Model)
     </div>
 </div>
 
-<!-- Root config for external JS -->
 <div id="project-details-root" data-config='@Html.Raw(clientConfigJson)'></div>
 
-@await Html.PartialAsync("_ImportPreviewModal")
+@await Html.PartialAsync("Partials/_ImportPreviewModal")
 
 @section Jobick_style {
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
