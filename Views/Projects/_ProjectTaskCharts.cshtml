@@ -1,0 +1,45 @@
+﻿@model Jobick.ViewModels.ProjectDetailsVM
+@{
+    var completed = (int)(ViewData["CompletedCount"] ?? 0);
+    var overdue = (int)(ViewData["OverdueCount"] ?? 0);
+    var inProgress = (int)(ViewData["InProgressCount"] ?? 0);
+    var notStarted = (int)(ViewData["NotStartedCount"] ?? 0);
+    var tasksCount = (int)(ViewData["TasksCount"] ?? 0);
+    var totalTasksCost = (decimal)(ViewData["TotalTasksCost"] ?? 0m);
+    var projectCost = (decimal)(ViewData["ProjectCost"] ?? 0m);
+}
+<div class="row">
+    <!-- Task Status Card -->
+    <div class="card mt-4">
+        <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">حالة المهام</h4></div>
+        <div class="card-body pt-3">
+            <div class="row align-items-center">
+                <div class="col-xl-6 col-sm-6">
+                    <div class="progress default-progress"><div class="progress-bar bg-success progress-animated" style="width:@(tasksCount>0?(completed*100/tasksCount):0)%"></div></div>
+                    <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">المهام المكتملة</span><h6 class="mb-0">@(tasksCount>0?(completed*100/tasksCount):0)%</h6></div>
+                    <div class="progress default-progress"><div class="progress-bar bg-info progress-animated" style="width:@(tasksCount>0?(inProgress*100/tasksCount):0)%"></div></div>
+                    <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">قيد التنفيذ</span><h6 class="mb-0">@(tasksCount>0?(inProgress*100/tasksCount):0)%</h6></div>
+                    <div class="progress default-progress"><div class="progress-bar bg-warning progress-animated" style="width:@(tasksCount>0?(notStarted*100/tasksCount):0)%"></div></div>
+                    <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">لم تبدأ</span><h6 class="mb-0">@(tasksCount>0?(notStarted*100/tasksCount):0)%</h6></div>
+                    <div class="progress default-progress"><div class="progress-bar bg-danger progress-animated" style="width:@(tasksCount>0?(overdue*100/tasksCount):0)%"></div></div>
+                    <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">متأخرة</span><h6 class="mb-0">@(tasksCount>0?(overdue*100/tasksCount):0)%</h6></div>
+                </div>
+                <div class="col-xl-6 col-sm-6"><div id="tasksPieChart"></div></div>
+            </div>
+        </div>
+    </div>
+    <!-- Cost vs Project Card -->
+    <div class="card mt-4">
+        <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">تكلفة المهام مقابل تكلفة المشروع</h4></div>
+        <div class="card-body pt-3">
+            <div class="row align-items-center">
+                <div class="col-xl-6 col-sm-6">
+                    <div class="progress default-progress"><div class="progress-bar bg-primary progress-animated" style="width:@(projectCost>0?(totalTasksCost*100/projectCost):0)%"></div></div>
+                    <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">إجمالي تكلفة المهام</span><h6 class="mb-0">@totalTasksCost.ToString("N2")</h6></div>
+                    <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">تكلفة المشروع</span><h6 class="mb-0">@projectCost.ToString("N2")</h6></div>
+                </div>
+                <div class="col-xl-6 col-sm-6"><div id="costPieChart"></div></div>
+            </div>
+        </div>
+    </div>
+</div>

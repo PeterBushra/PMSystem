@@ -1,0 +1,26 @@
+﻿@model Jobick.ViewModels.ProjectDetailsVM
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title">معلومات المشروع</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-6">
+                        <p><strong>الاسم:</strong><span class="ms-2">@Model.Name</span></p>
+                        <p><strong>الوصف:</strong> @Model.Description</p>
+                        <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
+                        <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("N0")</p>
+                    </div>
+                    <div class="col-xl-6">
+                        <p><strong>مالك النظام:</strong> @Model.SystemOwner</p>
+                        <p><strong>هدف المشروع:</strong> @Model.ProjectGoal</p>
+                        <p><strong>تاريخ البدء:</strong> @Model.StartSate.ToShortDateString()</p>
+                        <p><strong>تاريخ الانتهاء:</strong> @Model.EndDate.ToShortDateString()</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

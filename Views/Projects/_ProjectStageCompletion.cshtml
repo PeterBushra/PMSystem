@@ -1,0 +1,78 @@
+﻿@model Jobick.ViewModels.ProjectDetailsVM
+@{
+    var percentInsideThreshold = (decimal)(ViewData["PercentTextInsideThreshold"] ?? 18m);
+    var completionSuccessThreshold = (decimal)(ViewData["CompletionSuccessThreshold"] ?? 100m);
+    var projectCompletionWeighted = (decimal)(ViewData["ProjectCompletionWeighted"] ?? 0m);
+    var projectWeightCap = (decimal)(ViewData["ProjectWeightCap"] ?? 100m);
+
+    // Reconstruct minimal stage info (reuse original logic) to keep partial independent.
+    var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
+    var stageInfos = Model.KPIs.StageCompletionByWeight
+        .Select(s => {
+            var stageWeightSum = Model.Tasks.Where(t => (t.StageName ?? string.Empty).Trim() == s.Key).Sum(t => t.Weight ?? 0m);
+            return new {
+                Name = s.Key,
+                Percent = Math.Round(s.Value * 100m, 2),
+                WeightSum = stageWeightSum,
+                WeightPercentOfProject = totalProjectWeight > 0 ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2) : 0m,
+                ShowInside = Math.Round(s.Value * 100m, 2) >= percentInsideThreshold,
+                BarSuccess = (s.Value >= 1m || Math.Round(s.Value * 100m, 2) >= completionSuccessThreshold)
+            };
+        })
+        .OrderByDescending(s => s.Percent)
+        .ToList();
+}
+@if (stageInfos.Any())
+{
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card mt-4">
+            <div class="card-header"><h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4></div>
+            <div class="card-body">
+                @foreach (var s in stageInfos)
+                {
+                    var barColorClass = s.BarSuccess ? "bg-success" : "bg-warning";
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="font-w500">@s.Name</span>
+                            <span class="small">وزن المرحلة: <strong>@s.WeightSum%</strong>
+                                @if (totalProjectWeight != projectWeightCap) { <span class="text-muted">(= @s.WeightPercentOfProject% من المشروع)</span> }
+                                &nbsp;|&nbsp; إنجاز: <strong>@s.Percent%</strong>
+                            </span>
+                        </div>
+                        <div class="progress default-progress progress-h22 position-relative">
+                            <div class="progress-bar @barColorClass progress-h22 progress-fs-xs text-white" style="width:@s.Percent%">
+                                @if (s.ShowInside) { <span class="w-100 text-center">@s.Percent% | وزن: @s.WeightSum%</span> }
+                            </div>
+                            @if (!s.ShowInside)
+                            {
+                                <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@s.Percent% | وزن: @s.WeightSum%</span>
+                            }
+                        </div>
+                    </div>
+                }
+                <small class="text-muted d-block mt-2">يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card mt-4">
+            <div class="card-header"><h4 class="card-title">النسبة المخططة لكل سنة</h4></div>
+            <div class="card-body">
+                <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1"><span class="font-w500">اكتمال المشروع الكلي</span><span class="small"><strong>@projectCompletionWeighted%</strong></span></div>
+                    <div class="progress default-progress progress-h20 position-relative">
+                        <div class="progress-bar @(projectCompletionWeighted>=completionSuccessThreshold?"bg-success":"bg-warning") progress-h20 progress-fs-xs text-white" style="width:@projectCompletionWeighted%">
+                            @if (projectCompletionWeighted >= percentInsideThreshold) { <span class="w-100 text-center">@projectCompletionWeighted%</span> }
+                        </div>
+                        @if (projectCompletionWeighted < percentInsideThreshold) {
+                            <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@projectCompletionWeighted%</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}

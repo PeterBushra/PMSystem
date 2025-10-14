@@ -2,54 +2,32 @@
 @{
     Layout = "~/Views/Shared/_LayoutJobick.cshtml";
 
-    // ==========================================================
-    // Centralized Calculations & Constants (Single Location)
-    // ==========================================================
     var today = DateTime.Today;
 
     const decimal PERCENT_TEXT_INSIDE_THRESHOLD = 18m;   // When to show text inside progress bar
-    const decimal PERCENT_LIGHT_TEXT_THRESHOLD  = 55m;   // When to switch to light text color over bar
+    const decimal PERCENT_LIGHT_TEXT_THRESHOLD  = 55m;   // When to switch to light text color over bar (still used by JS config)
     const decimal COMPLETION_SUCCESS_THRESHOLD  = 100m;  // 100% completion
     const decimal PROJECT_WEIGHT_CAP            = 100m;  // Project task weights sum target
 
+    // Basic KPI counts
     var completed      = Model.Tasks.Count(t => t.DoneRatio >= 1.0m);
     var overdue        = Model.Tasks.Count(t => t.ExpectedEndDate < today && t.DoneRatio < 1.0m);
     var inProgress     = Model.Tasks.Count(t => t.DoneRatio > 0 && t.DoneRatio < 1.0m && t.ExpectedEndDate >= today);
     var notStarted     = Model.Tasks.Count(t => (t.DoneRatio == 0 || t.DoneRatio == null) && t.ExpectedEndDate >= today);
     var tasksCount     = Model.Tasks.Count;
 
+    // Costs
     var totalTasksCost = Model.Tasks.Sum(t => t.Cost ?? 0);
     var projectCost    = Model.TotalCost ?? 0;
 
+    // Weights / completion
     var allTasksCompleted = tasksCount > 0 && completed == tasksCount;
     var totalWeightRaw    = Model.Tasks.Sum(t => t.Weight ?? 0m);
     var isWeightsFull     = totalWeightRaw >= PROJECT_WEIGHT_CAP;
-
-    var projectCompletionWeighted = Math.Round(
-        Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)), 2);
+    var projectCompletionWeighted = Math.Round(Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)), 2);
     projectCompletionWeighted = Math.Clamp(projectCompletionWeighted, 0m, PROJECT_WEIGHT_CAP);
 
-    var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
-    var stageInfos = Model.KPIs.StageCompletionByWeight
-        .Select(s => {
-            var name = s.Key;
-            var fraction = s.Value; // 0..1 relative inside stage
-            var percent  = Math.Round(fraction * 100m, 2);
-            var stageWeightSum = Model.Tasks.Where(t => (t.StageName ?? string.Empty).Trim() == name).Sum(t => t.Weight ?? 0m);
-            var stageWeightPercentOfProject = totalProjectWeight > 0 ? Math.Round(stageWeightSum * 100m / totalProjectWeight, 2) : 0m;
-            return new {
-                Name = name,
-                Fraction = fraction,
-                Percent = percent,
-                WeightSum = stageWeightSum,
-                WeightPercentOfProject = stageWeightPercentOfProject,
-                ShowInside = percent >= PERCENT_TEXT_INSIDE_THRESHOLD,
-                BarSuccess = (fraction >= 1m || percent >= COMPLETION_SUCCESS_THRESHOLD)
-            };
-        })
-        .OrderByDescending(s => s.Percent)
-        .ToList();
-
+    // Year distribution (for client charts)
     var projectStartYear = Model.StartSate.Year;
     var projectEndYear   = Model.EndDate.Year;
     var hasTasks         = Model.Tasks?.Any() == true;
@@ -58,16 +36,13 @@
     var minYear          = Math.Min(projectStartYear, minTaskYear);
     var maxYear          = Math.Max(projectEndYear,   maxTaskYear);
     var yearsAsc         = Enumerable.Range(minYear, maxYear - minYear + 1).ToList();
-    var weightPerYearAsc = yearsAsc
-        .Select(y => Math.Round(Model.Tasks.Where(t => t.ExpectedEndDate.Year == y).Sum(t => t.Weight ?? 0m), 2))
-        .ToList();
-    yearsAsc.Reverse();
-    weightPerYearAsc.Reverse();
-    var years         = yearsAsc;          // reversed years
-    var weightPerYear = weightPerYearAsc;  // reversed weights
-    var totalAllYears = Math.Round(weightPerYear.Sum(), 2);
+    var weightPerYearAsc = yearsAsc.Select(y => Math.Round(Model.Tasks.Where(t => t.ExpectedEndDate.Year == y).Sum(t => t.Weight ?? 0m), 2)).ToList();
+    yearsAsc.Reverse(); weightPerYearAsc.Reverse();
+    var years            = yearsAsc; // reversed years
+    var weightPerYear    = weightPerYearAsc; // reversed weights
+    var totalAllYears    = Math.Round(weightPerYear.Sum(), 2);
 
-    // Client config object for external JS
+    // Client config for external JS
     var clientConfig = new {
         years,
         weights = weightPerYear,
@@ -92,279 +67,40 @@
     ViewData["Title"] = allTasksCompleted
         ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
         : $"تفاصيل المشروع - {Model.Name}";
+
+    // Expose frequently used values to partials through ViewData (optional usage)
+    ViewData["AllTasksCompleted"] = allTasksCompleted;
+    ViewData["IsWeightsFull"] = isWeightsFull;
+    ViewData["CompletedCount"] = completed;
+    ViewData["OverdueCount"] = overdue;
+    ViewData["InProgressCount"] = inProgress;
+    ViewData["NotStartedCount"] = notStarted;
+    ViewData["TasksCount"] = tasksCount;
+    ViewData["TotalTasksCost"] = totalTasksCost;
+    ViewData["ProjectCost"] = projectCost;
+    ViewData["ProjectCompletionWeighted"] = projectCompletionWeighted;
+    ViewData["PercentTextInsideThreshold"] = PERCENT_TEXT_INSIDE_THRESHOLD;
+    ViewData["CompletionSuccessThreshold"] = COMPLETION_SUCCESS_THRESHOLD;
+    ViewData["ProjectWeightCap"] = PROJECT_WEIGHT_CAP;
 }
 
 <div class="content-body rtl-text-right" dir="rtl">
     <div class="container-fluid">
-        <!-- ===================== Breadcrumb ===================== -->
-        <div class="row page-titles">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Projects")">المشاريع</a></li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0)">تفاصيل المشروع</a></li>
-            </ol>
-        </div>
-
-        <!-- ===================== Project Information ===================== -->
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">معلومات المشروع</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-xl-6">
-                                <p><strong>الاسم:</strong><span class="ms-2">@Model.Name</span></p>
-                                <p><strong>الوصف:</strong> @Model.Description</p>
-                                <p><strong>المسؤول عن التنفيذ:</strong> @Model.ResponsibleForImplementing</p>
-                                <p><strong>التكلفة الإجمالية:</strong> @Model.TotalCost?.ToString("N0")</p>
-                            </div>
-                            <div class="col-xl-6">
-                                <p><strong>مالك النظام:</strong> @Model.SystemOwner</p>
-                                <p><strong>هدف المشروع:</strong> @Model.ProjectGoal</p>
-                                <p><strong>تاريخ البدء:</strong> @Model.StartSate.ToShortDateString()</p>
-                                <p><strong>تاريخ الانتهاء:</strong> @Model.EndDate.ToShortDateString()</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===================== KPI Summary Statistics ===================== -->
-        <div class="row">
-            <div class="col-xl-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex flex-row flex-wrap justify-content-between align-items-stretch">
-                            <div class="static-icon text-center flex-fill m-2 kpi-box">
-                                <span><i class="fas fa-tasks"></i></span>
-                                <h3 class="count mb-0">@Model.KPIs.TotalTasks</h3>
-                                <p class="mb-0">إجمالي المهام</p>
-                            </div>
-                            <div class="static-icon text-center flex-fill m-2 kpi-box">
-                                <span><i class="fas fa-check-circle text-success"></i></span>
-                                <h3 class="count mb-0">@Model.KPIs.CompletedTasks</h3>
-                                <p class="mb-0">المهام المكتملة</p>
-                            </div>
-                            <div class="static-icon text-center flex-fill m-2 kpi-box">
-                                <span><i class="fas fa-clock text-warning"></i></span>
-                                <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
-                                <p class="mb-0">لم تبدأ</p>
-                            </div>
-                            <div class="static-icon text-center flex-fill m-2 kpi-box">
-                                <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
-                                <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
-                                <p class="mb-0">متأخرة</p>
-                            </div>
-                            @if (!allTasksCompleted)
-                            {
-                                <div class="static-icon text-center flex-fill m-2 kpi-box">
-                                    <span><i class="fas fa-calendar-alt"></i></span>
-                                    <h3 class="count mb-0">@Model.KPIs.DaysRemaining</h3>
-                                    <p class="mb-0">الأيام المتبقية حتى نهاية المشروع</p>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===================== Task Status & Cost Charts ===================== -->
-        <div class="row">
-            <!-- Task Status -->
-            <div class="card mt-4">
-                <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">حالة المهام</h4></div>
-                <div class="card-body pt-3">
-                    <div class="row align-items-center">
-                        <div class="col-xl-6 col-sm-6">
-                            <!-- Completed -->
-                            <div class="progress default-progress"><div class="progress-bar bg-success progress-animated" style="width:@(tasksCount>0?(completed*100/tasksCount):0)%"></div></div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">المهام المكتملة</span><h6 class="mb-0">@(tasksCount>0?(completed*100/tasksCount):0)%</h6></div>
-                            <!-- In progress -->
-                            <div class="progress default-progress"><div class="progress-bar bg-info progress-animated" style="width:@(tasksCount>0?(inProgress*100/tasksCount):0)%"></div></div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">قيد التنفيذ</span><h6 class="mb-0">@(tasksCount>0?(inProgress*100/tasksCount):0)%</h6></div>
-                            <!-- Not started -->
-                            <div class="progress default-progress"><div class="progress-bar bg-warning progress-animated" style="width:@(tasksCount>0?(notStarted*100/tasksCount):0)%"></div></div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">لم تبدأ</span><h6 class="mb-0">@(tasksCount>0?(notStarted*100/tasksCount):0)%</h6></div>
-                            <!-- Overdue -->
-                            <div class="progress default-progress"><div class="progress-bar bg-danger progress-animated" style="width:@(tasksCount>0?(overdue*100/tasksCount):0)%"></div></div>
-                            <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">متأخرة</span><h6 class="mb-0">@(tasksCount>0?(overdue*100/tasksCount):0)%</h6></div>
-                        </div>
-                        <div class="col-xl-6 col-sm-6"><div id="tasksPieChart"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cost vs Project -->
-            <div class="card mt-4">
-                <div class="card-header border-0 pb-0"><h4 class="card-title mb-0">تكلفة المهام مقابل تكلفة المشروع</h4></div>
-                <div class="card-body pt-3">
-                    <div class="row align-items-center">
-                        <div class="col-xl-6 col-sm-6">
-                            <div class="progress default-progress"><div class="progress-bar bg-primary progress-animated" style="width:@(projectCost>0?(totalTasksCost*100/projectCost):0)%"></div></div>
-                            <div class="d-flex align-items-end mt-2 pb-4 justify-content-between"><span class="font-w500">إجمالي تكلفة المهام</span><h6 class="mb-0">@totalTasksCost.ToString("N2")</h6></div>
-                            <div class="d-flex align-items-end mt-2 justify-content-between"><span class="font-w500">تكلفة المشروع</span><h6 class="mb-0">@projectCost.ToString("N2")</h6></div>
-                        </div>
-                        <div class="col-xl-6 col-sm-6"><div id="costPieChart"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            @* ============= Stage Completion By Weight (Per Stage Progress) ============= *@
-            @if (stageInfos.Any())
-            {
-                <div class="col-xl-6">
-                    <div class="card mt-4">
-                        <div class="card-header"><h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4></div>
-                        <div class="card-body">
-                            @foreach (var s in stageInfos)
-                            {
-                                var barColorClass = s.BarSuccess ? "bg-success" : "bg-warning";
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="font-w500">@s.Name</span>
-                                        <span class="small">وزن المرحلة: <strong>@s.WeightSum%</strong>
-                                            @if (totalProjectWeight != PROJECT_WEIGHT_CAP) { <span class="text-muted">(= @s.WeightPercentOfProject% من المشروع)</span> }
-                                            &nbsp;|&nbsp; إنجاز: <strong>@s.Percent%</strong>
-                                        </span>
-                                    </div>
-                                    <div class="progress default-progress progress-h22 position-relative">
-                                        <div class="progress-bar @barColorClass progress-h22 progress-fs-xs text-white" style="width:@s.Percent%">
-                                            @if (s.ShowInside) { <span class="w-100 text-center">@s.Percent% | وزن: @s.WeightSum%</span> }
-                                        </div>
-                                        @if (!s.ShowInside)
-                                        {
-                                            <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@s.Percent% | وزن: @s.WeightSum%</span>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                            <small class="text-muted d-block mt-2">يُحسب الإنجاز = (مجموع (وزن المهمة × نسبة إنجازها) ÷ مجموع أوزان مهام المرحلة) × 100.</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Overall weighted completion bar -->
-                <div class="col-xl-6">
-                    <div class="card mt-4">
-                        <div class="card-header"><h4 class="card-title">النسبة المخططة لكل سنة</h4></div>
-                        <div class="card-body">
-                            <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1"><span class="font-w500">اكتمال المشروع الكلي</span><span class="small"><strong>@projectCompletionWeighted%</strong></span></div>
-                                <div class="progress default-progress progress-h20 position-relative">
-                                    <div class="progress-bar @(projectCompletionWeighted>=COMPLETION_SUCCESS_THRESHOLD?"bg-success":"bg-warning") progress-h20 progress-fs-xs text-white" style="width:@projectCompletionWeighted%">
-                                        @if (projectCompletionWeighted >= PERCENT_TEXT_INSIDE_THRESHOLD) { <span class="w-100 text-center">@projectCompletionWeighted%</span> }
-                                    </div>
-                                    @if (projectCompletionWeighted < PERCENT_TEXT_INSIDE_THRESHOLD) {
-                                        <span class="position-absolute top-50 end-0 translate-middle-y badge-floating-small fw-semibold text-dark">@projectCompletionWeighted%</span>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- ===================== Tasks Grid ===================== -->
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">مهام المشروع</h4>
-                        <div class="d-flex align-items-center gap-2">
-                            @if (isWeightsFull)
-                            {
-                                <span data-bs-toggle="tooltip" title="لا يمكن الإضافة لأن الأوزان بلغت 100%"><a class="btn btn-secondary disabled" href="#" tabindex="-1" aria-disabled="true">إضافة مهمة</a></span>
-                            }
-                            else
-                            {
-                                <a href="@Url.Action("CreateTask", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">إضافة مهمة</a>
-                            }
-                            <button type="button" id="btnImportExcel" class="btn btn-outline-primary"><i class="fas fa-file-excel me-1"></i>استيراد مهام من إكسل</button>
-                            <a href="@Url.Content("~/Template/Template.xlsx")" class="small mt-1 text-decoration-underline" download>تحميل قالب الإكسل</a>
-                            <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="d-none" />
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table id="tasksTable" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center">الحالة</th>
-                                        <th class="text-center">المراحل</th>
-                                        <th class="text-center">المهام</th>
-                                        <th class="text-center">القسم المنفذ</th>
-                                        <th class="text-center">تاريخ البدء</th>
-                                        <th class="text-center">تاريخ الانتهاء</th>
-                                        <th class="text-center">النسبة الفعلية</th>
-                                        <th class="text-center">النسبة المخطط (الوزن)</th>
-                                        <th class="text-center">الصرف المخطط</th>
-                                        <th class="text-center">المرفق</th>
-                                        <th class="text-center"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var task in Model.Tasks)
-                                    {
-                                        var statusClass = task.DoneRatio >= 1.0m ? "badge-success" : task.ExpectedEndDate < DateTime.Today ? "badge-danger" : task.DoneRatio > 0 ? "badge-info" : "badge-warning";
-                                        var statusText  = task.DoneRatio >= 1.0m ? "مكتملة" : task.ExpectedEndDate < DateTime.Today ? "متأخرة" : task.DoneRatio > 0 ? "قيد التنفيذ" : "لم تبدأ";
-                                        <tr>
-                                            <td data-order="@((task.DoneRatio ?? 0m) >= 1 ? 3 : (task.ExpectedEndDate < DateTime.Today ? 0 : (task.DoneRatio > 0 ? 2 : 1)))"><span class="badge @statusClass">@statusText</span></td>
-                                            <td>@task.StageName</td>
-                                            <td>@task.Task1</td>
-                                            <td>@task.ImplementorDepartment</td>
-                                            <td data-order="@task.ExpectedStartDate.ToString("yyyy-MM-dd")">@task.ExpectedStartDate.ToShortDateString()</td>
-                                            <td data-order="@task.ExpectedEndDate.ToString("yyyy-MM-dd")">@task.ExpectedEndDate.ToShortDateString()</td>
-                                            <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
-                                            <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
-                                            <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
-                                            <td class="text-center">
-                                                @if ((task.DoneRatio ?? 0m) >= 1.0m && !string.IsNullOrEmpty(task.AttachmentFilePath))
-                                                {
-                                                    <a asp-controller="Tasks" asp-action="DownloadAttachment" asp-route-id="@task.Id" class="btn btn-success shadow btn-xs sharp" title="تحميل المرفق"><i class="fa fa-download"></i></a>
-                                                }
-                                                else { <span class="text-muted">—</span> }
-                                            </td>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <a asp-controller="Tasks" asp-action="EditTask" asp-route-id="@task.Id" class="btn btn-primary shadow btn-xs sharp me-1"><i class="fas fa-pencil-alt"></i></a>
-                                                    <form asp-controller="Tasks" asp-action="DeleteTask" asp-route-id="@task.Id" asp-route-projectId="@Model.Id" method="post" class="inline-form">
-                                                        <button type="submit" class="btn btn-danger shadow btn-xs sharp"><i class="fa fa-trash"></i></button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        @await Html.PartialAsync("_ProjectBreadcrumb")
+        @await Html.PartialAsync("_ProjectInfo", Model)
+        @await Html.PartialAsync("_ProjectKpis", Model)
+        @await Html.PartialAsync("_ProjectTaskCharts", Model)
+        @await Html.PartialAsync("_ProjectStageCompletion", Model)
+        @await Html.PartialAsync("_ProjectTasksTable", Model)
     </div>
 </div>
 
+<!-- Root config for external JS -->
 <div id="project-details-root" data-config='@Html.Raw(clientConfigJson)'></div>
 
-<!-- ===================== Import Preview Modal ===================== -->
-<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content" id="importPreviewContent">
-            <div class="modal-header"><h5 class="modal-title">معاينة الاستيراد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body"><div class="text-center text-muted">يرجى اختيار ملف إكسل لعرض المعاينة هنا.</div></div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div>
-        </div>
-    </div>
-</div>
+@await Html.PartialAsync("_ImportPreviewModal")
 
 @section Jobick_style {
-    <!-- Styles: DataTables, Chartist, Datepicker -->
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/datatables-rtl.css" />
@@ -374,7 +110,6 @@
 }
 
 @section Jobick_script {
-    <!-- Core / Vendors (kept only once each) -->
     <script src="~/Jobick/vendor/global/global.min.js"></script>
     <script src="~/Jobick/js/custom.min.js"></script>
     <script src="~/Jobick/js/dlabnav-init.js"></script>
