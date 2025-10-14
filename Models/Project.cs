@@ -31,6 +31,10 @@ public partial class Project
 
     public DateTime CreatedDate { get; set; }
 
+    public string? StrategicProgramme { get; set; }
+
+    public string? StrategicGoal { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Task> Tasks { get; set; } = new List<Task>();

@@ -15,6 +15,15 @@
     var totalWeightRaw = Model.Tasks.Sum(t => t.Weight ?? 0m);
     var isWeightsFull = totalWeightRaw >= 100m;
 
+    // Overall project completion by weight = Sum(Weight * DoneRatio)
+    // Weight: 0..100, DoneRatio: 0..1
+    var projectCompletionWeighted = Math.Round(
+        Model.Tasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)),
+        2
+    );
+    if (projectCompletionWeighted < 0m) projectCompletionWeighted = 0m;
+    if (projectCompletionWeighted > 100m) projectCompletionWeighted = 100m;
+
     ViewData["Title"] = allTasksCompleted
         ? new Microsoft.AspNetCore.Html.HtmlString($"تفاصيل المشروع - {Model.Name} <span class=\"badge badge-success ms-2 align-middle\" title=\"اكتمل المشروع بالكامل\">مكتمل</span>")
         : $"تفاصيل المشروع - {Model.Name}";
@@ -81,7 +90,7 @@
                                 <h3 class="count mb-0">@Model.KPIs.NotStartedTasks</h3>
                                 <p class="mb-0">لم تبدأ</p>
                             </div>
-                            <div class="static-icon text-center flex-fill m-2" style="min-width:180px;">
+                            <div class="static-icon text-center flex-fill م-2" style="min-width:180px;">
                                 <span><i class="fas fa-exclamation-triangle text-danger"></i></span>
                                 <h3 class="count mb-0">@Model.KPIs.OverdueTasks</h3>
                                 <p class="mb-0">متأخرة</p>
@@ -191,7 +200,7 @@
                 // Pre-calculate total project weight (should normally be 100, but calculated for safety)
                 var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
 
-                <div class="col-xl-6">
+                <div id="StageCompletionByWeightBar" class="col-xl-6">
                     <div class="card">
                         <div class="card-header">
                             <h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4>
@@ -231,7 +240,7 @@
                                         <span class="font-w500">@stageName</span>
                                         <span class="small">
                                             وزن المرحلة:
-                                            <strong>@stageWeightSum@("%")</strong>
+                                            <strong>@stageWeightSum@( "%")</strong>
                                             @if (totalProjectWeight != 100)
                                             {
                                                 <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
@@ -267,7 +276,43 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-xl-6 col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">النسبة المخططة لكل سنة</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="font-w500">اكتمال المشروع الكلي</span>
+                                    <span class="small"><strong>@projectCompletionWeighted%</strong></span>
+                                </div>
+                                <div class="progress default-progress position-relative" style="height:14px; overflow:visible;">
+                                    <div class="progress-bar @(projectCompletionWeighted >= 100 ? "bg-success" : "bg-warning") d-flex align-items-center @(projectCompletionWeighted >= 55 ? "text-white" : "text-dark")"
+                                         style="width:@projectCompletionWeighted%; height:14px; font-size:.65rem; padding-inline:4px; transition:width .6s;">
+                                        @if (projectCompletionWeighted >= 18)
+                                        {
+                                            <span class="w-100 text-center" style="line-height:1;">@projectCompletionWeighted%</span>
+                                        }
+                                    </div>
+                                    @if (projectCompletionWeighted < 18)
+                                    {
+                                        <span class="position-absolute top-50 end-0 translate-middle-y small fw-semibold text-dark"
+                                              style="font-size:.60rem; padding-inline:4px; background:rgba(255,255,255,.65); border-radius:3px;">
+                                            @projectCompletionWeighted%
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
+
+       
         </div>
 
         <!-- Tasks Grid -->
@@ -308,8 +353,8 @@
                                         <th class="text-center">القسم المنفذ</th>
                                         <th class="text-center">تاريخ البدء </th>
                                         <th class="text-center">تاريخ الانتهاء </th>
-                                        <th class="text-center">النسبة المخطط (الوزن)</th>
                                         <th class="text-center">النسبة الفعلية</th>
+                                        <th class="text-center">النسبة المخطط (الوزن)</th>
                                         <th class="text-center">الصرف المخطط</th>
                                         <th class="text-center">المرفق</th>
                                         <th class="text-center" style="text-align: center !important;"></th>
@@ -333,8 +378,8 @@
                                             <td>@task.ImplementorDepartment</td>
                                             <td data-order="@task.ExpectedStartDate.ToString("yyyy-MM-dd")">@task.ExpectedStartDate.ToShortDateString()</td>
                                             <td data-order="@task.ExpectedEndDate.ToString("yyyy-MM-dd")">@task.ExpectedEndDate.ToShortDateString()</td>
-                                            <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.DoneRatio ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.DoneRatio?.ToString("P0")</td>
+                                            <td data-order="@((task.Weight ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@(((task.Weight ?? 0) / 100m).ToString("P0"))</td>
                                             <td data-order="@((task.Cost ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))">@task.Cost?.ToString("N0")</td>
                                             <td class="text-center">
                                                 @if ((task.DoneRatio ?? 0m) >= 1.0m && !string.IsNullOrEmpty(task.AttachmentFilePath))
@@ -397,12 +442,29 @@
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
-
+    <link rel="stylesheet" href="~/Jobick/vendor/chartist/css/chartist.min.css">
+    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
     <style>
         /* Center DataTables "لا توجد نتائج مطابقة" message */
         #tasksTable tbody td.dataTables_empty,
         table.dataTable tbody td.dataTables_empty {
             text-align: center !important;
+        }
+        /* Make the stacked bar area flex-responsively fill the width */
+        #stacked-bar-chart {
+            width: 100%;
+            min-height: 180px;
+            border-radius: 1px; /* requested radius */
+            overflow: hidden;   /* clip chart corners to radius */
+        }
+        /* Slightly modern feel for Chartist tooltip */
+        .chartist-tooltip { 
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: rgba(33, 37, 41, 0.92);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,.15);
         }
     </style>
 }
@@ -432,6 +494,64 @@
     <!-- DataTables -->
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
+
+
+    <!-- Required vendors -->
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+
+    <!-- Chart sparkline plugin files -->
+    <script src="~/Jobick/vendor/jquery-sparkline/jquery.sparkline.min.js"></script>
+
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="~/Jobick/js/plugins-init/sparkline-init.js"></script>
+
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+
+    <!-- Chart Chartist plugin files -->
+    <script src="~/Jobick/vendor/chartist/js/chartist.min.js"></script>
+    <script src="~/Jobick/vendor/chartist-plugin-tooltips/js/chartist-plugin-tooltip.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+
+    @* Build years and per-year weight sums (normalize per-task: 0..1 -> 0..100, 0..100 stays) *@
+    @{
+        var projectStartYear = Model.StartSate.Year;
+        var projectEndYear   = Model.EndDate.Year;
+
+        var hasTasks   = Model.Tasks?.Any() == true;
+        var minTaskYear = hasTasks ? Model.Tasks.Min(t => t.ExpectedEndDate.Year) : projectStartYear;
+        var maxTaskYear = hasTasks ? Model.Tasks.Max(t => t.ExpectedEndDate.Year) : projectEndYear;
+
+        var minYear = Math.Min(projectStartYear, minTaskYear);
+        var maxYear = Math.Max(projectEndYear,   maxTaskYear);
+
+        // Reverse years so the stacked bar builds from right to left
+        var years = Enumerable.Range(minYear, maxYear - minYear + 1).Reverse().ToList();
+
+        // Sum total weight per end year only, matching the reversed years order
+        var weightPerYear = years
+            .Select(y => Math.Round(
+                Model.Tasks.Where(t => t.ExpectedEndDate.Year == y)
+                           .Sum(t => t.Weight??0)))
+            .ToList();
+
+        var totalAllYears = Math.Round(weightPerYear.Sum(), 2);
+
+        var yearsJson   = System.Text.Json.JsonSerializer.Serialize(years);
+        var weightsJson = System.Text.Json.JsonSerializer.Serialize(weightPerYear);
+        var totalJson   = System.Text.Json.JsonSerializer.Serialize(totalAllYears);
+    }
 
     <script>
         // تفعيل التولتيب باستخدام Bootstrap
@@ -525,7 +645,7 @@
     </script>
 
     <script>
-            document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
             var options = {
                 chart: {
                     type: 'pie',
@@ -558,7 +678,7 @@
     </script>
 
     <script>
-            document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
             var options = {
                 chart: {
                     type: 'pie',
@@ -687,5 +807,521 @@
                 }
             };
         }
+
+        // Render one horizontal bar per year with total normalized weight of tasks ending that year
+        document.addEventListener("DOMContentLoaded", function () {
+            var labels = @Html.Raw(yearsJson);   // e.g., [2025,2026,2027]
+            var weights = @Html.Raw(weightsJson); // e.g., [30,45,25]
+
+            // Choose a sensible upper bound: at least 100, or the next 10 above the max
+            var maxWeight = weights.length ? Math.max.apply(null, weights) : 0;
+            var high = Math.max(100, Math.ceil(maxWeight / 10) * 10);
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                // Years on the vertical axis
+                labels: labels.map(String),
+                // Single series (one bar per year)
+                series: [weights]
+            }, {
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function (value) { return value + '%'; }
+                },
+                axisY: {
+                    offset: 50 // make space for year labels
+                },
+                height: (labels.length * 54) + 'px', // wider rows for thicker bars
+                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (v) { return v + '%'; }
+                    })
+                ]
+            });
+
+            // Modern, wider bars
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    data.element.attr({
+                        style: 'stroke:#3498db;stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                    });
+                }
+            });
+        });
     </script>
-}
+
+    <!-- Bullet Chart init -->
+    <script>
+        (function () {
+        var stackedBarChart = function(){
+            if(jQuery('#StackedBarChart').length > 0 ){
+                $('#StackedBarChart').sparkline([
+                    [1, 4, 2],
+                    [2, 3, 2],
+                    [3, 2, 2],
+                    [4, 1, 2]
+                ], {
+                        type: "bar",
+                        height: "200",
+                        barWidth: 10,
+                        barSpacing: 7,
+                        stackedBarColor: ['#f93a0b', '#145650', '#ff5c00']
+                    });
+            }
+        }
+
+            // Init and keep responsive
+            jQuery(function () { stackedBarChart(); });
+            jQuery(window).on('resize', function () { setTimeout(stackedBarChart, 300); });
+        })();
+    </script>
+
+    <script>
+        // Single stacked bar: each stack = sum of task weights (by EndYear)
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // numbers
+            var weights = @Html.Raw(weightsJson);   // numbers (sums per year)
+            var total   = @Html.Raw(totalJson);     // sum of all yearly sums
+
+            var high = (Number(total) > 0) ? Number(total) : 100;
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+
+            // One bar, stacked by year. Each data point carries meta = year.
+            var series = years.map(function (y, i) {
+                return [{ value: Number(weights[i] || 0), meta: String(y) }];
+            });
+
+            var centers = []; // segment midpoints to draw year labels on X-axis
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                // Years on the vertical axis
+                labels: labels.map(String),
+                // Single series (one bar per year)
+                series: [weights]
+            }, {
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function (value) { return value + '%'; }
+                },
+                axisY: {
+                    offset: 50
+                },
+                height: (labels.length * 54) + 'px',
+                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (v) { return v + '%'; }
+                    })
+                ]
+            });
+
+            // Wider, modern style
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    var color = colors[data.seriesIndex % colors.length];
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
+
+                    var w = Number(weights[data.seriesIndex] || 0);
+                    if (w > 0) {
+                        var cx = data.x1 + (data.x2 - data.x1) / 2;
+                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
+                    }
+                }
+            });
+
+            // Draw years on the X-axis under each segment
+            chart.on('created', function (ctx) {
+                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
+                var y = ctx.chartRect.y2 + 18; // below axis
+                var used = new Set();
+
+                centers.forEach(function (p) {
+                    if (used.has(p.label)) return;
+                    used.add(p.label);
+                    group.elem('text', {
+                        x: p.x,
+                        y: y,
+                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
+                    }).text(p.label);
+                });
+
+                centers = [];
+            });
+        });
+    </script>
+
+    <script>
+        // Single stacked bar: alternate labels above/below with margins and leader lines
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,25]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            var high = total > 0 ? total : 100;
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+
+            // One bar, stacked by year. Each data point carries meta = year
+            var series = years.map(function (y, i) {
+                return [{ value: Number(weights[i] || 0), meta: String(y) }];
+            });
+
+            var centers = []; // segment midpoints for year labels
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function (value) { return value + '%'; }
+                },
+                axisY: {
+                    offset: 10
+                },
+                height: (labels.length * 54) + 'px',
+                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (v) { return v + '%'; }
+                    })
+                ]
+            });
+
+            // Color segments, thicken bar, and collect centers
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    var color = colors[data.seriesIndex % colors.length];
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:34px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));' });
+
+                    var w = Number(weights[data.seriesIndex] || 0);
+                    if (w > 0) {
+                        var cx = data.x1 + (data.x2 - data.x1) / 2;
+                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
+                    }
+                }
+            });
+
+            // Draw years on the X-axis under each segment
+            chart.on('created', function (ctx) {
+                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
+                var y = ctx.chartRect.y2 + 18; // below axis
+                var used = new Set();
+
+                centers.forEach(function (p) {
+                    if (used.has(p.label)) return;
+                    used.add(p.label);
+                    group.elem('text', {
+                        x: p.x,
+                        y: y,
+                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
+                    }).text(p.label);
+                });
+
+                centers = [];
+            });
+        });
+    </script>
+
+    <script>
+        // Single stacked bar: hide zero values; labels above with arrows, responsive
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
+
+            // Filter out zero values (don’t render 0% segments)
+            var items = years
+                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
+                .filter(function (it) { return it.value > 0; });
+
+            // If everything is zero, show a friendly message
+            if (items.length === 0) {
+                var host = document.querySelector('#stacked-bar-chart');
+                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
+                return;
+            }
+
+            var fYears   = items.map(function (it) { return it.year; });
+            var fWeights = items.map(function (it) { return it.value; });
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+            var BAR_THICKNESS = 36; // increased thickness
+
+            // Build stacked series from filtered items
+            var series = fYears.map(function (y, i) {
+                return [{ value: fWeights[i], meta: y }];
+            });
+
+            var segments = []; // for label placement
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                fullWidth: true,
+                seriesBarDistance: 0,
+                axisX: {
+                    low: 0,
+                    high: total, // keep original total so proportions remain correct
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; }
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
+                height: '240px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + v + '%';
+                        }
+                    })
+                ]
+            });
+
+            chart.on('draw', function (data) {
+                if (data.type !== 'bar') return;
+
+                var idx = data.seriesIndex;
+                var color = colors[idx % colors.length];
+                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
+
+                // Wider, rounded bar per stack
+                data.element.attr({
+                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                });
+
+                // Compute geometry
+                var segW = Math.max(0, (data.x2 - data.x1));
+                var cx   = data.x1 + segW / 2;
+
+                segments.push({
+                    x: cx,
+                    color: color,
+                    year: String(fYears[idx]),
+                    value: value
+                });
+            });
+
+            chart.on('created', function (ctx) {
+                ctx.svg.querySelector('.ct-labels-above')?.remove();
+                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
+
+                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
+                var rowGap = 20;
+
+                // Left->right packing to avoid overlapping labels
+                segments.sort(function (a, b) { return a.x - b.x; });
+                var placed = []; // {row, x1, x2}
+
+                segments.forEach(function (s) {
+                    var text = s.year + ' • ' + s.value + '%';
+
+                    var approxWidth = Math.max(48, text.length * 7.2);
+                    var half = approxWidth / 2;
+
+                    var row = 0, tries = 0, x1, x2;
+                    while (true) {
+                        x1 = s.x - half; x2 = s.x + half;
+                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
+                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
+                        row++; if (++tries > 50) break;
+                    }
+
+                    var y = baseAbove - (row * rowGap);
+
+                    // Leader line + arrow
+                    layer.elem('line', {
+                        x1: s.x, y1: y + 6,
+                        x2: s.x, y2: ctx.chartRect.y2 - 6
+                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
+
+                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
+                    layer.elem('path', {
+                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
+                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
+
+                    layer.elem('text', {
+                        x: s.x, y: y,
+                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
+                    }).text(text);
+                });
+
+                segments = [];
+            });
+
+            // Responsive re-render
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(function () { chart.update(); }, 150);
+            });
+        });
+    </script>
+
+    <script>
+        // Single stacked bar: hide zero values; labels above with arrows, responsive
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,0]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            if (!Array.isArray(years) || !Array.isArray(weights) || total <= 0) return;
+
+            // Filter out zero values (don’t render 0% segments)
+            var items = years
+                .map(function (y, i) { return { year: String(y), value: Number(weights[i] || 0) }; })
+                .filter(function (it) { return it.value > 0; });
+
+            // If everything is zero, show a friendly message
+            if (items.length === 0) {
+                var host = document.querySelector('#stacked-bar-chart');
+                if (host) host.innerHTML = '<div class="text-muted small text-center py-3">لا توجد بيانات لعرضها</div>';
+                return;
+            }
+
+            var fYears   = items.map(function (it) { return it.year; });
+            var fWeights = items.map(function (it) { return it.value; });
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+            var BAR_THICKNESS = 36; // increased thickness
+
+            // Build stacked series from filtered items
+            var series = fYears.map(function (y, i) {
+                return [{ value: fWeights[i], meta: y }];
+            });
+
+            var segments = []; // for label placement
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                fullWidth: true,
+                seriesBarDistance: 0,
+                axisX: {
+                    low: 0,
+                    high: total, // keep original total so proportions remain correct
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; }
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 84, right: 18, bottom: 18, left: 12 },
+                height: '240px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0, p = total ? (v * 100 / total) : 0;
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + v + '%';
+                        }
+                    })
+                ]
+            });
+
+            chart.on('draw', function (data) {
+                if (data.type !== 'bar') return;
+
+                var idx = data.seriesIndex;
+                var color = colors[idx % colors.length];
+                var value = Number(fWeights[idx] || 0); // already > 0 after filtering
+
+                // Wider, rounded bar per stack
+                data.element.attr({
+                    style: 'stroke:' + color + ';stroke-width:' + BAR_THICKNESS + 'px;stroke-linecap:round;filter: drop-shadow(0 1px 3px rgba(0,0,0,.12));'
+                });
+
+                // Compute geometry
+                var segW = Math.max(0, (data.x2 - data.x1));
+                var cx   = data.x1 + segW / 2;
+
+                segments.push({
+                    x: cx,
+                    color: color,
+                    year: String(fYears[idx]),
+                    value: value
+                });
+            });
+
+            chart.on('created', function (ctx) {
+                ctx.svg.querySelector('.ct-labels-above')?.remove();
+                var layer = ctx.svg.elem('g', { class: 'ct-labels-above' });
+
+                var baseAbove = ctx.chartRect.y2 - 28; // first row above axis
+                var rowGap = 20;
+
+                // Left->right packing to avoid overlapping labels
+                segments.sort(function (a, b) { return a.x - b.x; });
+                var placed = []; // {row, x1, x2}
+
+                segments.forEach(function (s) {
+                    var text = s.year + ' • ' + s.value + '%';
+
+                    var approxWidth = Math.max(48, text.length * 7.2);
+                    var half = approxWidth / 2;
+
+                    var row = 0, tries = 0, x1, x2;
+                    while (true) {
+                        x1 = s.x - half; x2 = s.x + half;
+                        var collides = placed.some(function (p) { return p.row === row && !(x2 < p.x1 || x1 > p.x2); });
+                        if (!collides) { placed.push({ row: row, x1: x1, x2: x2 }); break; }
+                        row++; if (++tries > 50) break;
+                    }
+
+                    var y = baseAbove - (row * rowGap);
+
+                    // Leader line + arrow
+                    layer.elem('line', {
+                        x1: s.x, y1: y + 6,
+                        x2: s.x, y2: ctx.chartRect.y2 - 6
+                    }).attr({ style: 'stroke:' + s.color + ';stroke-width:1;opacity:.95;' });
+
+                    var ax = s.x, ay = ctx.chartRect.y2 - 6, aw = 6, ah = 7;
+                    layer.elem('path', {
+                        d: 'M ' + ax + ' ' + ay + ' L ' + (ax - aw/2) + ' ' + (ay - ah) + ' L ' + (ax + aw/2) + ' ' + (ay - ah) + ' Z'
+                    }).attr({ style: 'fill:' + s.color + ';opacity:.95;' });
+
+                    layer.elem('text', {
+                        x: s.x, y: y,
+                        style: 'fill:#2b2f33;font-size:12px;font-weight:600;text-anchor:middle;'
+                    }).text(text);
+                });
+
+                segments = [];
+            });
+
+            // Responsive re-render
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(function () { chart.update(); }, 150);
+            });
+        });
+    </script>
+    }
