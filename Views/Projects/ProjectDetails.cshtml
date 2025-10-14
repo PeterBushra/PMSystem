@@ -191,7 +191,7 @@
                 // Pre-calculate total project weight (should normally be 100, but calculated for safety)
                 var totalProjectWeight = Model.Tasks.Sum(t => t.Weight ?? 0m);
 
-                <div class="col-xl-6">
+                <div id="StageCompletionByWeightBar" class="col-xl-6">
                     <div class="card">
                         <div class="card-header">
                             <h4 class="card-title">النسبة الفعلية مقابل المخطط (كل مرحلة = 100%)</h4>
@@ -231,7 +231,7 @@
                                         <span class="font-w500">@stageName</span>
                                         <span class="small">
                                             وزن المرحلة:
-                                            <strong>@stageWeightSum@("%")</strong>
+                                            <strong>@stageWeightSum@( "%")</strong>
                                             @if (totalProjectWeight != 100)
                                             {
                                                 <span class="text-muted">(= @stageWeightPercentOfProject% من المشروع)</span>
@@ -267,7 +267,20 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-xl-6 col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Stacked bar chart</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="stacked-bar-chart" class="ct-chart ct-golden-section chartlist-chart"></div>
+                        </div>
+                    </div>
+                </div>
             }
+
+       
         </div>
 
         <!-- Tasks Grid -->
@@ -397,12 +410,27 @@
     <link href="~/Jobick/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="~/Jobick/vendor/datatables/responsive/responsive.css" rel="stylesheet" />
     <link href="~/css/datatables-rtl.css" rel="stylesheet" />
-
+    <link rel="stylesheet" href="~/Jobick/vendor/chartist/css/chartist.min.css">
+    <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
     <style>
         /* Center DataTables "لا توجد نتائج مطابقة" message */
         #tasksTable tbody td.dataTables_empty,
         table.dataTable tbody td.dataTables_empty {
             text-align: center !important;
+        }
+        /* Make the stacked bar area flex-responsively fill the width */
+        #stacked-bar-chart {
+            width: 100%;
+            min-height: 180px;
+        }
+        /* Slightly modern feel for Chartist tooltip */
+        .chartist-tooltip { 
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: rgba(33, 37, 41, 0.92);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,.15);
         }
     </style>
 }
@@ -432,6 +460,64 @@
     <!-- DataTables -->
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
+
+
+    <!-- Required vendors -->
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+
+    <!-- Chart sparkline plugin files -->
+    <script src="~/Jobick/vendor/jquery-sparkline/jquery.sparkline.min.js"></script>
+
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="~/Jobick/js/plugins-init/sparkline-init.js"></script>
+
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+    <script src="~/Jobick/vendor/global/global.min.js"></script>
+    <script src="~/Jobick/vendor/chartjs/chart.bundle.min.js"></script>
+
+    <!-- Chart Chartist plugin files -->
+    <script src="~/Jobick/vendor/chartist/js/chartist.min.js"></script>
+    <script src="~/Jobick/vendor/chartist-plugin-tooltips/js/chartist-plugin-tooltip.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <script src="~/Jobick/vendor/bootstrap-datepicker-master/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="~/Jobick/js/custom.min.js"></script>
+    <script src="~/Jobick/js/dlabnav-init.js"></script>
+
+
+    @* Build years and per-year weight sums (normalize per-task: 0..1 -> 0..100, 0..100 stays) *@
+    @{
+        var projectStartYear = Model.StartSate.Year;
+        var projectEndYear   = Model.EndDate.Year;
+
+        var hasTasks   = Model.Tasks?.Any() == true;
+        var minTaskYear = hasTasks ? Model.Tasks.Min(t => t.ExpectedEndDate.Year) : projectStartYear;
+        var maxTaskYear = hasTasks ? Model.Tasks.Max(t => t.ExpectedEndDate.Year) : projectEndYear;
+
+        var minYear = Math.Min(projectStartYear, minTaskYear);
+        var maxYear = Math.Max(projectEndYear,   maxTaskYear);
+
+        var years = Enumerable.Range(minYear, maxYear - minYear + 1).ToList();
+
+ 
+        // Sum total weight per end year only
+        var weightPerYear = years
+            .Select(y => Math.Round(
+                Model.Tasks.Where(t => t.ExpectedEndDate.Year == y)
+                           .Sum(t => t.Weight??0)))
+            .ToList();
+
+        var totalAllYears = Math.Round(weightPerYear.Sum(), 2);
+
+        var yearsJson   = System.Text.Json.JsonSerializer.Serialize(years);
+        var weightsJson = System.Text.Json.JsonSerializer.Serialize(weightPerYear);
+        var totalJson   = System.Text.Json.JsonSerializer.Serialize(totalAllYears);
+    }
 
     <script>
         // تفعيل التولتيب باستخدام Bootstrap
@@ -687,5 +773,262 @@
                 }
             };
         }
+
+        // Render one horizontal bar per year with total normalized weight of tasks ending that year
+        document.addEventListener("DOMContentLoaded", function () {
+            var labels = @Html.Raw(yearsJson);   // e.g., [2025,2026,2027]
+            var weights = @Html.Raw(weightsJson); // e.g., [30,45,25]
+
+            // Choose a sensible upper bound: at least 100, or the next 10 above the max
+            var maxWeight = weights.length ? Math.max.apply(null, weights) : 0;
+            var high = Math.max(100, Math.ceil(maxWeight / 10) * 10);
+
+            new Chartist.Bar('#stacked-bar-chart', {
+                // Years on the vertical axis
+                labels: labels.map(String),
+                // Single series (one bar per year)
+                series: [weights]
+            }, {
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function (value) { return value + '%'; }
+                },
+                axisY: {
+                    offset: 50 // make space for year labels
+                },
+                height: (labels.length * 38) + 'px',
+                chartPadding: { top: 10, right: 15, bottom: 10, left: 15 },
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        transformTooltipTextFnc: function (v) { return v + '%'; }
+                    })
+                ]
+            });
+        });
+    </script>
+
+    <!-- Bullet Chart init -->
+    <script>
+        (function () {
+        var stackedBarChart = function(){
+            if(jQuery('#StackedBarChart').length > 0 ){
+                $('#StackedBarChart').sparkline([
+                    [1, 4, 2],
+                    [2, 3, 2],
+                    [3, 2, 2],
+                    [4, 1, 2]
+                ], {
+                        type: "bar",
+                        height: "200",
+                        barWidth: 10,
+                        barSpacing: 7,
+                        stackedBarColor: ['#f93a0b', '#145650', '#ff5c00']
+                    });
+            }
+        }
+
+            // Init and keep responsive
+            jQuery(function () { stackedBarChart(); });
+            jQuery(window).on('resize', function () { setTimeout(stackedBarChart, 300); });
+        })();
+    </script>
+
+    <script>
+        // Single stacked bar: each stack = sum of task weights (by EndYear)
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // numbers
+            var weights = @Html.Raw(weightsJson);   // numbers (sums per year)
+            var total   = @Html.Raw(totalJson);     // sum of all yearly sums
+
+            var high = (Number(total) > 0) ? Number(total) : 100;
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+
+            // One bar, stacked by year. Each data point carries meta = year.
+            var series = years.map(function (y, i) {
+                return [{ value: Number(weights[i] || 0), meta: String(y) }];
+            });
+
+            var centers = []; // segment midpoints to draw year labels on X-axis
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''], // single category
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; } // hide numbers
+                },
+                axisY: { offset: 10 },
+                chartPadding: { top: 10, right: 15, bottom: 35, left: 10 },
+                height: '160px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        // Show percentage on hover: "<year>: NN%"
+                        tooltipFnc: function (meta, value) {
+                            var v = Number(value) || 0;
+                            var p = total;
+                            return (meta ? meta + ': ' : '');
+                        }
+                    })
+                ]
+            });
+
+            // Color segments and collect center positions
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    var color = colors[data.seriesIndex % colors.length];
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:16px;' });
+
+                    var w = Number(weights[data.seriesIndex] || 0);
+                    if (w > 0) {
+                        var cx = data.x1 + (data.x2 - data.x1) / 2;
+                        centers.push({ x: cx, label: String(years[data.seriesIndex]) });
+                    }
+                }
+            });
+
+
+            // Draw years on the X-axis under each segment
+            chart.on('created', function (ctx) {
+                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
+                var y = ctx.chartRect.y2 + 18; // below axis
+                var used = new Set();
+
+                centers.forEach(function (p) {
+                    if (used.has(p.label)) return;
+                    used.add(p.label);
+                    group.elem('text', {
+                        x: p.x,
+                        y: y,
+                        style: 'fill:#6c757d;font-size:11px;text-anchor:middle;'
+                    }).text(p.label);
+                });
+
+                centers = [];
+            });
+        });
+    </script>
+
+    <script>
+        // Single stacked bar: alternate labels above/below with margins and leader lines
+        document.addEventListener("DOMContentLoaded", function () {
+            var years   = @Html.Raw(yearsJson);     // e.g., [2023,2024,2025]
+            var weights = @Html.Raw(weightsJson);   // e.g., [30,45,25]
+            var total   = Number(@Html.Raw(totalJson)) || 0;
+
+            // Use the total as the max so widths are proportional to the whole
+            var high = total > 0 ? total : 100;
+
+            var colors = ['#1abc9c','#3498db','#9b59b6','#f1c40f','#e67e22','#e74c3c','#2ecc71','#7f8c8d'];
+
+            // One bar, stacked by year. Each data point carries meta = year
+            var series = years.map(function (y, i) {
+                return [{ value: Number(weights[i] || 0), meta: String(y) }];
+            });
+
+            var centers = []; // segment midpoints for year labels
+
+            var chart = new Chartist.Bar('#stacked-bar-chart', {
+                labels: [''],
+                series: series
+            }, {
+                stackBars: true,
+                horizontalBars: true,
+                axisX: {
+                    low: 0,
+                    high: high,
+                    onlyInteger: true,
+                    labelInterpolationFnc: function () { return ''; } // hide numeric ticks
+                },
+                axisY: { offset: 10 },
+                // more space for above/below labels
+                chartPadding: { top: 36, right: 16, bottom: 56, left: 10 },
+                height: '170px',
+                plugins: [
+                    Chartist.plugins.tooltip({
+                        appendToBody: true,
+                        // Show "<year>: NN%" on hover
+                        transformTooltipTextFnc: function (value) {
+                            var v = Number(value) || 0;
+                            var p = total > 0 ? (v * 100 / total) : 0;
+                            // Try to read year from ct:meta set on the bar element
+                            var active = document.querySelector('.chartist-tooltip.tooltip-show');
+                            var meta = active ? active.getAttribute('ct:meta') : '';
+                            return (meta ? meta + ': ' : '') + p.toFixed(2) + '%';
+                        }
+                    })
+                ]
+            });
+
+            // Color segments, thicken bar, and collect centers
+            chart.on('draw', function (data) {
+                if (data.type === 'bar') {
+                    var color = colors[data.seriesIndex % colors.length];
+                    data.element.attr({ style: 'stroke:' + color + ';stroke-width:22px;stroke-linecap:round;' });
+
+                    var w = Number(weights[data.seriesIndex] || 0);
+                    if (w > 0) {
+                        var cx = data.x1 + (data.x2 - data.x1) / 2;
+                        centers.push({ x: cx, label: String(years[data.seriesIndex]), idx: data.seriesIndex, color: color });
+                    }
+                }
+            });
+
+            // Draw alternating labels with vertical margins and leader lines
+            chart.on('created', function (ctx) {
+                var group = ctx.svg.elem('g', { class: 'ct-custom-xlabels' });
+
+                // Margins relative to axis line
+                var marginAbove = 16; // pixels above the axis
+                var marginBelow = 26; // pixels below the axis
+                var yBelow = ctx.chartRect.y2 + marginBelow;
+                var yAbove = ctx.chartRect.y2 - marginAbove;
+
+                centers
+                    .sort(function (a, b) { return a.idx - b.idx; })
+                    .forEach(function (p, i) {
+                        var isBelow = (i % 2 === 0);
+                        var y = isBelow ? yBelow : yAbove;
+
+                        // leader line for both positions
+                        group.elem('line', {
+                            x1: p.x, y1: ctx.chartRect.y2,
+                            x2: p.x, y2: isBelow ? (y - 10) : (y + 10),
+                            style: 'stroke:#c7c7c7;stroke-width:1;opacity:.85;'
+                        });
+
+                        // small colored marker
+                        group.elem('circle', {
+                            cx: p.x, cy: isBelow ? (y - 10) : (y + 10), r: 3,
+                            style: 'fill:' + p.color + ';stroke:#fff;stroke-width:1;'
+                        });
+
+                        // label text (year)
+                        group.elem('text', {
+                            x: p.x, y: y,
+                            style: 'fill:#495057;font-size:12px;font-weight:600;text-anchor:middle;'
+                        }).text(p.label);
+                    });
+
+                centers = [];
+            });
+
+            // Responsive redraw
+            var resizeTimer;
+            window.addEventListener('resize', function(){
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function(){ chart.update(); }, 150);
+            });
+        });
     </script>
 }
