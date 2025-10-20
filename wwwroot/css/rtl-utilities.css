@@ -1,0 +1,42 @@
+/* RTL and Text Alignment Utilities */
+
+.rtl-text-right {
+    direction: rtl;
+    text-align: right;
+}
+
+.content-body-rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.fix-wrapper-rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.header-rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.sidebar-rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Date input RTL alignment */
+input[type="date"].date-rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Table row clickable cursor */
+.row-clickable {
+    cursor: pointer;
+}
+
+/* Modern select wrapper */
+.modern-select-wrapper {
+    min-width: 260px;
+}

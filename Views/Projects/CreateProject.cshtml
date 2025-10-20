@@ -5,7 +5,7 @@
     ViewData["Title"] = "إضافة مشروع";
 }
 
-<div class="content-body" dir="rtl" style="text-align:right;">
+<div class="content-body content-body-rtl">
     <div class="container-fluid">
         <div class="row page-titles">
             <ol class="breadcrumb">
@@ -85,14 +85,14 @@
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">تاريخ البدء</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="StartSate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
+                                                <input asp-for="StartSate" type="date" class="form-control date-rtl" required />
                                                 <div class="invalid-feedback">يرجى اختيار تاريخ البدء.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">تاريخ الانتهاء</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="EndDate" type="date" class="form-control" required dir="rtl" style="text-align:right;" />
+                                                <input asp-for="EndDate" type="date" class="form-control date-rtl" required />
                                                 <div class="invalid-feedback">يرجى اختيار تاريخ الانتهاء.</div>
                                             </div>
                                         </div>
@@ -143,6 +143,7 @@
 @section Jobick_style
 {
     <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
+    <link href="~/css/rtl-utilities.css" rel="stylesheet">
 }
 
 @section Jobick_script

@@ -82,7 +82,7 @@
                                         }
 
                                         <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
-                                            style="cursor:pointer;">
+                                            class="row-clickable">
                                             <td class="text-center"><span class="@badgeClass">@statusText</span></td>
                                             <td>@project.Name</td>
                                             <td>@project.Description</td>
@@ -126,14 +126,8 @@
     <!-- Custom Stylesheet -->
     <link href="~/Jobick/vendor/bootstrap-datepicker-master/css/bootstrap-datepicker.min.css" rel="stylesheet">
     <link href="~/css/datatables-rtl.css" rel="stylesheet">
-
-    <style>
-        /* Center DataTables "لا توجد نتائج مطابقة" message */
-        #projectsTable tbody td.dataTables_empty,
-        table.dataTable tbody td.dataTables_empty {
-            text-align: center !important;
-        }
-    </style>
+    <link href="~/css/projects-index.css" rel="stylesheet">
+    <link href="~/css/rtl-utilities.css" rel="stylesheet">
 }
 
 @section Jobick_script

@@ -1,0 +1,7 @@
+/* Projects Index Page Styles */
+
+/* Center DataTables "?? ???? ????? ??????" message */
+#projectsTable tbody td.dataTables_empty,
+table.dataTable tbody td.dataTables_empty {
+    text-align: center !important;
+}

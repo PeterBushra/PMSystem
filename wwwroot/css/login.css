@@ -1,0 +1,18 @@
+/* Login Page Styles */
+
+.fix-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-auth {
+    max-width: 150px;
+    height: auto;
+}
+
+/* Form inline display utility */
+.inline-form {
+    display: inline;
+}

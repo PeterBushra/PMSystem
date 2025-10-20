@@ -1,7 +1,13 @@
 ﻿@{
     Layout = "~/Views/Shared/_LayoutJobickBlank.cshtml";
 }
-<div class="fix-wrapper" dir="rtl" style="text-align:right;">
+
+@section Styles {
+    <link href="~/css/login.css" rel="stylesheet" />
+    <link href="~/css/rtl-utilities.css" rel="stylesheet" />
+}
+
+<div class="fix-wrapper fix-wrapper-rtl">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-6">

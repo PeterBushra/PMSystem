@@ -13,7 +13,7 @@
     var initialShowAttachment = Model.DoneRatio.HasValue && Model.DoneRatio.Value >= 100m;
 }
 
-<div class="content-body" dir="rtl" style="text-align:right;">
+<div class="content-body content-body-rtl">
     <div class="container-fluid">
         <div class="row page-titles">
             <ol class="breadcrumb">
@@ -70,18 +70,18 @@
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="ExpectedStartDate" class="form-label fw-bold">تاريخ البدء </label>
-                                        <input asp-for="ExpectedStartDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
+                                        <input asp-for="ExpectedStartDate" type="date" class="form-control js-date date-rtl" required />
                                         <span asp-validation-for="ExpectedStartDate" class="text-danger"></span>
                                     </div>
                                     <div class="mb-3">
                                         <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء </label>
-                                        <input asp-for="ExpectedEndDate" type="date" class="form-control js-date" required dir="rtl" style="text-align:right;" />
+                                        <input asp-for="ExpectedEndDate" type="date" class="form-control js-date date-rtl" required />
                                         <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                                     </div>
 
                                     <div class="mb-3" id="actualEndDateContainer" style="display:@(initialShowAttachment ? "block" : "none");">
                                         <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
-                                        <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date" dir="rtl" style="text-align:right;" />
+                                        <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date date-rtl" />
                                         <span asp-validation-for="ActualEndDate" class="text-danger"></span>
                                         <small class="form-text text-muted">مطلوب عند اكتمال المهمة بنسبة 100%.</small>
                                     </div>

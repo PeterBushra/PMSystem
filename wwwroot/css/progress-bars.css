@@ -1,0 +1,51 @@
+/* Project Task Charts Styles */
+
+/* Progress bar width styling - these need to remain inline as they are dynamic */
+/* However, we can define the base styles here */
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+.default-progress {
+    height: 10px;
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+.default-progress .progress-bar {
+    border-radius: 5px;
+}
+
+/* Progress bar height variations */
+.progress-h22 {
+    height: 22px;
+    border-radius: 6px;
+}
+
+.progress-h22.progress-bar {
+    line-height: 22px;
+}
+
+.progress-h20 {
+    height: 20px;
+    border-radius: 5px;
+}
+
+.progress-h20.progress-bar {
+    line-height: 20px;
+}
+
+/* Progress bar font size */
+.progress-fs-xs {
+    font-size: 0.75rem;
+}
+
+/* Badge floating for small percentages */
+.badge-floating-small {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}

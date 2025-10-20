@@ -54,7 +54,7 @@
                             <i class="fas fa-filter me-2 text-primary"></i>
                             <strong class="me-2">تصفية حسب القطاع المسؤول</strong>
                         </div>
-                        <div class="modern-select w-auto ms-2" style="min-width:260px;">
+                        <div class="modern-select modern-select-wrapper w-auto ms-2">
                             @if (hasResponsibleOptions && responsibleList.Any())
                             {
                                 <select id="responsibleFilter"
@@ -268,7 +268,7 @@
                                     <tbody>
                                         @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
                                         {
-                                            <tr class="project-row" data-project-id="@p.ProjectId" style="cursor:pointer;">
+                                            <tr class="project-row row-clickable" data-project-id="@p.ProjectId">
                                                 <td class="text-center">@p.Name</td>
                                                 <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
                                                 <td class="text-center">
@@ -304,60 +304,8 @@
     <link href="~/css/dashboard-modern.css" rel="stylesheet" />
     <!-- Added: bootstrap-select CSS for modern dropdown -->
     <link href="~/Jobick/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet" />
-    <style>
-        /* Force "in progress" KPI to #e16b16 */
-        .kpi-inprogress {
-            background-color: #e16b16 !important;
-            color: #fff !important;
-        }
-        .kpi-inprogress .kpi-icon,
-        .kpi-inprogress .kpi-label,
-        .kpi-inprogress .kpi-value,
-        .kpi-inprogress .kpi-sub {
-            color: #fff !important;
-        }
-
-        /* Force "not started" KPI to #b5b5b5 */
-        .kpi-notstarted {
-            background-color: #b5b5b5 !important;
-            color: #212529 !important;
-        }
-        .kpi-notstarted .kpi-icon,
-        .kpi-notstarted .kpi-label,
-        .kpi-notstarted .kpi-value,
-        .kpi-notstarted .kpi-sub {
-            color: #212529 !important;
-        }
-
-        /* Center DataTables "لا توجد نتائج مطابقة" message */
-        #overdueProjectsTable tbody td.dataTables_empty,
-        table.dataTable tbody td.dataTables_empty {
-            text-align: center !important;
-        }
-
-        /* Utility: center inline empty state messages */
-        .empty-message {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            min-height: 42px;
-        }
-
-        /* Modern dropdown polish */
-        .modern-select .bootstrap-select > .dropdown-toggle {
-            background-color: #fff;
-            border-color: var(--border, #e5e5e5);
-            color: #495057;
-            padding: .45rem 1rem;
-        }
-        .modern-select .bootstrap-select .dropdown-menu {
-            border-radius: .75rem;
-        }
-        .modern-select .bootstrap-select .bs-searchbox input.form-control {
-            border-radius: .5rem;
-        }
-    </style>
+    <link href="~/css/adhmmc-index.css" rel="stylesheet" />
+    <link href="~/css/rtl-utilities.css" rel="stylesheet" />
 }
 
 @section Jobick_script{

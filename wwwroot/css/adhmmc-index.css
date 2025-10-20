@@ -1,0 +1,58 @@
+/* ADHMMC Dashboard Index Styles */
+
+/* Force "in progress" KPI to #e16b16 */
+.kpi-inprogress {
+    background-color: #e16b16 !important;
+    color: #fff !important;
+}
+
+.kpi-inprogress .kpi-icon,
+.kpi-inprogress .kpi-label,
+.kpi-inprogress .kpi-value,
+.kpi-inprogress .kpi-sub {
+    color: #fff !important;
+}
+
+/* Force "not started" KPI to #b5b5b5 */
+.kpi-notstarted {
+    background-color: #b5b5b5 !important;
+    color: #212529 !important;
+}
+
+.kpi-notstarted .kpi-icon,
+.kpi-notstarted .kpi-label,
+.kpi-notstarted .kpi-value,
+.kpi-notstarted .kpi-sub {
+    color: #212529 !important;
+}
+
+/* Center DataTables "?? ???? ????? ??????" message */
+#overdueProjectsTable tbody td.dataTables_empty,
+table.dataTable tbody td.dataTables_empty {
+    text-align: center !important;
+}
+
+/* Utility: center inline empty state messages */
+.empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 42px;
+}
+
+/* Modern dropdown polish */
+.modern-select .bootstrap-select > .dropdown-toggle {
+    background-color: #fff;
+    border-color: var(--border, #e5e5e5);
+    color: #495057;
+    padding: .45rem 1rem;
+}
+
+.modern-select .bootstrap-select .dropdown-menu {
+    border-radius: .75rem;
+}
+
+.modern-select .bootstrap-select .bs-searchbox input.form-control {
+    border-radius: .5rem;
+}
