@@ -1,0 +1,70 @@
+﻿@model Jobick.ViewModels.ProjectStatisticsVM
+@using System.Text.Json
+@using System.Globalization
+@{
+    // NEW: Budgets per year (Fourth KPI) - based on EndDate.Year
+    var orderedBudgetYears = Model.ProjectsBudgetsByYear.OrderBy(x => x.Key).ToList();
+    var budgetYearsJson = JsonSerializer.Serialize(orderedBudgetYears.Select(x => x.Key));
+    var budgetYearValuesJson = JsonSerializer.Serialize(orderedBudgetYears.Select(x => x.Value));
+
+    // Third KPI – ordered budgets & real names
+    var orderedBudgets = Model.AllProjectsBudgetsExceptFullyDone
+        .OrderByDescending(x => x.Value)
+        .ToList();
+
+    // Safely map Id -> Name (fallback to "مشروع {id}")
+    var budgetLabelsJson = JsonSerializer.Serialize(
+        orderedBudgets.Select(x =>
+            Model.ProjectNames.TryGetValue(x.Key, out var name) && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : $"مشروع {x.Key}"
+        ));
+
+    var budgetValuesJson = JsonSerializer.Serialize(orderedBudgets.Select(x => x.Value));
+    var totalBudget = orderedBudgets.Sum(b => b.Value);
+}
+<!-- NEW ROW: Budgets per Year (Vertical Bars) + Donut (Third KPI) -->
+<div class="row mt-4">
+    <div class="col-xl-6">
+        <div class="card card-modern">
+            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">ميزانيات المشاريع حسب السنة</h4>
+                @if(!orderedBudgetYears.Any())
+                {
+                    <span class="badge bg-warning text-dark">لا بيانات</span>
+                }
+            </div>
+            <div class="card-body pt-3">
+                @if (!orderedBudgetYears.Any())
+                {
+                    <div class="alert alert-info text-center mb-0 empty-message ">لا توجد بيانات لعرضها.</div>
+                }
+                else
+                {
+                    <div id="projectsBudgetByYearBar"></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="card card-modern h-100">
+            <div class="card-header border-0 pb-0 d-flex justify-content_between justify-content-between align-items-center">
+                <h4 class="card-title mb-0">ميزانيات المشاريع (غير المكتملة بالكامل)</h4>
+                <span class="small text-muted">
+                    الإجمالي: @totalBudget.ToString("N0")
+                </span>
+            </div>
+            <div class="card-body pt-3">
+                @if (!orderedBudgets.Any())
+                {
+                    <div class="alert alert-info text-center mb-0">لا توجد بيانات ميزانيات للعرض.</div>
+                }
+                else
+                {
+                    <div id="projectsBudgetsDonut"></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

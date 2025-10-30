@@ -1,0 +1,89 @@
+﻿@model Jobick.ViewModels.ProjectStatisticsVM
+<!-- Overdue + At-Risk Projects Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card card-modern">
+            <div class="card-header border-0 pb-0">
+                <h4 class="card-title mb-0">المشاريع المتأخرة أو المعرضة للخطر</h4>
+            </div>
+            <div class="card-body pt-3">
+                @if (!Model.OverdueProjectsWithIncompleteTasks.Any())
+                {
+                    <div class="alert alert-info text-center mb-0 mt-3 empty-message ">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table id="overdueProjectsTable" class="table table-hover table-striped" style="min-width:900px">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">اسم المشروع</th>
+                                    <th class="text-center">تاريخ الانتهاء</th>
+                                    <th class="text-center">الحالة</th>
+                                    <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
+                                    <th class="text-center" style="text-align: center !important;">أسباب التأخير</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model.OverdueProjectsWithIncompleteTasks)
+                                {
+                                    <tr class="project-row row-clickable" data-project-id="@p.ProjectId">
+                                        <td class="text-center">@p.Name</td>
+                                        <td class="text-center" data-order="@p.EndDate.ToString("yyyy-MM-dd")">@p.EndDate.ToShortDateString()</td>
+                                        <td class="text-center">
+                                            @if (p.EndDate.Date < DateTime.Today)
+                                            {
+                                                <span class="badge bg-danger">متأخر</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">مُعرض للتأخير</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">@p.IncompleteTasksCount</td>
+                                        <td class="text-center delay-reasons-cell">
+                                            @if (!string.IsNullOrEmpty(p.DelayReasons))
+                                            {
+                                                <span class="delay-reasons-btn"
+                                                      data-reasons="@p.DelayReasons"
+                                                      data-project-name="@p.Name"
+                                                      data-bs-toggle="modal"
+                                                      data-bs-target="#delayReasonsModal"
+                                                      style="cursor: pointer;">
+                                                    <i class="fas fa-info-circle text-info"></i>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">لا يوجد</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <!-- Modal for Delay Reasons -->
+            <div class="modal fade" id="delayReasonsModal" tabindex="-1" aria-labelledby="delayReasonsModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="delayReasonsModalLabel">أسباب التأخير - <span id="projectNameModal"></span></h5>
+                        </div>
+                        <div class="modal-body">
+                            <p id="delayReasonsContent"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>

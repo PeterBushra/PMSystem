@@ -1,0 +1,54 @@
+﻿@model Jobick.ViewModels.ProjectStatisticsVM
+@using System.Text.Json
+@using System.Globalization
+@{
+    // Added: Responsible filter data from ViewBag
+    var responsibleList = ViewBag.ResponsibleList as List<string> ?? new List<string>();
+    string? selectedResponsible = ViewBag.SelectedResponsible as string;
+    bool hasResponsibleOptions = (ViewBag.HasResponsibleOptions as bool?) ?? false;
+}
+<!-- Added: Filter toolbar for ResponsibleForImplementing -->
+<div class="row g-3 align-items-center mt-2">
+    <div class="col-12">
+        <div class="card card-modern">
+            <div class="card-body d-flex flex-nowrap align-items-center gap-2">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-filter me-2 text-primary"></i>
+                    <strong class="me-2">تصفية حسب القطاع المسؤول</strong>
+                </div>
+                <div class="modern-select modern-select-wrapper w-auto ms-2">
+                    @if (hasResponsibleOptions && responsibleList.Any())
+                    {
+                        <select id="responsibleFilter"
+                                class="selectpicker show-tick"
+                                data-style="btn-light rounded-pill shadow-sm border"
+                                data-live-search="true"
+                                data-container="body"
+                                data-dropup-auto="false"
+                                data-size="7"
+                                data-width="auto"
+                                title="اختر القطاع المسؤول">
+                            @foreach (var resp in responsibleList)
+                            {
+                                if (string.Equals(resp, selectedResponsible, StringComparison.Ordinal))
+                                {
+                                    <option value="@resp" selected>@resp</option>
+                                }
+                                else
+                                {
+                                    <option value="@resp">@resp</option>
+                                }
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-0 empty-message">
+                            لا توجد جهات مسؤولة متاحة.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

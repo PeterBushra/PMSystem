@@ -1,0 +1,54 @@
+﻿@model Jobick.ViewModels.ProjectStatisticsVM
+@using System.Text.Json
+@{
+    var total = Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects;
+    // First KPI (counts by year already present)
+    var orderedYears = Model.ProjectsCountByYear.OrderBy(x => x.Key).ToList();
+    var yearsJson  = JsonSerializer.Serialize(orderedYears.Select(x => x.Key));
+    var countsJson = JsonSerializer.Serialize(orderedYears.Select(x => x.Value));
+}
+<!-- First Row -->
+<div class="row mt-3">
+    <!-- Project Status -->
+    <div class="col-xl-6">
+        <div class="card card-modern mt-4">
+            <div class="card-header border-0 pb-0 d-flex align-items-center">
+                <h4 class="card-title mb-0">حالة المشاريع</h4>
+                <span class="badge bg-light text-muted border ms-2" style="font-size:0.7rem;">يتم احتساب حالة المشاريع فقط للمشاريع التي تحتوي على مهام</span>
+
+            </div>
+            <div class="card-body pt-3">
+                @if (total == 0)
+                {
+                    <div class="alert alert-info text-center mb-0">لا توجد بيانات لعرضها.</div>
+                }
+                else
+                {
+                    <div id="projectsStatusPie"></div>
+                }
+            </div>
+        </div>
+    </div>
+    <!-- Projects Count By Year -->
+    <div class="col-xl-6">
+        <div class="card card-modern mt-4">
+            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">عدد المشاريع حسب السنة</h4>
+                @if(!orderedYears.Any())
+                {
+                    <span class="badge bg-warning text-dark">لا بيانات</span>
+                }
+            </div>
+            <div class="card-body pt-3">
+                @if (!orderedYears.Any())
+                {
+                    <div class="alert alert-info text-center mb-0 empty-message ">لا توجد بيانات لعرضها.</div>
+                }
+                else
+                {
+                    <div id="projectsByYearBar"></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

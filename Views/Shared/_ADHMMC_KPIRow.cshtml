@@ -1,0 +1,67 @@
+﻿@model Jobick.ViewModels.ProjectStatisticsVM
+@using System.Globalization
+@{
+    var total = Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects;
+    // Arabic compact display (no decimals): ألف / مليون / مليار / تريليون, with Arabic number formatting.
+    var ar = new CultureInfo("ar-EG");
+    var totalBudget = Model.AllProjectsBudgetsExceptFullyDone.Sum(b => b.Value);
+    var totalBudgetCompact = totalBudget.ToString("N0", ar);
+    var totalBudgetExact   = totalBudget.ToString("N2", ar);
+}
+<!-- Modern KPI row -->
+<div class="row kpi-row g-3 mt-2">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card kpi-card kpi-bg-success">
+            <div class="card-body">
+                <div class="kpi-top">
+                    <div class="kpi-label">المشاريع المكتملة</div>
+                    <i class="kpi-icon fas fa-check-circle"></i>
+                </div>
+                <div class="kpi-value" data-countup>@Model.DoneProjects</div>
+                <div class="kpi-sub">نسبة: @((total>0? (Model.DoneProjects*100/total):0))%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <!-- In-progress uses #e16b16 -->
+        <div class="card kpi-card kpi-inprogress">
+            <div class="card-body">
+                <div class="kpi-top">
+                    <div class="kpi-label">جاري التنفيذ</div>
+                    <i class="kpi-icon fas fa-tasks"></i>
+                </div>
+                <div class="kpi-value" data-countup>@Model.InProgressProjects</div>
+                <div class="kpi-sub">نسبة: @((total>0? (Model.InProgressProjects*100/total):0))%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <!-- Not started uses #b5b5b5 -->
+        <div class="card kpi-card kpi-notstarted">
+            <div class="card-body">
+                <div class="kpi-top">
+                    <div class="kpi-label">لم تبدأ</div>
+                    <i class="kpi-icon fas fa-hourglass-start"></i>
+                </div>
+                <div class="kpi-value" data-countup>@Model.NotStartedProjects</div>
+                <div class="kpi-sub">نسبة: @((total>0? (Model.NotStartedProjects*100/total):0))%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card kpi-card kpi-bg-primary">
+            <div class="card-body">
+                <div class="kpi-top">
+                    <div class="kpi-label">الميزانية الإجمالية</div>
+                    <i class="kpi-icon fas fa-coins"></i>
+                </div>
+                <!-- Compact Arabic text; tooltip shows exact Arabic-formatted amount -->
+                <div class="kpi-value"
+                     id="totalBudgetDisplay"
+                     title="@totalBudgetExact">
+                    @totalBudgetCompact
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
