@@ -113,6 +113,9 @@ public class ProjectsController(IProjectService _projectService, IProjectKpiServ
             StartSate = project.StartSate,
             EndDate = project.EndDate,
             TotalCost = project.TotalCost,
+            StrategicProgramme = project.StrategicProgramme,
+            StrategicGoal= project.StrategicGoal,
+            DelayReasons = project.DelayReasons,
             Tasks = project.Tasks.ToList()
         };
 

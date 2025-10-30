@@ -65,10 +65,10 @@
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">القسم المنفذ</label>
+                                            <label class="col-lg-4 col-form-label form-label required"> مالك المشروع</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="SystemOwner" class="form-control" placeholder="القسم المنفذ" required maxlength="150" />
-                                                <div class="invalid-feedback">يرجى إدخال القسم المنفذ.</div>
+                                                <input asp-for="SystemOwner" class="form-control" placeholder="مالك المشروع" required maxlength="150" />
+                                                <div class="invalid-feedback">يرجى إدخال مالك المشروع.</div>
                                             </div>
                                         </div>
                                         <div class="mb-3 row">
@@ -120,6 +120,18 @@
                                                 <div class="invalid-feedback">يرجى إدخال الهدف الاستراتيجي.</div>
                                             </div>
                                         </div>
+
+                                        @if (Model.Id != 0)
+                                        {
+                                            <div class="mb-3 row">
+                                                <label class="col-lg-4 col-form-label form-label required"> أسباب التأخر </label>
+                                                <div class="col-lg-6">
+                                                    <textarea asp-for="DelayReasons" class="form-control" rows="3" placeholder="أسباب التأخر" required maxlength="4000"></textarea>
+                                                    <div class="invalid-feedback">يرجى إدخال أسباب التأخر.</div>
+                                                </div>
+                                            </div>
+
+                                        }
 
                                         <div class="mb-3 row">
                                             <div class="col-lg-8 ms-auto">

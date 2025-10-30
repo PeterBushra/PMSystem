@@ -35,6 +35,8 @@ public partial class Project
 
     public string? StrategicGoal { get; set; }
 
+    public string? DelayReasons { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Task> Tasks { get; set; } = new List<Task>();

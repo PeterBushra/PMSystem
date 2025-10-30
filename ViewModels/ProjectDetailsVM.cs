@@ -16,7 +16,9 @@ public class ProjectDetailsVM
     public DateTime StartSate { get; set; }
     public DateTime EndDate { get; set; }
     public decimal? TotalCost { get; set; }
-
+    public string? StrategicProgramme { get; set; }
+    public string? StrategicGoal { get; set; }
+    public string? DelayReasons { get; set; }
     public List<Models.Task> Tasks { get; set; } = new();
     public ProjectKPIs KPIs { get; set; } = new();
 }

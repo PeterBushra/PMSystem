@@ -40,6 +40,7 @@ public partial class AdhmmcPmContext : DbContext
             entity.ToTable("Project");
 
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.DelayReasons).HasMaxLength(4000);
             entity.Property(e => e.Description).HasMaxLength(4000);
             entity.Property(e => e.DescriptionAr).HasMaxLength(4000);
             entity.Property(e => e.Name).HasMaxLength(250);
