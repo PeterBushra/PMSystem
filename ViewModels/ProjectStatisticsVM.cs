@@ -31,6 +31,8 @@ namespace Jobick.ViewModels
             public string Name { get; set; } = string.Empty;
             public DateTime EndDate { get; set; }
             public int IncompleteTasksCount { get; set; }
+            public string? DelayReasons { get; set; }
+
         }
     }
 }

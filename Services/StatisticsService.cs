@@ -95,7 +95,8 @@ public class StatisticsService : IStatisticsService
                 ProjectId = x.Project.Id,
                 Name = string.IsNullOrWhiteSpace(x.Project.NameAr) ? x.Project.Name : x.Project.NameAr,
                 EndDate = x.Project.EndDate,
-                IncompleteTasksCount = x.incompleteCount
+                IncompleteTasksCount = x.incompleteCount,
+                DelayReasons = x.Project.DelayReasons
             })
             // Keep overdue first if desired, then others by nearest end date
             .OrderByDescending(pi => pi.EndDate < today) // bool: overdue first

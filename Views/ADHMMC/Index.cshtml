@@ -248,7 +248,6 @@
                         <h4 class="card-title mb-0">المشاريع المتأخرة أو المعرضة للخطر</h4>
                     </div>
                     <div class="card-body pt-3">
-
                         @if (!Model.OverdueProjectsWithIncompleteTasks.Any())
                         {
                             <div class="alert alert-info text-center mb-0 mt-3 empty-message ">لا توجد مشاريع متأخرة أو معرضة للخطر.</div>
@@ -263,6 +262,7 @@
                                             <th class="text-center">تاريخ الانتهاء</th>
                                             <th class="text-center">الحالة</th>
                                             <th class="text-center" style="text-align: center !important;">عدد المهام غير المكتملة</th>
+                                            <th class="text-center" style="text-align: center !important;">أسباب التأخير</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -282,14 +282,49 @@
                                                     }
                                                 </td>
                                                 <td class="text-center">@p.IncompleteTasksCount</td>
+                                                <td class="text-center delay-reasons-cell">
+                                                    @if (!string.IsNullOrEmpty(p.DelayReasons))
+                                                    {
+                                                        <span class="delay-reasons-btn"
+                                                              data-reasons="@p.DelayReasons"
+                                                              data-project-name="@p.Name"
+                                                              data-bs-toggle="modal"
+                                                              data-bs-target="#delayReasonsModal"
+                                                              style="cursor: pointer;">
+                                                            <i class="fas fa-info-circle text-info"></i>
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">لا يوجد</span>
+                                                    }
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
-
                             </div>
                         }
                     </div>
+
+                    <!-- Modal for Delay Reasons -->
+                    <div class="modal fade" id="delayReasonsModal" tabindex="-1" aria-labelledby="delayReasonsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="delayReasonsModalLabel">أسباب التأخير - <span id="projectNameModal"></span></h5>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="delayReasonsContent"></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
             </div>
         </div>
@@ -319,6 +354,21 @@
     <script src="~/Jobick/vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="~/Jobick/vendor/datatables/responsive/responsive.js"></script>
     <script src="~/Jobick/vendor/owl-carousel/owl.carousel.js"></script>
+
+    <script>
+        document.querySelectorAll('.delay-reasons-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent row click event from firing
+
+                const reasons = this.getAttribute('data-reasons');
+                const projectName = this.getAttribute('data-project-name');
+
+                document.getElementById('projectNameModal').textContent = projectName;
+                document.getElementById('delayReasonsContent').textContent = reasons;
+            });
+        });
+    </script>   
+
     <script>
         // Initialize Bootstrap tooltips (for total budget hover)
         document.addEventListener('DOMContentLoaded', function () {
