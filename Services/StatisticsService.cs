@@ -61,6 +61,8 @@ public class StatisticsService : IStatisticsService
         // NEW: Calculate Progress Comparison (Targeted vs Actual)
         var targetedProgressByYear = new Dictionary<int, decimal>();
         var actualProgressByYear = new Dictionary<int, decimal>();
+        var targetedProgressByQuarter = new Dictionary<string, decimal>();
+        var actualProgressByQuarter = new Dictionary<string, decimal>();
 
         // Get all project IDs from the filtered projects
         var projectIds = projects.Select(p => p.Id).ToHashSet();
@@ -82,6 +84,22 @@ public class StatisticsService : IStatisticsService
             // Actual Progress: Sum of (weight * DoneRatio)
             var actualProgress = tasksInYear.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
             actualProgressByYear[year] = actualProgress;
+
+            // Calculate quarterly breakdown for this year
+            for (int quarter = 1; quarter <= 4; quarter++)
+            {
+                var quarterKey = $"{year}-Q{quarter}";
+                var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
+
+                var quarterTargeted = quarterTasks.Sum(t => t.Weight ?? 0m);
+                var quarterActual = quarterTasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+
+                if (quarterTargeted > 0 || quarterActual > 0)
+                {
+                    targetedProgressByQuarter[quarterKey] = quarterTargeted;
+                    actualProgressByQuarter[quarterKey] = quarterActual;
+                }
+            }
         }
 
         // Overdue or At-Risk projects (with incomplete tasks)
@@ -140,7 +158,14 @@ public class StatisticsService : IStatisticsService
             ProjectsBudgetsByYear = budgetsByYear,
             OverdueProjectsWithIncompleteTasks = overdueOrAtRisk,
             TargetedProgressByYear = targetedProgressByYear,
-            ActualProgressByYear = actualProgressByYear
+            ActualProgressByYear = actualProgressByYear,
+            TargetedProgressByQuarter = targetedProgressByQuarter,
+            ActualProgressByQuarter = actualProgressByQuarter
         };
+    }
+
+    private static int GetQuarter(DateTime date)
+    {
+        return (date.Month - 1) / 3 + 1;
     }
 }

@@ -31,6 +31,11 @@ namespace Jobick.ViewModels
         // Year -> Actual Progress (sum of weight * DoneRatio for tasks with ExpectedEndDate in that year)
         public Dictionary<int, decimal> ActualProgressByYear { get; set; } = new();
 
+        // NEW: Quarterly Progress Comparison
+        // Key format: "Year-Quarter" (e.g., "2025-Q1")
+        public Dictionary<string, decimal> TargetedProgressByQuarter { get; set; } = new();
+        public Dictionary<string, decimal> ActualProgressByQuarter { get; set; } = new();
+
         public class ProjectInfo
         {
             public int ProjectId { get; set; }

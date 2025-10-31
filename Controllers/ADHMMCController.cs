@@ -72,7 +72,7 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     [Authorize]
     public async Task<IActionResult> Index(string? responsible = null)
     {
-        const string AllOption = "كل المشاريع";
+        const string AllOption = "كل القطاعات";
 
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();

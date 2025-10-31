@@ -52,6 +52,20 @@
         orderedProgressYears.Select(y => Model.ActualProgressByYear.GetValueOrDefault(y, 0m))
     );
 
+    // NEW: Quarterly Progress Data
+    var orderedQuarters = Model.TargetedProgressByQuarter.Keys
+        .Union(Model.ActualProgressByQuarter.Keys)
+        .OrderBy(q => q)
+        .ToList();
+
+    var progressQuartersJson = JsonSerializer.Serialize(orderedQuarters);
+    var targetedProgressQuarterlyJson = JsonSerializer.Serialize(
+        orderedQuarters.Select(q => Model.TargetedProgressByQuarter.GetValueOrDefault(q, 0m))
+    );
+    var actualProgressQuarterlyJson = JsonSerializer.Serialize(
+        orderedQuarters.Select(q => Model.ActualProgressByQuarter.GetValueOrDefault(q, 0m))
+    );
+
     // Added: Responsible filter data from ViewBag
     var responsibleList = ViewBag.ResponsibleList as List<string> ?? new List<string>();
     string? selectedResponsible = ViewBag.SelectedResponsible as string;
@@ -225,18 +239,25 @@
                 }
             }
 
-            // NEW: Progress Comparison Chart (Targeted vs Actual)
+            // NEW: Progress Comparison Chart (Targeted vs Actual) with Yearly and Quarterly views
             const progressComparisonEl = document.querySelector("#progressComparisonChart");
             if(progressComparisonEl){
                 const progressYears = @Html.Raw(progressYearsJson);
                 const targetedProgress = @Html.Raw(targetedProgressJson);
                 const actualProgress = @Html.Raw(actualProgressJson);
+                
+                const progressQuarters = @Html.Raw(progressQuartersJson);
+                const targetedProgressQuarterly = @Html.Raw(targetedProgressQuarterlyJson);
+                const actualProgressQuarterly = @Html.Raw(actualProgressQuarterlyJson);
 
                 if(progressYears.length > 0){
                     let progressChart = null;
                     
                     // Populate year filter dropdown
                     const yearFilter = document.getElementById('yearFilter');
+                    const viewMode = document.getElementById('viewMode');
+                    const quarterNote = document.getElementById('quarterNote');
+
                     if(yearFilter){
                         progressYears.forEach(year => {
                             const option = document.createElement('option');
@@ -252,23 +273,69 @@
                         }
                     }
 
-                    function renderProgressChart(selectedYear){
+                    // Helper to extract quarters for a specific year
+                    function getQuartersForYear(year) {
+                        return progressQuarters.filter(q => q.startsWith(year + '-'));
+                    }
+
+                    function renderProgressChart(selectedYear, mode){
                         let categories, targeted, actual;
 
-                        if(selectedYear === 'all'){
-                            categories = progressYears;
-                            targeted = targetedProgress;
-                            actual = actualProgress;
-                        } else {
-                            const yearIndex = progressYears.indexOf(parseInt(selectedYear));
-                            if(yearIndex !== -1){
-                                categories = [selectedYear];
-                                targeted = [targetedProgress[yearIndex]];
-                                actual = [actualProgress[yearIndex]];
+                        if(mode === 'yearly'){
+                            // Yearly view
+                            if(quarterNote) quarterNote.style.display = 'none';
+                            
+                            if(selectedYear === 'all'){
+                                categories = progressYears;
+                                targeted = targetedProgress;
+                                actual = actualProgress;
                             } else {
-                                categories = [];
-                                targeted = [];
-                                actual = [];
+                                const yearIndex = progressYears.indexOf(parseInt(selectedYear));
+                                if(yearIndex !== -1){
+                                    categories = [selectedYear];
+                                    targeted = [targetedProgress[yearIndex]];
+                                    actual = [actualProgress[yearIndex]];
+                                } else {
+                                    categories = [];
+                                    targeted = [];
+                                    actual = [];
+                                }
+                            }
+                        } else {
+                            // Quarterly view
+                            if(quarterNote) quarterNote.style.display = 'block';
+                            
+                            if(selectedYear === 'all'){
+                                // Show all quarters from all years
+                                categories = progressQuarters.map(q => {
+                                    const parts = q.split('-');
+                                    return parts[1]; // Q1, Q2, Q3, Q4
+                                });
+                                // Add year prefix for clarity when showing all
+                                categories = progressQuarters.map(q => q.replace('-', ' '));
+                                targeted = targetedProgressQuarterly;
+                                actual = actualProgressQuarterly;
+                            } else {
+                                // Show quarters for selected year only
+                                const yearQuarters = getQuartersForYear(selectedYear);
+                                categories = yearQuarters.map(q => q.split('-')[1]); // Q1, Q2, Q3, Q4
+                                
+                                targeted = yearQuarters.map(q => {
+                                    const idx = progressQuarters.indexOf(q);
+                                    return idx !== -1 ? targetedProgressQuarterly[idx] : 0;
+                                });
+                                
+                                actual = yearQuarters.map(q => {
+                                    const idx = progressQuarters.indexOf(q);
+                                    return idx !== -1 ? actualProgressQuarterly[idx] : 0;
+                                });
+
+                                // If no data for this year, show empty
+                                if(yearQuarters.length === 0){
+                                    categories = ['Q1', 'Q2', 'Q3', 'Q4'];
+                                    targeted = [0, 0, 0, 0];
+                                    actual = [0, 0, 0, 0];
+                                }
                             }
                         }
 
@@ -281,11 +348,11 @@
                             },
                             series:[
                                 { 
-                                    name:'معدل الإنجاز المستهدف  ', 
+                                    name:'معدل الإنجاز المستهدف', 
                                     data: targeted 
                                 },
                                 { 
-                                    name:'معدل الإنجاز الفعلي  ', 
+                                    name:'معدل الإنجاز الفعلي', 
                                     data: actual 
                                 }
                             ],
@@ -339,11 +406,16 @@
                     }
 
                     // Initial render
-                    renderProgressChart(yearFilter?.value || 'all');
+                    renderProgressChart(yearFilter?.value || 'all', viewMode?.value || 'yearly');
+
+                    // View mode change handler
+                    viewMode?.addEventListener('change', function(){
+                        renderProgressChart(yearFilter?.value || 'all', this.value);
+                    });
 
                     // Year filter change handler
                     yearFilter?.addEventListener('change', function(){
-                        renderProgressChart(this.value);
+                        renderProgressChart(this.value, viewMode?.value || 'yearly');
                     });
                 }
             }
