@@ -58,6 +58,32 @@ public class StatisticsService : IStatisticsService
             .GroupBy(p => p.EndDate.Year)
             .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalCost ?? 0m));
 
+        // NEW: Calculate Progress Comparison (Targeted vs Actual)
+        var targetedProgressByYear = new Dictionary<int, decimal>();
+        var actualProgressByYear = new Dictionary<int, decimal>();
+
+        // Get all project IDs from the filtered projects
+        var projectIds = projects.Select(p => p.Id).ToHashSet();
+
+        // Group tasks by year (based on ExpectedEndDate) for projects in the filtered set
+        var tasksByYear = allTasks
+            .Where(t => projectIds.Contains(t.ProjectId))
+            .GroupBy(t => t.ExpectedEndDate.Year);
+
+        foreach (var yearGroup in tasksByYear)
+        {
+            var year = yearGroup.Key;
+            var tasksInYear = yearGroup.ToList();
+
+            // Targeted Progress: Sum of all weights
+            var targetedProgress = tasksInYear.Sum(t => t.Weight ?? 0m);
+            targetedProgressByYear[year] = targetedProgress;
+
+            // Actual Progress: Sum of (weight * DoneRatio)
+            var actualProgress = tasksInYear.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+            actualProgressByYear[year] = actualProgress;
+        }
+
         // Overdue or At-Risk projects (with incomplete tasks)
         var overdueOrAtRisk = projects
             .Select(p => new
@@ -112,7 +138,9 @@ public class StatisticsService : IStatisticsService
             AllProjectsBudgetsExceptFullyDone = budgetsExceptFullyDone,
             ProjectNames = projectNames,
             ProjectsBudgetsByYear = budgetsByYear,
-            OverdueProjectsWithIncompleteTasks = overdueOrAtRisk
+            OverdueProjectsWithIncompleteTasks = overdueOrAtRisk,
+            TargetedProgressByYear = targetedProgressByYear,
+            ActualProgressByYear = actualProgressByYear
         };
     }
 }

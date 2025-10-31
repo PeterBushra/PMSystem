@@ -25,6 +25,12 @@ namespace Jobick.ViewModels
         // Fifth KPI
         public List<ProjectInfo> OverdueProjectsWithIncompleteTasks { get; set; } = new();
 
+        // NEW: Sixth KPI - Progress Comparison (Targeted vs Actual)
+        // Year -> Targeted Progress (sum of all task weights for tasks with ExpectedEndDate in that year)
+        public Dictionary<int, decimal> TargetedProgressByYear { get; set; } = new();
+        // Year -> Actual Progress (sum of weight * DoneRatio for tasks with ExpectedEndDate in that year)
+        public Dictionary<int, decimal> ActualProgressByYear { get; set; } = new();
+
         public class ProjectInfo
         {
             public int ProjectId { get; set; }
