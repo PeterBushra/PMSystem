@@ -157,6 +157,14 @@
                 
                 let detailedProgressChart = null;
                 
+                // Pre-compute overall actual progress per project (across all tasks, ignoring year/quarter)
+                const overallActualByProject = projectProgressData.reduce((acc, item) => {
+                    const id = item.ProjectId;
+                    const val = Number(item.ActualProgress) || 0;
+                    acc[id] = (acc[id] || 0) + val;
+                    return acc;
+                }, {});
+                
                 // Function to determine color based on performance
                 function getProgressColor(actual, target) {
                     const diff = target - actual;
@@ -199,7 +207,7 @@
                         return;
                     }
                     
-                    // Filter data based on selections
+                    // Filter data based on selections (year/quarter for targets; optional project filter)
                     let filteredData = projectProgressData.filter(item => {
                         let match = item.Year.toString() === selectedYear && item.Quarter === selectedQuarter;
                         
@@ -221,11 +229,12 @@
                     const categories = filteredData.map(item => item.ProjectName);
                     const annualTargets = filteredData.map(item => item.AnnualTargetProgress);
                     const quarterTargets = filteredData.map(item => item.QuarterTargetProgress);
-                    const actualProgress = filteredData.map(item => item.ActualProgress);
+                    // Actual progress should be for the whole project (across all tasks), not limited by selected year/quarter
+                    const actualProgress = filteredData.map(item => (overallActualByProject[item.ProjectId] ?? 0));
                     
-                    // Calculate colors for actual progress bars
+                    // Calculate colors for actual progress bars (compare overall actual vs selected quarter target)
                     const actualColors = filteredData.map(item => 
-                        getProgressColor(item.ActualProgress, item.QuarterTargetProgress)
+                        getProgressColor((overallActualByProject[item.ProjectId] ?? 0), item.QuarterTargetProgress)
                     );
                     
                     const options = {
@@ -328,16 +337,17 @@
                             },
                             custom: function({ series, seriesIndex, dataPointIndex, w }) {
                                 const data = filteredData[dataPointIndex];
-                                const diff = data.QuarterTargetProgress - data.ActualProgress;
+                                const overallActual = (overallActualByProject[data.ProjectId] ?? 0);
+                                const diff = data.QuarterTargetProgress - overallActual;
                                 const diffPercent = diff.toFixed(2);
                                 
                                 let statusText = '';
                                 let statusClass = '';
                                 
-                                if (data.ActualProgress > data.QuarterTargetProgress) {
-                                    statusText = `متفوق على المستهدف بـ ${(data.ActualProgress - data.QuarterTargetProgress).toFixed(2)}%`;
+                                if (overallActual > data.QuarterTargetProgress) {
+                                    statusText = `متفوق على المستهدف بـ ${(overallActual - data.QuarterTargetProgress).toFixed(2)}%`;
                                     statusClass = 'text-success';
-                                } else if (data.ActualProgress === data.QuarterTargetProgress) {
+                                } else if (overallActual === data.QuarterTargetProgress) {
                                    statusText = 'حقق المستهدف';
                                    statusClass = 'text-success';
                                 }
@@ -362,7 +372,7 @@
                                         </div>
                                         <div class="mt-2">النسبة السنوية: <strong>${data.AnnualTargetProgress.toFixed(1)}%</strong></div>
                                         <div>المستهدف (الربع): <strong>${data.QuarterTargetProgress.toFixed(1)}%</strong></div>
-                                        <div>الإنجاز الفعلي: <strong>${data.ActualProgress.toFixed(1)}%</strong></div>
+                                        <div>الإنجاز الفعلي: <strong>${overallActual.toFixed(1)}%</strong></div>
                                         <div class="mt-1 ${statusClass}"><strong>${statusText}</strong></div>
                                         ${reasonsHtml}
                                     </div>
