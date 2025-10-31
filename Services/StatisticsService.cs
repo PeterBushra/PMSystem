@@ -102,6 +102,54 @@ public class StatisticsService : IStatisticsService
             }
         }
 
+        // NEW: Calculate detailed project progress for each project, year, and quarter
+        var projectProgressDetails = new List<ProjectStatisticsVM.ProjectProgressDetail>();
+        
+        foreach (var project in projects)
+        {
+            var projectTasks = allTasks.Where(t => t.ProjectId == project.Id).ToList();
+            if (!projectTasks.Any()) continue;
+
+            var projectName = string.IsNullOrWhiteSpace(project.NameAr) ? project.Name : project.NameAr;
+
+            // Group project tasks by year
+            var projectTasksByYear = projectTasks.GroupBy(t => t.ExpectedEndDate.Year);
+
+            foreach (var yearGroup in projectTasksByYear)
+            {
+                var year = yearGroup.Key;
+                var tasksInYear = yearGroup.ToList();
+
+                // Calculate annual target for this project
+                var annualTarget = tasksInYear.Sum(t => t.Weight ?? 0m);
+
+                // Calculate quarterly breakdown
+                for (int quarter = 1; quarter <= 4; quarter++)
+                {
+                    var quarterKey = $"Q{quarter}";
+                    var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
+
+                    var quarterTarget = quarterTasks.Sum(t => t.Weight ?? 0m);
+                    var quarterActual = quarterTasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+
+                    // Only add if there's data for this quarter
+                    if (quarterTarget > 0 || quarterActual > 0)
+                    {
+                        projectProgressDetails.Add(new ProjectStatisticsVM.ProjectProgressDetail
+                        {
+                            ProjectId = project.Id,
+                            ProjectName = projectName,
+                            Year = year,
+                            Quarter = quarterKey,
+                            AnnualTargetProgress = annualTarget,
+                            QuarterTargetProgress = quarterTarget,
+                            ActualProgress = quarterActual
+                        });
+                    }
+                }
+            }
+        }
+
         // Overdue or At-Risk projects (with incomplete tasks)
         var overdueOrAtRisk = projects
             .Select(p => new
@@ -160,7 +208,8 @@ public class StatisticsService : IStatisticsService
             TargetedProgressByYear = targetedProgressByYear,
             ActualProgressByYear = actualProgressByYear,
             TargetedProgressByQuarter = targetedProgressByQuarter,
-            ActualProgressByQuarter = actualProgressByQuarter
+            ActualProgressByQuarter = actualProgressByQuarter,
+            ProjectProgressDetails = projectProgressDetails
         };
     }
 

@@ -36,6 +36,10 @@ namespace Jobick.ViewModels
         public Dictionary<string, decimal> TargetedProgressByQuarter { get; set; } = new();
         public Dictionary<string, decimal> ActualProgressByQuarter { get; set; } = new();
 
+        // NEW: Seventh KPI - Detailed Project Progress by Quarter
+        // List of projects with their progress data for chart filtering
+        public List<ProjectProgressDetail> ProjectProgressDetails { get; set; } = new();
+
         public class ProjectInfo
         {
             public int ProjectId { get; set; }
@@ -43,7 +47,17 @@ namespace Jobick.ViewModels
             public DateTime EndDate { get; set; }
             public int IncompleteTasksCount { get; set; }
             public string? DelayReasons { get; set; }
+        }
 
+        public class ProjectProgressDetail
+        {
+            public int ProjectId { get; set; }
+            public string ProjectName { get; set; } = string.Empty;
+            public int Year { get; set; }
+            public string Quarter { get; set; } = string.Empty; // Q1, Q2, Q3, Q4
+            public decimal AnnualTargetProgress { get; set; }
+            public decimal QuarterTargetProgress { get; set; }
+            public decimal ActualProgress { get; set; }
         }
     }
 }
