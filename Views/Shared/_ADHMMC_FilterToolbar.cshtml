@@ -2,53 +2,152 @@
 @using System.Text.Json
 @using System.Globalization
 @{
-    // Added: Responsible filter data from ViewBag
+    // Filter data from ViewBag
     var responsibleList = ViewBag.ResponsibleList as List<string> ?? new List<string>();
     string? selectedResponsible = ViewBag.SelectedResponsible as string;
     bool hasResponsibleOptions = (ViewBag.HasResponsibleOptions as bool?) ?? false;
+    
+    var strategicGoalList = ViewBag.StrategicGoalList as List<string> ?? new List<string>();
+    string? selectedStrategicGoal = ViewBag.SelectedStrategicGoal as string;
+    bool hasStrategicGoalOptions = (ViewBag.HasStrategicGoalOptions as bool?) ?? false;
+    
+    string filterType = ViewBag.FilterType as string ?? "responsible";
 }
-<!-- Added: Filter toolbar for ResponsibleForImplementing -->
+
+<!-- Filter toolbar with radio buttons for filter type selection -->
 <div class="row g-3 align-items-center mt-2">
     <div class="col-12">
         <div class="card card-modern">
-            <div class="card-body d-flex flex-nowrap align-items-center gap-2">
-                <div class="d-flex align-items-center">
+            <div class="card-body">
+                <!-- Filter Type Selection (Radio Buttons) -->
+                <div class="d-flex align-items-center mb-3">
                     <i class="fas fa-filter me-2 text-primary"></i>
-                    <strong class="me-2">تصفية حسب القطاع المسؤول</strong>
+                    <strong class="me-3">نوع التصفية:</strong>
+                    <div class="btn-group btn-group-modern" role="group" aria-label="Filter Type Selection">
+                        <input type="radio" class="btn-check" name="filterTypeRadio" id="filterTypeResponsible" 
+                               value="responsible" @(filterType == "responsible" ? "checked" : "")>
+                        <label class="btn btn-outline-primary btn-sm rounded-pill me-2" for="filterTypeResponsible">
+                            <i class="fas fa-users me-1"></i>
+                            القطاع المسؤول
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="filterTypeRadio" id="filterTypeGoal" 
+                               value="goal" @(filterType == "goal" ? "checked" : "")>
+                        <label class="btn btn-outline-primary btn-sm rounded-pill" for="filterTypeGoal">
+                            <i class="fas fa-bullseye me-1"></i>
+                            الهدف الاستراتيجي
+                        </label>
+                    </div>
                 </div>
-                <div class="modern-select modern-select-wrapper w-auto ms-2">
-                    @if (hasResponsibleOptions && responsibleList.Any())
-                    {
-                        <select id="responsibleFilter"
-                                class="selectpicker show-tick"
-                                data-style="btn-light rounded-pill shadow-sm border"
-                                data-live-search="true"
-                                data-container="body"
-                                data-dropup-auto="false"
-                                data-size="7"
-                                data-width="auto"
-                                title="اختر القطاع المسؤول">
-                            @foreach (var resp in responsibleList)
-                            {
-                                if (string.Equals(resp, selectedResponsible, StringComparison.Ordinal))
+                
+                <!-- Responsible Filter -->
+                <div id="responsibleFilterContainer" class="filter-container" 
+                     style="display: @(filterType == "responsible" ? "flex" : "none");">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users me-2 text-info"></i>
+                        <strong class="me-2">تصفية حسب القطاع المسؤول:</strong>
+                    </div>
+                    <div class="modern-select modern-select-wrapper w-auto ms-2">
+                        @if (hasResponsibleOptions && responsibleList.Any())
+                        {
+                            <select id="responsibleFilter"
+                                    class="selectpicker show-tick"
+                                    data-style="btn-light rounded-pill shadow-sm border"
+                                    data-live-search="true"
+                                    data-container="body"
+                                    data-dropup-auto="false"
+                                    data-size="7"
+                                    data-width="auto"
+                                    title="اختر القطاع المسؤول">
+                                @foreach (var resp in responsibleList)
                                 {
-                                    <option value="@resp" selected>@resp</option>
+                                    if (string.Equals(resp, selectedResponsible, StringComparison.Ordinal))
+                                    {
+                                        <option value="@resp" selected>@resp</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@resp">@resp</option>
+                                    }
                                 }
-                                else
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0 empty-message">
+                                لا توجد جهات مسؤولة متاحة.
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Strategic Goal Filter -->
+                <div id="strategicGoalFilterContainer" class="filter-container" 
+                     style="display: @(filterType == "goal" ? "flex" : "none");">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bullseye me-2 text-success"></i>
+                        <strong class="me-2">تصفية حسب الهدف الاستراتيجي:</strong>
+                    </div>
+                    <div class="modern-select modern-select-wrapper w-auto ms-2">
+                        @if (hasStrategicGoalOptions && strategicGoalList.Any())
+                        {
+                            <select id="strategicGoalFilter"
+                                    class="selectpicker show-tick"
+                                    data-style="btn-light rounded-pill shadow-sm border"
+                                    data-live-search="true"
+                                    data-container="body"
+                                    data-dropup-auto="false"
+                                    data-size="7"
+                                    data-width="auto"
+                                    title="اختر الهدف الاستراتيجي">
+                                @foreach (var goal in strategicGoalList)
                                 {
-                                    <option value="@resp">@resp</option>
+                                    if (string.Equals(goal, selectedStrategicGoal, StringComparison.Ordinal))
+                                    {
+                                        <option value="@goal" selected>@goal</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@goal">@goal</option>
+                                    }
                                 }
-                            }
-                        </select>
-                    }
-                    else
-                    {
-                        <div class="alert alert-warning mb-0 empty-message">
-                            لا توجد جهات مسؤولة متاحة.
-                        </div>
-                    }
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0 empty-message">
+                                لا توجد أهداف استراتيجية متاحة.
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Modern radio button styles */
+    .btn-group-modern .btn-check:checked + .btn-outline-primary {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+    }
+    
+    .btn-group-modern .btn-outline-primary {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-group-modern .btn-outline-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+    }
+    
+    .filter-container {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+</style>

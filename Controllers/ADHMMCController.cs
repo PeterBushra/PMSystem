@@ -1,4 +1,5 @@
-﻿using Jobick.Services;
+﻿using Jobick.Models;
+using Jobick.Services;
 using Jobick.Services.Interfaces;
 using Jobick.ViewModels;
 using Microsoft.AspNetCore.Authentication;
@@ -67,15 +68,26 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     /// Displays the dashboard with aggregate KPIs.
     /// KPIs include project status distribution, counts per year, budgets for not fully done projects,
     /// budgets by year, and overdue projects with incomplete tasks.
-    /// Results are filtered by ResponsibleForImplementing when provided.
+    /// Results are filtered by ResponsibleForImplementing or StrategicGoal when provided.
+    /// Only one filter type can be active at a time.
     /// </summary>
     [Authorize]
-    public async Task<IActionResult> Index(string? responsible = null)
+    public async Task<IActionResult> Index(string? responsible = null, string? goal = null, string? filterType = null)
     {
-        const string AllOption = "كل القطاعات";
+        const string AllOption = "الكل";
 
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();
+
+        // Determine which filter is active
+        // Priority: explicit filterType parameter, then check which filter value is provided
+        if (string.IsNullOrWhiteSpace(filterType))
+        {
+            if (!string.IsNullOrWhiteSpace(goal))
+                filterType = "goal";
+            else
+                filterType = "responsible"; // default
+        }
 
         // Build distinct list of ResponsibleForImplementing values (non-empty)
         var responsibleList = projects
@@ -85,19 +97,47 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
             .OrderBy(s => s)
             .ToList();
 
-        // Ensure the "All projects" option exists at the top
+        // Ensure the "All" option exists at the top
         if (!responsibleList.Contains(AllOption))
         {
             responsibleList.Insert(0, AllOption);
         }
 
-        // Default selection: All projects if none provided
-        string? selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
+        // Build distinct list of StrategicGoal values (non-empty)
+        var strategicGoalList = projects
+            .Select(p => p.StrategicGoal)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
 
-        // Filter projects based on selected responsible; when "All projects" is chosen, do not filter
-        var filteredProjects = string.Equals(selectedResponsible, AllOption, StringComparison.Ordinal)
-            ? projects
-            : projects.Where(p => string.Equals(p.ResponsibleForImplementing, selectedResponsible, StringComparison.Ordinal)).ToList();
+        // Ensure the "All" option exists at the top
+        if (!strategicGoalList.Contains(AllOption))
+        {
+            strategicGoalList.Insert(0, AllOption);
+        }
+
+        // Default selections
+        string? selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
+        string? selectedStrategicGoal = string.IsNullOrWhiteSpace(goal) ? AllOption : goal;
+
+        // Filter projects based on active filter type
+        List<Project> filteredProjects;
+        
+        if (filterType == "goal")
+        {
+            // Filter by Strategic Goal
+            filteredProjects = string.Equals(selectedStrategicGoal, AllOption, StringComparison.Ordinal)
+                ? projects
+                : projects.Where(p => string.Equals(p.StrategicGoal, selectedStrategicGoal, StringComparison.Ordinal)).ToList();
+        }
+        else
+        {
+            // Filter by Responsible (default)
+            filteredProjects = string.Equals(selectedResponsible, AllOption, StringComparison.Ordinal)
+                ? projects
+                : projects.Where(p => string.Equals(p.ResponsibleForImplementing, selectedResponsible, StringComparison.Ordinal)).ToList();
+        }
 
         // Calculate dashboard for filtered projects
         var vm = _statisticsService.CalculateDashboard(filteredProjects, allTasks);
@@ -106,6 +146,12 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
         ViewBag.ResponsibleList = responsibleList;
         ViewBag.SelectedResponsible = selectedResponsible;
         ViewBag.HasResponsibleOptions = responsibleList.Count > 0;
+        
+        ViewBag.StrategicGoalList = strategicGoalList;
+        ViewBag.SelectedStrategicGoal = selectedStrategicGoal;
+        ViewBag.HasStrategicGoalOptions = strategicGoalList.Count > 0;
+        
+        ViewBag.FilterType = filterType;
 
         return View(vm);
     }

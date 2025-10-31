@@ -128,21 +128,59 @@
     </script>
     <script>
         (function(){
-            // Added: initialize responsible filter and navigate on change
+            // Filter handling
             const $picker = $('.selectpicker');
             if($picker.length){
                 $picker.selectpicker({
                     liveSearch: true,
-                    noneSelectedText: 'اختر القطاع المسؤول',
+                    noneSelectedText: 'اختر',
                     liveSearchPlaceholder: 'ابحث...'
                 });
-                document.getElementById('responsibleFilter')?.addEventListener('change', function(){
-                    const v = this.value;
+            }
+            
+            // Radio button change handler
+            document.querySelectorAll('input[name="filterTypeRadio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const selectedType = this.value;
+                    const responsibleContainer = document.getElementById('responsibleFilterContainer');
+                    const goalContainer = document.getElementById('strategicGoalFilterContainer');
+                    
+                    if (selectedType === 'responsible') {
+                        responsibleContainer.style.display = 'flex';
+                        goalContainer.style.display = 'none';
+                    } else {
+                        responsibleContainer.style.display = 'none';
+                        goalContainer.style.display = 'flex';
+                    }
+                    
+                    // Navigate to clear filters and set filter type
                     const url = new URL(window.location.href);
-                    url.searchParams.set('responsible', v);
+                    url.searchParams.delete('responsible');
+                    url.searchParams.delete('goal');
+                    url.searchParams.set('filterType', selectedType);
                     window.location.href = url.toString();
                 });
-            }
+            });
+            
+            // Responsible filter change handler
+            document.getElementById('responsibleFilter')?.addEventListener('change', function(){
+                const v = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.delete('goal');
+                url.searchParams.set('responsible', v);
+                url.searchParams.set('filterType', 'responsible');
+                window.location.href = url.toString();
+            });
+            
+            // Strategic goal filter change handler
+            document.getElementById('strategicGoalFilter')?.addEventListener('change', function(){
+                const v = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.delete('responsible');
+                url.searchParams.set('goal', v);
+                url.searchParams.set('filterType', 'goal');
+                window.location.href = url.toString();
+            });
 
             const years  = @Html.Raw(yearsJson);
             const counts = @Html.Raw(countsJson);

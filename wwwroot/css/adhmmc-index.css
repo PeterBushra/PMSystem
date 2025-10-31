@@ -56,3 +56,44 @@ table.dataTable tbody td.dataTables_empty {
 .modern-select .bootstrap-select .bs-searchbox input.form-control {
     border-radius: .5rem;
 }
+
+/* Modern Filter Toolbar Styles */
+.btn-group-modern .btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.btn-group-modern .btn-outline-primary {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-group-modern .btn-outline-primary:hover:not(.btn-check:checked + .btn-outline-primary) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+.filter-container {
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.filter-container:hover {
+    background-color: #e9ecef;
+}
+
+.card-modern {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    transition: box-shadow 0.3s ease;
+}
+
+.card-modern:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
