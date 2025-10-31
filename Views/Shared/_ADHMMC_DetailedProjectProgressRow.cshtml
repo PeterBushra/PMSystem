@@ -313,7 +313,7 @@
                             if (data.ActualProgress > data.QuarterTargetProgress) {
                                 statusText = `متفوق على المستهدف بـ ${data.ActualProgress - data.QuarterTargetProgress}%`;
                                 statusClass = 'text-success';
-                            }else if (data.ActualProgress = data.QuarterTargetProgress) {
+                            } else if (data.ActualProgress === data.QuarterTargetProgress) {
                                statusText = 'حقق المستهدف';
                                statusClass = 'text-success';
                             }
