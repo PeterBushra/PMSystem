@@ -77,8 +77,12 @@ public class StatisticsService : IStatisticsService
             var year = yearGroup.Key;
             var tasksInYear = yearGroup.ToList();
 
-            // Targeted Progress: Sum of all weights
-            var targetedProgress = tasksInYear.Sum(t => t.Weight ?? 0m);
+            // Targeted Progress: Average of task weights per project
+            var projectTargets = tasksInYear
+                .GroupBy(t => t.ProjectId)
+                .Select(g => g.Sum(t => t.Weight ?? 0m))
+                .ToList();
+            var targetedProgress = projectTargets.Any() ? projectTargets.Average() : 0m;
             targetedProgressByYear[year] = targetedProgress;
 
             // Actual Progress: Sum of (weight * DoneRatio)
@@ -91,7 +95,13 @@ public class StatisticsService : IStatisticsService
                 var quarterKey = $"{year}-Q{quarter}";
                 var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
 
-                var quarterTargeted = quarterTasks.Sum(t => t.Weight ?? 0m);
+                // Targeted Progress: Average of task weights per project for this quarter
+                var quarterProjectTargets = quarterTasks
+                    .GroupBy(t => t.ProjectId)
+                    .Select(g => g.Sum(t => t.Weight ?? 0m))
+                    .ToList();
+                var quarterTargeted = quarterProjectTargets.Any() ? quarterProjectTargets.Average() : 0m;
+                
                 var quarterActual = quarterTasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
 
                 if (quarterTargeted > 0 || quarterActual > 0)
