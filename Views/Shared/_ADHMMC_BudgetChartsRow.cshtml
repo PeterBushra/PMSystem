@@ -26,7 +26,7 @@
 <!-- NEW ROW: Budgets per Year (Vertical Bars) + Donut (Third KPI) -->
 <div class="row mt-4">
     <div class="col-xl-6">
-        <div class="card card-modern">
+        <div class="card card-modern h-100">
             <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">ميزانيات المشاريع حسب السنة</h4>
                 @if(!orderedBudgetYears.Any())
@@ -49,7 +49,7 @@
 
     <div class="col-xl-6">
         <div class="card card-modern h-100">
-            <div class="card-header border-0 pb-0 d-flex justify-content_between justify-content-between align-items-center">
+            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">ميزانيات المشاريع (غير المكتملة بالكامل)</h4>
                 <span class="small text-muted">
                     الإجمالي: @totalBudget.ToString("N0")
