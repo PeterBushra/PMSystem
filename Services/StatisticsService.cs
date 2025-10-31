@@ -77,16 +77,23 @@ public class StatisticsService : IStatisticsService
             var year = yearGroup.Key;
             var tasksInYear = yearGroup.ToList();
 
-            // Targeted Progress: Average of task weights per project
-            var projectTargets = tasksInYear
+            // Targeted Progress: compute per-project target sums for the year
+            var projectTargetSums = tasksInYear
                 .GroupBy(t => t.ProjectId)
-                .Select(g => g.Sum(t => t.Weight ?? 0m))
-                .ToList();
-            var targetedProgress = projectTargets.Any() ? projectTargets.Average() : 0m;
+                .ToDictionary(g => g.Key, g => g.Sum(t => t.Weight ?? 0m));
+
+            // For consistency average across the same set of projects (include zeros for projects without tasks in this year)
+            var targetsForAllProjects = projectIds.Select(pid => projectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
+            var targetedProgress = targetsForAllProjects.Any() ? targetsForAllProjects.Average() : 0m;
             targetedProgressByYear[year] = targetedProgress;
 
-            // Actual Progress: Sum of (weight * DoneRatio)
-            var actualProgress = tasksInYear.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+            // Actual Progress: compute per-project actual sums (weight * DoneRatio) for the year
+            var projectActualSums = tasksInYear
+                .GroupBy(t => t.ProjectId)
+                .ToDictionary(g => g.Key, g => g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)));
+
+            var actualsForAllProjects = projectIds.Select(pid => projectActualSums.GetValueOrDefault(pid, 0m)).ToList();
+            var actualProgress = actualsForAllProjects.Any() ? actualsForAllProjects.Average() : 0m;
             actualProgressByYear[year] = actualProgress;
 
             // Calculate quarterly breakdown for this year
@@ -95,19 +102,21 @@ public class StatisticsService : IStatisticsService
                 var quarterKey = $"{year}-Q{quarter}";
                 var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
 
-                // Targeted Progress: Average of task weights per project for this quarter
-                var quarterProjectTargets = quarterTasks
+                // Targeted Progress: per-project target sums for this quarter
+                var quarterProjectTargetSums = quarterTasks
                     .GroupBy(t => t.ProjectId)
-                    .Select(g => g.Sum(t => t.Weight ?? 0m))
-                    .ToList();
-                var quarterTargeted = quarterProjectTargets.Any() ? quarterProjectTargets.Average() : 0m;
-                
-                // Changed: Quarter Actual should be averaged per project similar to targeted
-                var quarterProjectActuals = quarterTasks
+                    .ToDictionary(g => g.Key, g => g.Sum(t => t.Weight ?? 0m));
+
+                var quarterTargetsForAllProjects = projectIds.Select(pid => quarterProjectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
+                var quarterTargeted = quarterTargetsForAllProjects.Any() ? quarterTargetsForAllProjects.Average() : 0m;
+
+                // Actual Progress: per-project actual sums for this quarter
+                var quarterProjectActualSums = quarterTasks
                     .GroupBy(t => t.ProjectId)
-                    .Select(g => g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)))
-                    .ToList();
-                var quarterActualAvg = quarterProjectActuals.Any() ? quarterProjectActuals.Average() : 0m;
+                    .ToDictionary(g => g.Key, g => g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)));
+
+                var quarterActualsForAllProjects = projectIds.Select(pid => quarterProjectActualSums.GetValueOrDefault(pid, 0m)).ToList();
+                var quarterActualAvg = quarterActualsForAllProjects.Any() ? quarterActualsForAllProjects.Average() : 0m;
 
                 if (quarterTargeted > 0 || quarterActualAvg > 0)
                 {
