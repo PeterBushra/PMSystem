@@ -76,6 +76,17 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     {
         const string AllOption = "الكل";
 
+        // Check if this is a first-time load (no parameters at all)
+        bool isFirstLoad = string.IsNullOrWhiteSpace(responsible) 
+                          && string.IsNullOrWhiteSpace(goal) 
+                          && string.IsNullOrWhiteSpace(filterType);
+
+        // If first load, redirect with default parameters to ensure consistent behavior
+        if (isFirstLoad)
+        {
+            return RedirectToAction(nameof(Index), new { responsible = AllOption, filterType = "responsible" });
+        }
+
         var projects = await _projectService.GetProjectListAsync();
         var allTasks = await _taskService.GetTaskListAsync();
 

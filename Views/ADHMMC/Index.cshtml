@@ -188,9 +188,18 @@
             
             // Get current URL parameters
             const urlParams = new URLSearchParams(window.location.search);
-            const currentFilterType = urlParams.get('filterType') || 'responsible';
-            const currentResponsible = urlParams.get('responsible');
-            const currentGoal = urlParams.get('goal');
+            let currentFilterType = urlParams.get('filterType') || 'responsible';
+            let currentResponsible = urlParams.get('responsible') || 'الكل';
+            let currentGoal = urlParams.get('goal');
+            
+            // If no URL parameters at all, redirect to set defaults
+            if (!urlParams.has('filterType') && !urlParams.has('responsible') && !urlParams.has('goal')) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('filterType', 'responsible');
+                url.searchParams.set('responsible', 'الكل');
+                window.location.href = url.toString();
+                return; // Exit early to prevent further execution
+            }
             
             // Radio button change handler
             document.querySelectorAll('input[name="filterTypeRadio"]').forEach(radio => {
