@@ -102,12 +102,17 @@ public class StatisticsService : IStatisticsService
                     .ToList();
                 var quarterTargeted = quarterProjectTargets.Any() ? quarterProjectTargets.Average() : 0m;
                 
-                var quarterActual = quarterTasks.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m));
+                // Changed: Quarter Actual should be averaged per project similar to targeted
+                var quarterProjectActuals = quarterTasks
+                    .GroupBy(t => t.ProjectId)
+                    .Select(g => g.Sum(t => (t.Weight ?? 0m) * (t.DoneRatio ?? 0m)))
+                    .ToList();
+                var quarterActualAvg = quarterProjectActuals.Any() ? quarterProjectActuals.Average() : 0m;
 
-                if (quarterTargeted > 0 || quarterActual > 0)
+                if (quarterTargeted > 0 || quarterActualAvg > 0)
                 {
                     targetedProgressByQuarter[quarterKey] = quarterTargeted;
-                    actualProgressByQuarter[quarterKey] = quarterActual;
+                    actualProgressByQuarter[quarterKey] = quarterActualAvg;
                 }
             }
         }
