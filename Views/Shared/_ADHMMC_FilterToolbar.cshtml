@@ -12,6 +12,18 @@
     bool hasStrategicGoalOptions = (ViewBag.HasStrategicGoalOptions as bool?) ?? false;
     
     string filterType = ViewBag.FilterType as string ?? "responsible";
+    
+    // Check if filter is active (not "الكل")
+    bool isFilterActive = (filterType == "responsible" && selectedResponsible != "الكل") 
+                          || (filterType == "goal" && selectedStrategicGoal != "الكل");
+    
+    string activeFilterText = "";
+    if (isFilterActive)
+    {
+        activeFilterText = filterType == "responsible" 
+            ? $"القطاع المسؤول: {selectedResponsible}"
+            : $"الهدف الاستراتيجي: {selectedStrategicGoal}";
+    }
 }
 
 <!-- Filter toolbar with radio buttons for filter type selection -->
@@ -19,11 +31,21 @@
     <div class="col-12">
         <div class="card card-modern">
             <div class="card-body">
+                <!-- Active Filter Status Banner -->
+                @if (isFilterActive)
+                {
+                    <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                        <i class="fas fa-filter me-2"></i>
+                        <strong>تصفية نشطة:</strong> @activeFilterText
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="clearFilter()"></button>
+                    </div>
+                }
+                
                 <!-- Filter Type Selection (Radio Buttons) -->
-                <div class="d-flex align-items-center mb-3">
+                <div class="d-flex align-items-center mb-3 flex-wrap">
                     <i class="fas fa-filter me-2 text-primary"></i>
                     <strong class="me-3">نوع التصفية:</strong>
-                    <div class="btn-group btn-group-modern" role="group" aria-label="Filter Type Selection">
+                    <div class="btn-group btn-group-modern me-3" role="group" aria-label="Filter Type Selection">
                         <input type="radio" class="btn-check" name="filterTypeRadio" id="filterTypeResponsible" 
                                value="responsible" @(filterType == "responsible" ? "checked" : "")>
                         <label class="btn btn-outline-primary btn-sm rounded-pill me-2" for="filterTypeResponsible">
@@ -38,6 +60,14 @@
                             الهدف الاستراتيجي
                         </label>
                     </div>
+                    
+                    @if (isFilterActive)
+                    {
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" onclick="clearFilter()">
+                            <i class="fas fa-times me-1"></i>
+                            إلغاء التصفية
+                        </button>
+                    }
                 </div>
                 
                 <!-- Responsible Filter -->
@@ -125,3 +155,49 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Clear filter function
+    function clearFilter() {
+        // Show loading overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'filterLoadingOverlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        `;
+        overlay.innerHTML = `
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-3 text-primary fw-bold" style="font-size: 1.2rem;">
+                جاري إلغاء التصفية...
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        const url = new URL(window.location.href);
+        url.searchParams.delete('responsible');
+        url.searchParams.delete('goal');
+        // Keep the filterType but reset to "الكل"
+        const currentFilterType = url.searchParams.get('filterType') || 'responsible';
+        url.searchParams.set('filterType', currentFilterType);
+        
+        if (currentFilterType === 'responsible') {
+            url.searchParams.set('responsible', 'الكل');
+        } else {
+            url.searchParams.set('goal', 'الكل');
+        }
+        
+        window.location.href = url.toString();
+    }
+</script>

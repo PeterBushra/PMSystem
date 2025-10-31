@@ -117,9 +117,9 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
             strategicGoalList.Insert(0, AllOption);
         }
 
-        // Default selections
-        string? selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
-        string? selectedStrategicGoal = string.IsNullOrWhiteSpace(goal) ? AllOption : goal;
+        // Default selections - if no filter parameter provided, default to "الكل"
+        string selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
+        string selectedStrategicGoal = string.IsNullOrWhiteSpace(goal) ? AllOption : goal;
 
         // Filter projects based on active filter type
         List<Project> filteredProjects;
@@ -140,6 +140,8 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
         }
 
         // Calculate dashboard for filtered projects
+        // Note: allTasks includes all tasks from the database, but CalculateDashboard will filter them
+        // based on the projectIds from filteredProjects
         var vm = _statisticsService.CalculateDashboard(filteredProjects, allTasks);
 
         // Pass filter data to the view
