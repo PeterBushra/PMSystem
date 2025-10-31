@@ -1,4 +1,4 @@
-/* ADHMMC Dashboard Index Styles */
+﻿/* ADHMMC Dashboard Index Styles */
 
 /* Force "in progress" KPI to #e16b16 */
 .kpi-inprogress {
@@ -26,7 +26,7 @@
     color: #212529 !important;
 }
 
-/* Center DataTables "?? ???? ????? ??????" message */
+/* Center DataTables "لا توجد نتائج متطابقة" message */
 #overdueProjectsTable tbody td.dataTables_empty,
 table.dataTable tbody td.dataTables_empty {
     text-align: center !important;
@@ -96,4 +96,225 @@ table.dataTable tbody td.dataTables_empty {
 
 .card-modern:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ========================================
+   DARK MODE STYLES
+   ======================================== */
+
+/* Dark mode for filter containers */
+[data-theme-version="dark"] .filter-container {
+    background-color: #1e2746;
+    border: 1px solid #333a54;
+}
+
+[data-theme-version="dark"] .filter-container:hover {
+    background-color: #252d4a;
+}
+
+/* Dark mode for bootstrap-select dropdown (strategic goal filter) */
+[data-theme-version="dark"] .modern-select .bootstrap-select > .dropdown-toggle {
+    background-color: #1e2746;
+    border-color: #333a54;
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select > .dropdown-toggle:hover,
+[data-theme-version="dark"] .modern-select .bootstrap-select > .dropdown-toggle:focus {
+    background-color: #252d4a;
+    border-color: #3d4465;
+    color: #fff;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu {
+    background-color: #1e2746;
+    border-color: #333a54;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu .dropdown-item {
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu .dropdown-item:hover,
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu .dropdown-item:focus {
+    background-color: #252d4a;
+    color: #fff;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu .dropdown-item.active,
+[data-theme-version="dark"] .modern-select .bootstrap-select .dropdown-menu .dropdown-item.selected {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .bs-searchbox input.form-control {
+    background-color: #252d4a;
+    border-color: #333a54;
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .bs-searchbox input.form-control:focus {
+    background-color: #1e2746;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+[data-theme-version="dark"] .modern-select .bootstrap-select .bs-searchbox input.form-control::placeholder {
+    color: #6c757d;
+}
+
+/* Dark mode for standard form-select dropdowns (progress comparison & detailed progress) */
+[data-theme-version="dark"] .form-select,
+[data-theme-version="dark"] #viewMode,
+[data-theme-version="dark"] #yearFilter,
+[data-theme-version="dark"] #detailedYearFilter,
+[data-theme-version="dark"] #detailedQuarterFilter,
+[data-theme-version="dark"] #detailedProjectFilter {
+    background-color: #1e2746;
+    border-color: #333a54;
+    color: #b9b9c3;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23b9b9c3' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+[data-theme-version="dark"] .form-select:hover,
+[data-theme-version="dark"] .form-select:focus,
+[data-theme-version="dark"] #viewMode:hover,
+[data-theme-version="dark"] #yearFilter:hover,
+[data-theme-version="dark"] #viewMode:focus,
+[data-theme-version="dark"] #yearFilter:focus,
+[data-theme-version="dark"] #detailedYearFilter:hover,
+[data-theme-version="dark"] #detailedQuarterFilter:hover,
+[data-theme-version="dark"] #detailedProjectFilter:hover,
+[data-theme-version="dark"] #detailedYearFilter:focus,
+[data-theme-version="dark"] #detailedQuarterFilter:focus,
+[data-theme-version="dark"] #detailedProjectFilter:focus {
+    background-color: #252d4a;
+    border-color: #3d4465;
+    color: #fff;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+[data-theme-version="dark"] .form-select option,
+[data-theme-version="dark"] #viewMode option,
+[data-theme-version="dark"] #yearFilter option,
+[data-theme-version="dark"] #detailedYearFilter option,
+[data-theme-version="dark"] #detailedQuarterFilter option,
+[data-theme-version="dark"] #detailedProjectFilter option {
+    background-color: #1e2746;
+    color: #b9b9c3;
+}
+
+/* Dark mode for labels next to dropdowns */
+[data-theme-version="dark"] .card-header label,
+[data-theme-version="dark"] label[for="viewMode"],
+[data-theme-version="dark"] label[for="yearFilter"],
+[data-theme-version="dark"] label[for="detailedYearFilter"],
+[data-theme-version="dark"] label[for="detailedQuarterFilter"],
+[data-theme-version="dark"] label[for="detailedProjectFilter"] {
+    color: #b9b9c3;
+}
+
+/* Dark mode for card headers */
+[data-theme-version="dark"] .card-header {
+    background-color: #1e2746;
+    border-bottom-color: #333a54;
+}
+
+[data-theme-version="dark"] .card-header .card-title {
+    color: #fff;
+}
+
+/* Dark mode for empty messages */
+[data-theme-version="dark"] .empty-message {
+    background-color: #1e2746;
+    color: #b9b9c3;
+}
+
+/* Dark mode for radio buttons */
+[data-theme-version="dark"] .btn-group-modern .btn-outline-primary {
+    border-color: #3d4465;
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .btn-group-modern .btn-outline-primary:hover:not(.btn-check:checked + .btn-outline-primary) {
+    background-color: #252d4a;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+[data-theme-version="dark"] .btn-group-modern .btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+/* Dark mode for bootstrap-select filter button */
+[data-theme-version="dark"] .bootstrap-select .filter-option-inner-inner {
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .bootstrap-select.show .dropdown-toggle {
+    background-color: #252d4a;
+    border-color: #0d6efd;
+}
+
+/* Dark mode for dropdown dividers */
+[data-theme-version="dark"] .bootstrap-select .dropdown-menu .dropdown-divider {
+    border-color: #333a54;
+}
+
+/* Dark mode for no results text */
+[data-theme-version="dark"] .bootstrap-select .no-results {
+    color: #b9b9c3;
+    background-color: #252d4a;
+}
+
+/* Dark mode for text-muted elements */
+[data-theme-version="dark"] .text-muted {
+    color: #8e92a8 !important;
+}
+
+/* Dark mode for small text under charts */
+[data-theme-version="dark"] .card-body small {
+    color: #8e92a8;
+}
+
+[data-theme-version="dark"] .card-body small strong {
+    color: #b9b9c3;
+}
+
+/* Dark mode for form-select-sm specifically */
+[data-theme-version="dark"] .form-select-sm {
+    background-color: #1e2746;
+    border-color: #333a54;
+    color: #b9b9c3;
+}
+
+[data-theme-version="dark"] .form-select-sm:hover,
+[data-theme-version="dark"] .form-select-sm:focus {
+    background-color: #252d4a;
+    border-color: #3d4465;
+    color: #fff;
+}
+
+/* Dark mode for gap flex containers with dropdowns */
+[data-theme-version="dark"] .d-flex.gap-2 label {
+    color: #b9b9c3;
+}
+
+/* Dark mode support for alert messages within filters */
+[data-theme-version="dark"] .filter-container .alert-warning {
+    background-color: #332701;
+    border-color: #664e03;
+    color: #ffecb5;
+}
+
+/* Dark mode for strong text in filter containers */
+[data-theme-version="dark"] .filter-container strong {
+    color: #fff;
+}
+
+/* Dark mode for card body background */
+[data-theme-version="dark"] .card-body {
+    background-color: transparent;
 }

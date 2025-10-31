@@ -139,6 +139,19 @@
                 });
             }
             
+            // Theme change handler - refresh selectpicker when theme changes
+            const themeToggle = document.querySelector('.dlab-theme-mode');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    // Wait for theme to change, then refresh selectpicker
+                    setTimeout(function() {
+                        if ($picker.length) {
+                            $picker.selectpicker('refresh');
+                        }
+                    }, 100);
+                });
+            }
+            
             // Radio button change handler
             document.querySelectorAll('input[name="filterTypeRadio"]').forEach(radio => {
                 radio.addEventListener('change', function() {
