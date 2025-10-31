@@ -170,6 +170,22 @@
                     }
                 }
                 
+                // Helper: render delay reasons list as badges
+                function renderDelayReasons(reasons) {
+                    if (!reasons) return '';
+                    // Split by common separators and trim
+                    const items = reasons
+                        .split(/[,;\n]+/)
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                        .slice(0, 8); // limit to avoid overly long tooltips
+
+                    if (items.length === 0) return '';
+
+                    const badges = items.map(r => `<span class="badge rounded-pill bg-light text-dark border me-1 mt-1">${r}</span>`).join('');
+                    return `<div class="mt-2"><small class="text-muted d-block mb-1">أسباب التأخير:</small>${badges}</div>`;
+                }
+                
                 function renderDetailedChart() {
                     const selectedYear = detailedYearFilter.value;
                     const selectedQuarter = detailedQuarterFilter.value;
@@ -335,14 +351,20 @@
                                     statusText = `أقل من المستهدف بـ ${diffPercent}%`;
                                     statusClass = 'text-warning';
                                 }
+
+                                const reasonsHtml = (diff > 0) ? renderDelayReasons(data.DelayReasons) : '';
                                 
                                 return `
-                                    <div class="apexcharts-tooltip-custom p-2" style="background: white; border: 1px solid #e3e3e3; border-radius: 4px;">
-                                        <div><strong>${data.ProjectName}</strong></div>
-                                        <div class="mt-1">النسبة السنوية: <strong>${data.AnnualTargetProgress.toFixed(1)}%</strong></div>
+                                    <div class="apexcharts-tooltip-custom p-2" style="background: white; border: 1px solid #e3e3e3; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); max-width: 320px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div><strong>${data.ProjectName}</strong></div>
+                                            <span class="badge ${statusClass.replace('text-','bg-')}">${data.Quarter}</span>
+                                        </div>
+                                        <div class="mt-2">النسبة السنوية: <strong>${data.AnnualTargetProgress.toFixed(1)}%</strong></div>
                                         <div>المستهدف (الربع): <strong>${data.QuarterTargetProgress.toFixed(1)}%</strong></div>
                                         <div>الإنجاز الفعلي: <strong>${data.ActualProgress.toFixed(1)}%</strong></div>
                                         <div class="mt-1 ${statusClass}"><strong>${statusText}</strong></div>
+                                        ${reasonsHtml}
                                     </div>
                                 `;
                             }

@@ -58,6 +58,8 @@ namespace Jobick.ViewModels
             public decimal AnnualTargetProgress { get; set; }
             public decimal QuarterTargetProgress { get; set; }
             public decimal ActualProgress { get; set; }
+            // NEW: Delay reasons for the project (to show in hover tooltip when below target)
+            public string? DelayReasons { get; set; }
         }
     }
 }

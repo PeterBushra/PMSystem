@@ -167,7 +167,8 @@ public class StatisticsService : IStatisticsService
                             Quarter = quarterKey,
                             AnnualTargetProgress = annualTarget,
                             QuarterTargetProgress = quarterTarget,
-                            ActualProgress = quarterActual
+                            ActualProgress = quarterActual,
+                            DelayReasons = project.DelayReasons
                         });
                     }
                 }
