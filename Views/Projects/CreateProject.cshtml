@@ -105,19 +105,27 @@
                                         </div>
 
 
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">البرنامج الاستراتيجي</label>
-                                            <div class="col-lg-6">
-                                                <input asp-for="StrategicProgramme" class="form-control" placeholder="البرنامج الاستراتيجي" required maxlength="150" />
-                                                <div class="invalid-feedback">يرجى إدخال البرنامج الاستراتيجي.</div>
-                                            </div>
-                                        </div>
-
+                                        <!-- الهدف الاستراتيجي (الأب) -->
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">الهدف الاستراتيجي</label>
                                             <div class="col-lg-6">
-                                                <input asp-for="StrategicGoal" class="form-control" placeholder="الهدف الاستراتيجي" required maxlength="150" />
+                                                <select asp-for="StrategicGoal" class="form-control" id="StrategicGoal"
+                                                        required data-selected-goal="@Model?.StrategicGoal">
+                                                    <option value="">-- اختر الهدف الاستراتيجي --</option>
+                                                </select>
                                                 <div class="invalid-feedback">يرجى إدخال الهدف الاستراتيجي.</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- البرنامج الاستراتيجي (الابن) -->
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">البرنامج الاستراتيجي</label>
+                                            <div class="col-lg-6">
+                                                <select asp-for="StrategicProgramme" class="form-control" id="StrategicProgramme"
+                                                        required data-selected-programme="@Model?.StrategicProgramme" disabled>
+                                                    <option value="">-- اختر البرنامج الاستراتيجي --</option>
+                                                </select>
+                                                <div class="invalid-feedback">يرجى إدخال البرنامج الاستراتيجي.</div>
                                             </div>
                                         </div>
 
@@ -181,5 +189,109 @@
                     }, false)
                 })
         })()
+    </script>
+
+    <script>
+        // تعبئة القوائم المنسدلة للهدف/البرنامج الاستراتيجي من ملف JSON وعلاقة أب/ابن
+        (function () {
+            const dataUrl = '@Url.Content("~/data/strategic-data.json")';
+            const goalSelect = document.getElementById('StrategicGoal');
+            const programmeSelect = document.getElementById('StrategicProgramme');
+
+            if (!goalSelect || !programmeSelect) return;
+
+            let strategicData = null;
+
+            function clearOptions(select, keepPlaceholder) {
+                while (select.options.length > (keepPlaceholder ? 1 : 0)) {
+                    select.remove(keepPlaceholder ? 1 : 0);
+                }
+            }
+
+            function enable(select, enabled) {
+                select.disabled = !enabled;
+            }
+
+            function populateGoals(goals, selectedValue) {
+                clearOptions(goalSelect, true);
+                goals.forEach(g => {
+                    const opt = document.createElement('option');
+                    // نخزن الاسم كقيمة لربطها مع خاصية السجل النصية
+                    opt.value = g.name;
+                    opt.textContent = g.name;
+                    opt.setAttribute('data-id', g.id);
+                    goalSelect.appendChild(opt);
+                });
+                if (selectedValue) {
+                    goalSelect.value = selectedValue;
+                }
+            }
+
+            function populateProgrammes(programmes, selectedValue) {
+                clearOptions(programmeSelect, true);
+                programmes.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name; // القيمة النصية للحفظ في قاعدة البيانات
+                    opt.textContent = p.name;
+                    opt.setAttribute('data-id', p.id);
+                    programmeSelect.appendChild(opt);
+                });
+                if (selectedValue) {
+                    // إذا لم يوجد في القائمة (بيانات قديمة)، أضفه كخيار مخصص
+                    const found = Array.from(programmeSelect.options).some(o => o.value === selectedValue);
+                    if (!found) {
+                        const custom = document.createElement('option');
+                        custom.value = selectedValue;
+                        custom.textContent = selectedValue + ' (قيمة قديمة)';
+                        programmeSelect.appendChild(custom);
+                    }
+                    programmeSelect.value = selectedValue;
+                }
+                enable(programmeSelect, true);
+            }
+
+            function onGoalChanged() {
+                const selectedGoalName = goalSelect.value;
+                clearOptions(programmeSelect, true);
+                enable(programmeSelect, false);
+
+                if (!selectedGoalName) return;
+
+                const goal = strategicData?.goals?.find(g => g.name === selectedGoalName);
+                if (goal) {
+                    populateProgrammes(goal.programmes || [], programmeSelect.getAttribute('data-selected-programme'));
+                }
+            }
+
+            // تحميل البيانات ثم التهيئة
+            fetch(dataUrl, { cache: 'no-store' })
+                .then(r => r.json())
+                .then(json => {
+                    strategicData = json;
+
+                    const preSelectedGoal = goalSelect.getAttribute('data-selected-goal') || '';
+                    const preSelectedProgramme = programmeSelect.getAttribute('data-selected-programme') || '';
+
+                    populateGoals(json.goals || [], preSelectedGoal);
+
+                    if (preSelectedGoal) {
+                        const g = (json.goals || []).find(x => x.name === preSelectedGoal);
+                        if (g) {
+                            populateProgrammes(g.programmes || [], preSelectedProgramme);
+                        }
+                    }
+
+                    goalSelect.addEventListener('change', function () {
+                        // عند تغيير الهدف، نفرغ قيمة البرنامج حتى يُعاد الاختيار
+                        programmeSelect.value = '';
+                        programmeSelect.setAttribute('data-selected-programme', '');
+                        onGoalChanged();
+                    });
+                })
+                .catch(err => {
+                    // في حال فشل التحميل، نبقي الحقول نصية كخطة بديلة
+                    console.error('فشل تحميل بيانات الاستراتيجيات:', err);
+                });
+        })();
     </script>
 }

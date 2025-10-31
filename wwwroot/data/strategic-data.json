@@ -1,0 +1,37 @@
+﻿{
+  "goals": [
+    {
+      "id": "digital-transformation",
+      "name": "التحول الرقمي",
+      "programmes": [
+        { "id": "infra-modernization", "name": "تحديث البنية التحتية" },
+        { "id": "process-automation", "name": "أتمتة الإجراءات" },
+        { "id": "data-platform", "name": "منصة البيانات" }
+      ]
+    },
+    {
+      "id": "service-excellence",
+      "name": "التميز في الخدمات",
+      "programmes": [
+        { "id": "cx-improvement", "name": "تحسين تجربة العملاء" },
+        { "id": "quality-management", "name": "إدارة الجودة" }
+      ]
+    },
+    {
+      "id": "human-capital",
+      "name": "تنمية رأس المال البشري",
+      "programmes": [
+        { "id": "training", "name": "التدريب وبناء القدرات" },
+        { "id": "talent-attraction", "name": "استقطاب المواهب" }
+      ]
+    },
+    {
+      "id": "sustainability",
+      "name": "الاستدامة",
+      "programmes": [
+        { "id": "green-operations", "name": "العمليات الخضراء" },
+        { "id": "energy-efficiency", "name": "كفاءة الطاقة" }
+      ]
+    }
+  ]
+}
