@@ -394,6 +394,17 @@
                     function getQuartersForYear(year) {
                         return progressQuarters.filter(q => q.startsWith(year + '-'));
                     }
+                    
+                    // Helper to convert quarter code to Arabic text
+                    function quarterToArabic(quarterCode) {
+                        const quarterMap = {
+                            'Q1': 'الربع الأول',
+                            'Q2': 'الربع الثاني',
+                            'Q3': 'الربع الثالث',
+                            'Q4': 'الربع الرابع'
+                        };
+                        return quarterMap[quarterCode] || quarterCode;
+                    }
 
                     function renderProgressChart(selectedYear, mode){
                         let categories, targeted, actual;
@@ -419,37 +430,39 @@
                                 }
                             }
                         } else {
-                            // Quarterly view
+                            // Quarterly view - RTL order
                             if(quarterNote) quarterNote.style.display = 'block';
                             
                             if(selectedYear === 'all'){
-                                // Show all quarters from all years
+                                // Show all quarters from all years with Arabic labels - REVERSED for RTL
                                 categories = progressQuarters.map(q => {
                                     const parts = q.split('-');
-                                    return parts[1]; // Q1, Q2, Q3, Q4
-                                });
-                                // Add year prefix for clarity when showing all
-                                categories = progressQuarters.map(q => q.replace('-', ' '));
-                                targeted = targetedProgressQuarterly;
-                                actual = actualProgressQuarterly;
+                                    const year = parts[0];
+                                    const quarter = quarterToArabic(parts[1]);
+                                    return `${year} ${quarter}`;
+                                }).reverse();
+                                targeted = targetedProgressQuarterly.slice().reverse();
+                                actual = actualProgressQuarterly.slice().reverse();
                             } else {
-                                // Show quarters for selected year only
+                                // Show quarters for selected year only with Arabic labels - REVERSED for RTL
                                 const yearQuarters = getQuartersForYear(selectedYear);
-                                categories = yearQuarters.map(q => q.split('-')[1]); // Q1, Q2, Q3, Q4
+                                categories = yearQuarters.map(q => quarterToArabic(q.split('-')[1])).reverse();
                                 
-                                targeted = yearQuarters.map(q => {
+                                const targetedTemp = yearQuarters.map(q => {
                                     const idx = progressQuarters.indexOf(q);
                                     return idx !== -1 ? targetedProgressQuarterly[idx] : 0;
                                 });
-                                
-                                actual = yearQuarters.map(q => {
+                                targeted = targetedTemp.reverse();
+                        
+                                const actualTemp = yearQuarters.map(q => {
                                     const idx = progressQuarters.indexOf(q);
                                     return idx !== -1 ? actualProgressQuarterly[idx] : 0;
                                 });
+                                actual = actualTemp.reverse();
 
-                                // If no data for this year, show empty
+                                // If no data for this year, show empty with Arabic labels - REVERSED for RTL
                                 if(yearQuarters.length === 0){
-                                    categories = ['Q1', 'Q2', 'Q3', 'Q4'];
+                                    categories = ['الربع الرابع', 'الربع الثالث', 'الربع الثاني', 'الربع الأول'];
                                     targeted = [0, 0, 0, 0];
                                     actual = [0, 0, 0, 0];
                                 }
