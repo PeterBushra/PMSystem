@@ -80,6 +80,7 @@ public class StatisticsService : IStatisticsService
         }
 
         // Helper: get latest known progress for task up to (and including) cutoff date
+        // Prefer TaskLogs; if none, fall back to DoneRatio (used for yearly view)
         static decimal GetTaskProgressUpTo(Jobick.Models.Task task, DateOnly cutoff)
         {
             decimal? fromLogs = task.TaskLogs?
@@ -93,32 +94,52 @@ public class StatisticsService : IStatisticsService
                 return NormalizeProgress(fromLogs.Value);
             }
 
-            // Fallback to DoneRatio if there are no logs
+            // Fallback to DoneRatio if there are no logs up to cutoff
             var dr = task.DoneRatio ?? 0m;
             return NormalizeProgress(dr);
         }
 
-        // Group tasks by year (based on ExpectedEndDate) for projects in the filtered set
-        var tasksByYear = allTasks
-            .Where(t => projectIds.Contains(t.ProjectId))
-            .GroupBy(t => t.ExpectedEndDate.Year);
-
-        foreach (var yearGroup in tasksByYear)
+        // Helper: logs-only progress at a given cutoff (no fallback)
+        static decimal GetTaskProgressFromLogsAt(Jobick.Models.Task task, DateOnly cutoff)
         {
-            var year = yearGroup.Key;
-            var tasksInYear = yearGroup.ToList();
+            decimal? val = task.TaskLogs?
+                .Where(l => l.Date <= cutoff)
+                .OrderByDescending(l => l.Date)
+                .Select(l => (decimal?)l.Progress)
+                .FirstOrDefault();
+            return val.HasValue ? NormalizeProgress(val.Value) : 0m;
+        }
 
-            // Targeted Progress: compute per-project target sums for the year (ExpectedEndDate basis)
+        // Helper: logs-only delta within a quarter (P(end) - P(before start)) clamped to [0,1]
+        static decimal GetTaskQuarterDeltaFromLogs(Jobick.Models.Task task, DateOnly quarterStart, DateOnly quarterEnd)
+        {
+            var pBeforeStart = GetTaskProgressFromLogsAt(task, quarterStart.AddDays(-1));
+            var pAtEnd = GetTaskProgressFromLogsAt(task, quarterEnd);
+            var delta = pAtEnd - pBeforeStart;
+            return delta > 0m ? Clamp01(delta) : 0m;
+        }
+
+        // Pre-group tasks by ExpectedEndDate year for targeted
+        var tasksByYearLookup = allTasks
+            .Where(t => projectIds.Contains(t.ProjectId))
+            .GroupBy(t => t.ExpectedEndDate.Year)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Compute yearly targeted + actual (existing behavior)
+        foreach (var kv in tasksByYearLookup)
+        {
+            var year = kv.Key;
+            var tasksInYear = kv.Value;
+
+            // Targeted yearly: per-project total weights for tasks ending this year
             var projectTargetSums = tasksInYear
                 .GroupBy(t => t.ProjectId)
                 .ToDictionary(g => g.Key, g => g.Sum(t => (t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)));
 
-            // For consistency average across the same set of projects (include zeros for projects without tasks in this year)
             var targetsForAllProjects = projectIds.Select(pid => projectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
-            var targetedProgress = targetsForAllProjects.Any() ? targetsForAllProjects.Average() : 0m;
-            targetedProgressByYear[year] = targetedProgress;
+            targetedProgressByYear[year] = targetsForAllProjects.Any() ? targetsForAllProjects.Average() : 0m;
 
-            // Actual Progress (YEARLY VIEW): based on TaskLogs up to the end of this year, for tasks whose ExpectedEndDate is in this year
+            // Actual yearly: latest progress up to end of year for tasks ending this year
             var yearEnd = new DateOnly(year, 12, 31);
             var actualSumsByProjectForYear = tasksInYear
                 .GroupBy(t => t.ProjectId)
@@ -126,45 +147,53 @@ public class StatisticsService : IStatisticsService
                     g => g.Key,
                     g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * GetTaskProgressUpTo(t, yearEnd))
                 );
-
             var actualsForAllProjectsYear = projectIds.Select(pid => actualSumsByProjectForYear.GetValueOrDefault(pid, 0m)).ToList();
-            var actualProgressYearly = actualsForAllProjectsYear.Any() ? actualsForAllProjectsYear.Average() : 0m;
-            actualProgressByYear[year] = actualProgressYearly;
+            actualProgressByYear[year] = actualsForAllProjectsYear.Any() ? actualsForAllProjectsYear.Average() : 0m;
+        }
 
-            // Calculate quarterly breakdown for this year
+        // Determine years to compute quarters for: union of ExpectedEndDate years and TaskLog years
+        var logYears = allTasks
+            .Where(t => projectIds.Contains(t.ProjectId) && t.TaskLogs != null && t.TaskLogs.Any())
+            .SelectMany(t => t.TaskLogs.Select(l => l.Date.Year))
+            .ToHashSet();
+        var yearsForQuarters = tasksByYearLookup.Keys.Union(logYears).OrderBy(y => y).ToList();
+
+        // Compute quarterly targeted (by ExpectedEndDate) and actual (by logs-only deltas) for each year
+        foreach (var year in yearsForQuarters)
+        {
+            var tasksInYear = tasksByYearLookup.GetValueOrDefault(year, new List<Jobick.Models.Task>());
+
             for (int quarter = 1; quarter <= 4; quarter++)
             {
                 var quarterKey = $"{year}-Q{quarter}";
 
-                // Targeted Progress (quarter): per-project target sums for this quarter (ExpectedEndDate basis)
+                // Targeted per quarter (ExpectedEndDate basis)
                 var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
                 var quarterProjectTargetSums = quarterTasks
                     .GroupBy(t => t.ProjectId)
                     .ToDictionary(g => g.Key, g => g.Sum(t => (t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)));
-
                 var quarterTargetsForAllProjects = projectIds.Select(pid => quarterProjectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
                 var quarterTargeted = quarterTargetsForAllProjects.Any() ? quarterTargetsForAllProjects.Average() : 0m;
 
-                // Actual Progress (QUARTERLY VIEW): based on TaskLogs up to the end of this quarter for tasks targeted to this quarter
+                // Actual per quarter: logs-only delta within this quarter across ALL tasks for these projects
+                var startMonth = (quarter - 1) * 3 + 1;
                 var endMonth = quarter * 3;
+                var quarterStart = new DateOnly(year, startMonth, 1);
                 var endDay = DateTime.DaysInMonth(year, endMonth);
                 var quarterEnd = new DateOnly(year, endMonth, endDay);
 
-                var quarterActualByProject = quarterTasks
+                var allProjectTasks = allTasks.Where(t => projectIds.Contains(t.ProjectId));
+                var quarterActualByProject = allProjectTasks
                     .GroupBy(t => t.ProjectId)
                     .ToDictionary(
                         g => g.Key,
-                        g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * GetTaskProgressUpTo(t, quarterEnd))
+                        g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * GetTaskQuarterDeltaFromLogs(t, quarterStart, quarterEnd))
                     );
-
                 var quarterActualsForAllProjects = projectIds.Select(pid => quarterActualByProject.GetValueOrDefault(pid, 0m)).ToList();
                 var quarterActualAvg = quarterActualsForAllProjects.Any() ? quarterActualsForAllProjects.Average() : 0m;
 
-                if (quarterTargeted > 0 || quarterActualAvg > 0)
-                {
-                    targetedProgressByQuarter[quarterKey] = quarterTargeted;
-                    actualProgressByQuarter[quarterKey] = quarterActualAvg;
-                }
+                targetedProgressByQuarter[quarterKey] = quarterTargeted;
+                actualProgressByQuarter[quarterKey] = quarterActualAvg;
             }
         }
 

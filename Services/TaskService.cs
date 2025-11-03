@@ -33,6 +33,7 @@ public class TaskService : ITaskService
         return await _context.Tasks
             .Include(t => t.Project)
             .Include(t => t.CreatedByNavigation)
+            .Include(t => t.TaskLogs)
             .FirstOrDefaultAsync(t => t.Id == id);
     }
 
@@ -42,8 +43,10 @@ public class TaskService : ITaskService
     public async Task<List<Models.Task>> GetTaskListAsync()
     {
         return await _context.Tasks
+            .AsNoTracking()
             .Include(t => t.Project)
             .Include(t => t.CreatedByNavigation)
+            .Include(t => t.TaskLogs)
             .ToListAsync();
     }
 
