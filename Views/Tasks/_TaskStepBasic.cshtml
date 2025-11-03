@@ -1,0 +1,42 @@
+﻿@model Jobick.Models.Task
+
+<div class="form-step" data-step="0">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Task1" class="form-label fw-bold">المهام</label>
+                <input asp-for="Task1" class="form-control" required maxlength="50" />
+                <span asp-validation-for="Task1" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="StageName" class="form-label fw-bold">المراحل</label>
+                <input asp-for="StageName" class="form-control" required maxlength="50" />
+                <span asp-validation-for="StageName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ImplementorDepartment" class="form-label fw-bold">القسم المنفذ</label>
+                <input asp-for="ImplementorDepartment" class="form-control" required maxlength="50" />
+                <span asp-validation-for="ImplementorDepartment" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="DepartmentResponsible" class="form-label fw-bold">الادارة المسؤولة</label>
+                <input asp-for="DepartmentResponsible" class="form-control" required maxlength="50" />
+                <span asp-validation-for="DepartmentResponsible" class="text-danger"></span>
+            </div>
+            <div class="mb-3 mb-md-0">
+                <label asp-for="DefinationOfDone" class="form-label fw-bold">المخرجات (DOD)</label>
+                <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000" rows="5" placeholder="صف بوضوح ما يعتبر إتماماً للمهمة..."></textarea>
+                <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-info">
+                أدخل البيانات الأساسية للمهمة هنا. بعد ذلك انتقل للتخطيط والجدولة ثم سجل التقدم.
+            </div>
+            <ul class="small text-muted mb-0">
+                <li>اكتب اسمًا واضحًا للمهمة والمراحل.</li>
+                <li>استخدم خانة المخرجات لتعريف الإكمال بوضوح.</li>
+            </ul>
+        </div>
+    </div>
+</div>

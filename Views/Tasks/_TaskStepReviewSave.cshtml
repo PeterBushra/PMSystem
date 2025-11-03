@@ -1,0 +1,33 @@
+﻿@model Jobick.Models.Task
+
+<div class="form-step d-none" data-step="3">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card card-body bg-light border mb-3" id="actualEndDateContainer" style="display:block;">
+                <label asp-for="ActualEndDate" class="form-label fw-bold mb-1">تاريخ الانتهاء الفعلي</label>
+                <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date date-rtl" readonly disabled />
+                <span asp-validation-for="ActualEndDate" class="text-danger"></span>
+                <small class="form-text text-muted">يتحدد تلقائياً عند وجود سجل بنسبة 100%.</small>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-body bg-light border mb-3" id="DoneRatioContainer">
+                <label asp-for="DoneRatio" class="form-label fw-bold mb-1">النسبة الفعلية (مجمعة من السجل)</label>
+                <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" readonly disabled />
+                <div class="progress mt-2" style="height:8px;">
+                    <div id="doneProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+                <span asp-validation-for="DoneRatio" class="text-danger"></span>
+                <small class="form-text text-muted">يتم حسابها تلقائياً من سجل الت ProgressLog.</small>
+                @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
+                {
+                    <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
+                        <strong>تحذير !</strong>
+                        سيتم حذف المرفق اذا تم تغيير نسبة الانجاز - اذا تم التعديل بالخطأ اضغط الغاء
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-info mt-2 mb-0">راجع البيانات قبل الحفظ. يمكنك العودة للخطوات السابقة لتعديل أي شيء.</div>
+</div>
