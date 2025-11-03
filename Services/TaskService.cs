@@ -100,4 +100,61 @@ public class TaskService : ITaskService
     {
         return _context.Tasks.AsNoTracking().Where(x => x.ProjectId == projectId && x.Id != excludeTaskId).Sum(x => x.Cost ?? 0);
     }
+
+    // Task logs --------------------------------------------------------------
+
+    /// <summary>
+    /// Retrieves all logs for a specific task ordered by date.
+    /// </summary>
+    public async Task<List<TaskLog>> GetTaskLogsAsync(int taskId)
+    {
+        return await _context.TaskLogs
+            .AsNoTracking()
+            .Where(l => l.TaskId == taskId)
+            .OrderBy(l => l.Date)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Replaces the logs of a task atomically while avoiding tracking conflicts and honoring non-identity PK.
+    /// </summary>
+    public async System.Threading.Tasks.Task ReplaceTaskLogsAsync(int taskId, IEnumerable<TaskLog> logs)
+    {
+        // Use a transaction to keep the replacement consistent
+        using var tx = await _context.Database.BeginTransactionAsync();
+
+        // Delete existing logs by key-only instances and save to clear
+        var existingIds = await _context.TaskLogs
+            .Where(l => l.TaskId == taskId)
+            .Select(l => l.Id)
+            .ToListAsync();
+
+        foreach (var id in existingIds)
+        {
+            _context.Entry(new TaskLog { Id = id }).State = EntityState.Deleted;
+        }
+        if (existingIds.Count > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        // Determine next Id since TaskLog.Id is configured as ValueGeneratedNever
+        int maxId = await _context.TaskLogs.Select(l => (int?)l.Id).MaxAsync() ?? 0;
+
+        // Add new logs with unique Ids
+        foreach (var l in logs)
+        {
+            var newLog = new TaskLog
+            {
+                Id = ++maxId,
+                TaskId = taskId,
+                Progress = Math.Clamp(l.Progress, 0m, 100m),
+                Date = l.Date
+            };
+            _context.TaskLogs.Add(newLog);
+        }
+
+        await _context.SaveChangesAsync();
+        await tx.CommitAsync();
+    }
 }

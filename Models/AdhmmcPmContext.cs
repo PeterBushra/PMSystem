@@ -19,6 +19,8 @@ public partial class AdhmmcPmContext : DbContext
 
     public virtual DbSet<Task> Tasks { get; set; }
 
+    public virtual DbSet<TaskLog> TaskLogs { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -33,6 +35,7 @@ public partial class AdhmmcPmContext : DbContext
                 );
         }
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>(entity =>
@@ -85,6 +88,19 @@ public partial class AdhmmcPmContext : DbContext
                 .HasForeignKey(d => d.ProjectId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Task_Project");
+        });
+
+        modelBuilder.Entity<TaskLog>(entity =>
+        {
+            entity.ToTable("TaskLog");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Progress).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.Task).WithMany(p => p.TaskLogs)
+                .HasForeignKey(d => d.TaskId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TaskLog_Task");
         });
 
         modelBuilder.Entity<User>(entity =>

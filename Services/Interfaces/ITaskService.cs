@@ -16,4 +16,8 @@ public interface ITaskService
     // New helpers to avoid loading full task lists for simple aggregations
     decimal GetTotalTasksCost(int projectId);
     decimal GetTotalTasksCostExcluding(int projectId, int excludeTaskId);
+
+    // Progress logs (timesheet-like)
+    System.Threading.Tasks.Task<System.Collections.Generic.List<TaskLog>> GetTaskLogsAsync(int taskId);
+    System.Threading.Tasks.Task ReplaceTaskLogsAsync(int taskId, System.Collections.Generic.IEnumerable<TaskLog> logs);
 }

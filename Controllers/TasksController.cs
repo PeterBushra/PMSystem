@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.StaticFiles;
 using System.IO;
 using System.Text;
 using Jobick.Extensions;
+using Jobick.Models;
+using System.Linq;
 
 namespace Jobick.Controllers;
 
@@ -68,6 +70,62 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         return await _attachmentService.SaveAsync(file);
     }
 
+    private static (List<TaskLog> logs, decimal totalPercent, DateTime? finishedDate) ParseLogsFromForm(IFormCollection form)
+    {
+        var progresses = form["LogProgress[]"].Count > 0 ? form["LogProgress[]"] : form["LogProgress"]; // support both
+        var dates = form["LogDate[]"].Count > 0 ? form["LogDate[]"] : form["LogDate"]; // support both
+
+        var logs = new List<TaskLog>();
+
+        int count = Math.Max(progresses.Count, dates.Count);
+        for (int i = 0; i < count; i++)
+        {
+            var pStr = i < progresses.Count ? progresses[i] : null;
+            var dStr = i < dates.Count ? dates[i] : null;
+            if (string.IsNullOrWhiteSpace(pStr) && string.IsNullOrWhiteSpace(dStr))
+                continue;
+
+            if (!decimal.TryParse(pStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var progress))
+                progress = 0m;
+            progress = Math.Clamp(progress, 0m, 100m);
+
+            DateOnly dateOnly;
+            if (DateOnly.TryParse(dStr, out var d1))
+            {
+                dateOnly = d1;
+            }
+            else if (DateTime.TryParse(dStr, out var d2))
+            {
+                dateOnly = DateOnly.FromDateTime(d2);
+            }
+            else
+            {
+                // Skip logs without a valid date
+                continue;
+            }
+
+            logs.Add(new TaskLog { Progress = progress, Date = dateOnly });
+        }
+
+        // Normalize: order by date
+        logs = logs.OrderBy(l => l.Date).ToList();
+
+        // Compute total percent (cap 100) and finished date when cumulative reaches 100%
+        decimal sum = 0m;
+        DateTime? finished = null;
+        foreach (var l in logs)
+        {
+            sum += l.Progress;
+            if (finished == null && sum >= 100m)
+            {
+                finished = l.Date.ToDateTime(TimeOnly.MinValue);
+            }
+        }
+        if (sum > 100m) sum = 100m;
+
+        return (logs, sum, finished);
+    }
+
     /// <summary>
     /// Returns the create form for a task with defaults and cost context in ViewBag.
     /// </summary>
@@ -90,6 +148,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         ViewBag.ExistingTasksCost  = existingCost;
         // Sum of other tasks' weight (for Add it's all current tasks)
         ViewBag.OtherTasksWeight   = existingWeight;
+        ViewBag.TaskLogs = new List<TaskLog>();
 
         return View(model);
     }
@@ -120,13 +179,32 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         // Mirror bilingual fields when needed
         model.MirrorArabicFromEnglish();
 
-        // Handle Attachment
+        // Parse logs from form and compute derived fields
+        var (logs, totalPercent, finishedDate) = ParseLogsFromForm(Request.Form);
+
+        // Validate logs sum and entries
+        if (logs.Any(l => l.Progress < 0 || l.Progress > 100))
+        {
+            ModelState.AddModelError("DoneRatio", "نسب التقدم يجب أن تكون بين 0 و 100.");
+        }
+        var sumLogs = logs.Sum(l => l.Progress);
+        if (sumLogs > 100m + 0.0001m)
+        {
+            ModelState.AddModelError("DoneRatio", "مجموع نسب التقدم يتجاوز 100%.");
+        }
+
+        // Apply derived values to model (percentage for now; later converted to fraction)
+        model.DoneRatio = totalPercent;
+        model.ActualEndDate = finishedDate;
+
+        // Handle Attachment requirement driven by computed percent
         var file = Request.Form.Files["Attachment"];
-        if (model.DoneRatio == 100.0m) // 100% (from form as percentage)
+        if (model.DoneRatio == 100.0m) // 100% (from logs)
         {
             if (file == null || file.Length == 0)
             {
                 await PopulateCreateViewBagsAsync(model.ProjectId);
+                ViewBag.TaskLogs = logs; // preserve user input
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
                 return View("CreateTask", model);
             }
@@ -146,6 +224,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         {
             // Repopulate ViewBag context for the UI before returning
             await PopulateCreateViewBagsAsync(model.ProjectId);
+            ViewBag.TaskLogs = logs;
             return View("CreateTask", model);
         }
 
@@ -160,6 +239,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         {
             // Repopulate ViewBag context for the UI before returning
             await PopulateCreateViewBagsAsync(model.ProjectId);
+            ViewBag.TaskLogs = logs;
             ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
             return View("CreateTask", model);
         }
@@ -175,6 +255,9 @@ public class TasksController(ITaskService _taskService, IProjectService _project
             model.CreatedDate = DateTime.Now;
             await _taskService.UpdateTaskAsync(model);
         }
+
+        // Save progress logs
+        await _taskService.ReplaceTaskLogsAsync(model.Id, logs);
 
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
@@ -202,6 +285,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         ViewBag.HasProjectTotal    = project?.TotalCost.HasValue == true;
         ViewBag.ExistingTasksCost  = existingCostExcludingCurrent;
         ViewBag.OtherTasksWeight   = otherTasksWeight;
+        ViewBag.TaskLogs = await _taskService.GetTaskLogsAsync(task.Id);
 
         ViewData["Title"] = "Edit Task";
         return View("CreateTask", task);
@@ -234,13 +318,28 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         // Mirror bilingual fields when needed
         model.MirrorArabicFromEnglish();
 
+        // Parse logs and compute derived fields
+        var (logs, totalPercent, finishedDate) = ParseLogsFromForm(Request.Form);
+        if (logs.Any(l => l.Progress < 0 || l.Progress > 100))
+        {
+            ModelState.AddModelError("DoneRatio", "نسب التقدم يجب أن تكون بين 0 و 100.");
+        }
+        var sumLogs = logs.Sum(l => l.Progress);
+        if (sumLogs > 100m + 0.0001m)
+        {
+            ModelState.AddModelError("DoneRatio", "مجموع نسب التقدم يتجاوز 100%.");
+        }
+        model.DoneRatio = totalPercent;
+        model.ActualEndDate = finishedDate;
+
         // Handle Attachment
         var file = Request.Form.Files["Attachment"];
-        if (model.DoneRatio == 100.0m) // 100% (from form as percentage)
+        if (model.DoneRatio == 100.0m) // 100% (from logs)
         {
             if ((file == null || file.Length == 0) && string.IsNullOrWhiteSpace(model.AttachmentFilePath))
             {
                 await PopulateEditViewBagsAsync(model);
+                ViewBag.TaskLogs = logs;
                 ModelState.AddModelError("Attachment", "يرجى إرفاق ملف عند اكتمال المهمة.");
                 return View("CreateTask", model);
             }
@@ -262,6 +361,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         if (!ModelState.IsValid)
         {
             await PopulateEditViewBagsAsync(model, weights);
+            ViewBag.TaskLogs = logs;
             return View("CreateTask", model);
         }
 
@@ -274,12 +374,17 @@ public class TasksController(ITaskService _taskService, IProjectService _project
         if (totalWeight > 100)
         {
             await PopulateEditViewBagsAsync(model, weights);
+            ViewBag.TaskLogs = logs;
             ModelState.AddModelError("Weight", "مجموع الأوزان لجميع المهام في المشروع يجب ألا يتجاوز 100%");
             return View("CreateTask", model);
         }
 
         // Copy the posted values into the tracked entity
         await _taskService.UpdateTaskAsync(model);
+
+        // Save logs
+        await _taskService.ReplaceTaskLogsAsync(model.Id, logs);
+
         return RedirectToAction("ProjectDetails", "Projects", new { id = model.ProjectId });
     }
 
@@ -337,7 +442,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     }
 
     // Helper: populate ViewBags for Create (POST error paths)
-    private async Task PopulateCreateViewBagsAsync(int projectId)
+    private async System.Threading.Tasks.Task PopulateCreateViewBagsAsync(int projectId)
     {
         var project = await _projectService.GetProjectAsync(projectId);
 
@@ -351,7 +456,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     }
 
     // Helper: populate ViewBags for Edit (POST error paths)
-    private async Task PopulateEditViewBagsAsync(Models.Task model, decimal? otherWeightsOverride = null)
+    private async System.Threading.Tasks.Task PopulateEditViewBagsAsync(Models.Task model, decimal? otherWeightsOverride = null)
     {
         var project = await _projectService.GetProjectAsync(model.ProjectId);
 

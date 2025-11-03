@@ -11,6 +11,8 @@
 
     // Determine initial visibility for attachment container (percentage value expected)
     var initialShowAttachment = Model.DoneRatio.HasValue && Model.DoneRatio.Value >= 100m;
+
+    var logs = (IEnumerable<Jobick.Models.TaskLog>?)ViewBag.TaskLogs ?? Enumerable.Empty<Jobick.Models.TaskLog>();
 }
 
 <div class="content-body content-body-rtl">
@@ -79,11 +81,10 @@
                                         <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
                                     </div>
 
-                                    <div class="mb-3" id="actualEndDateContainer" style="display:@(initialShowAttachment ? "block" : "none");">
-                                        <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
-                                        <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date date-rtl" />
-                                        <span asp-validation-for="ActualEndDate" class="text-danger"></span>
-                                        <small class="form-text text-muted">مطلوب عند اكتمال المهمة بنسبة 100%.</small>
+                                    <div class="mb-3">
+                                        <label asp-for="DefinationOfDone" class="form-label fw-bold">المخرجات (DOD)</label>
+                                        <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000"></textarea>
+                                        <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -98,11 +99,37 @@
                                         <div id="weightError" class="invalid-feedback d-block"></div>
                                     </div>
 
+                        
                                     <div class="mb-3">
-                                        <label asp-for="DoneRatio" class="form-label fw-bold">النسبة الفعلية </label>
-                                        <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" required />
+                                        <label asp-for="ManyDaysToComplete" class="form-label fw-bold">المدة المطلوبة للانتهاء (ايام عمل)</label>
+                                        <input asp-for="ManyDaysToComplete" type="number" class="form-control" required />
+                                        <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Cost" class="form-label fw-bold">الصرف المخطط</label>
+                                        <input asp-for="Cost" id="costInput" type="number" step="0.01" class="form-control" min="0" required />
+                                        <span asp-validation-for="Cost" class="text-danger"></span>
+                                        <small class="form-text text-muted d-block">
+                                            التكلفة المتبقية قبل هذه المهمة:
+                                            <span id="remainingBeforeSpan">@(hasProjectTotal ? Math.Max(projectTotalCost.GetValueOrDefault() - existingTasksCost, 0).ToString("N2") : "غير محدد")</span>
+                                        </small>
+                                        <div id="costWarning" class="alert alert-warning d-none mt-2 mb-0 py-2 px-3" style="font-size:0.85rem;"></div>
+                                    </div>
+
+
+                                    <div class="mb-3" id="actualEndDateContainer" style="display:block;">
+                                        <label asp-for="ActualEndDate" class="form-label fw-bold">تاريخ الانتهاء الفعلي</label>
+                                        <input asp-for="ActualEndDate" id="actualEndDateInput" type="date" class="form-control js-date date-rtl" readonly disabled />
+                                        <span asp-validation-for="ActualEndDate" class="text-danger"></span>
+                                        <small class="form-text text-muted">يتحدد تلقائياً عند وجود سجل بنسبة 100%.</small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="DoneRatio" class="form-label fw-bold">النسبة الفعلية (مجمعة من السجل)</label>
+                                        <input asp-for="DoneRatio" id="doneRatioInput" type="number" step="0.01" class="form-control" min="0" max="100" readonly disabled />
                                         <span asp-validation-for="DoneRatio" class="text-danger"></span>
-                                        <small class="form-text text-muted">أدخل قيمة بين 0 - 100</small>
+                                        <small class="form-text text-muted">يتم حسابها تلقائياً من سجل الت ProgressLog.</small>
                                         @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
                                         {
                                             <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
@@ -110,6 +137,70 @@
                                                 سيتم حذف المرفق اذا تم تغيير نسبة الانجاز - اذا تم التعديل بالخطأ اضغط الغاء
                                             </div>
                                         }
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="accordion" id="progressLogAccordion">
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#progressLogCollapse">
+                                                        <span class="fw-bold">سجل التقدم</span>
+                                                    </button>
+                                                </h2>
+                                                <div id="progressLogCollapse" class="accordion-collapse collapse show" data-bs-parent="#progressLogAccordion">
+                                                    <div class="accordion-body p-3">
+                                                        <div class="d-flex justify-content-end mb-3">
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" id="addLogRowBtn">إضافة تقدم جديد</button>
+                                                        </div>
+
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm align-middle" id="logsTable">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style="width:45%">التاريخ</th>
+                                                                        <th style="width:45%">النسبة %</th>
+                                                                        <th style="width:10%"></th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @if (logs.Any())
+                                                                    {
+                                                                        foreach (var l in logs)
+                                                                        {
+                                                                            <tr>
+                                                                                <td>
+                                                                                    <input type="date" name="LogDate[]" class="form-control log-date" value="@l.Date.ToString("yyyy-MM-dd")" />
+                                                                                </td>
+                                                                                <td>
+                                                                                    <input type="number" name="LogProgress[]" class="form-control log-progress" min="0" max="100" step="0.01" value="@l.Progress.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                                                                                </td>
+                                                                                <td class="text-end">
+                                                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-log">حذف</button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <tr>
+                                                                            <td><input type="date" name="LogDate[]" class="form-control log-date" /></td>
+                                                                            <td><input type="number" name="LogProgress[]" class="form-control log-progress" min="0" max="100" step="0.01" /></td>
+                                                                            <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-log">حذف</button></td>
+                                                                        </tr>
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+
+                                                        <div class="small text-muted mt-3">املأ التاريخ والنسبة. يتم تجاهل الصفوف الفارغة.</div>
+                                                        <div class="mt-2">
+                                                            إجمالي النسبة من السجل: <strong><span id="logsTotalSpan">0</span>%</strong>
+                                                        </div>
+                                                        <div id="logsError" class="invalid-feedback d-block"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="mb-3" id="attachmentContainer" style="display:@(initialShowAttachment ? "block" : "none");">
@@ -129,27 +220,6 @@
                                         }
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label asp-for="DefinationOfDone" class="form-label fw-bold">المخرجات (DOD)</label>
-                                        <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000"></textarea>
-                                        <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label asp-for="ManyDaysToComplete" class="form-label fw-bold">المدة المطلوبة للانتهاء (ايام عمل)</label>
-                                        <input asp-for="ManyDaysToComplete" type="number" class="form-control" required />
-                                        <span asp-validation-for="ManyDaysToComplete" class="text-danger"></span>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label asp-for="Cost" class="form-label fw-bold">الصرف المخطط</label>
-                                        <input asp-for="Cost" id="costInput" type="number" step="0.01" class="form-control" min="0" required />
-                                        <span asp-validation-for="Cost" class="text-danger"></span>
-                                        <small class="form-text text-muted d-block">
-                                            التكلفة المتبقية قبل هذه المهمة:
-                                            <span id="remainingBeforeSpan">@(hasProjectTotal ? Math.Max(projectTotalCost.GetValueOrDefault() - existingTasksCost, 0).ToString("N2") : "غير محدد")</span>
-                                        </small>
-                                        <div id="costWarning" class="alert alert-warning d-none mt-2 mb-0 py-2 px-3" style="font-size:0.85rem;"></div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -191,7 +261,11 @@
                 attachmentError: document.getElementById('attachmentError'),
                 costInput: document.getElementById('costInput'),
                 costWarning: document.getElementById('costWarning'),
-                remainingBeforeSpan: document.getElementById('remainingBeforeSpan')
+                remainingBeforeSpan: document.getElementById('remainingBeforeSpan'),
+                logsTableBody: document.querySelector('#logsTable tbody'),
+                addLogRowBtn: document.getElementById('addLogRowBtn'),
+                logsError: document.getElementById('logsError'),
+                logsTotalSpan: document.getElementById('logsTotalSpan')
             };
 
             // Centralized state
@@ -203,7 +277,8 @@
                 existingCost: parseFloat(form.dataset.existingCost) || 0,
                 hasExistingAttachment: form.dataset.hasExistingAttachment === 'true',
                 weightInvalid: false,
-                completionInvalid: false
+                completionInvalid: false,
+                logsInvalid: false
             };
 
             // Format helpers
@@ -216,7 +291,7 @@
                 catch { return Math.round(n).toString(); }
             }
             function applySaveState() {
-                if (els.saveBtn) els.saveBtn.disabled = !!(state.weightInvalid || state.completionInvalid);
+                if (els.saveBtn) els.saveBtn.disabled = !!(state.weightInvalid || state.completionInvalid || state.logsInvalid);
             }
 
             // Weight validation
@@ -235,7 +310,7 @@
                     els.weightInput.classList.add('is-invalid');
                     els.weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
                     if (els.weightError) {
-                        els.weightError.textContent = 'خطأ: مجموع الأوزان (' + fmtPercent(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + fmtPercent(exceededBy) + '%.\u200f';
+                        els.weightError.textContent = 'خطأ: مجموع الأوزان (' + fmtPercent(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + fmtPercent(exceededBy) + '%.';
                     }
                     state.weightInvalid = true;
                 } else {
@@ -273,76 +348,158 @@
                 }
             }
 
-            // Completion (attachment + actual end date)
-            function toggleCompletion() {
-                const ratio = parseFloat(els.doneRatioInput?.value) || 0;
-                const show = ratio >= 100;
+            function parseRows() {
+                const rows = Array.from(els.logsTableBody?.querySelectorAll('tr') || []);
+                return rows.map(r => {
+                    const p = r.querySelector('.log-progress');
+                    const d = r.querySelector('.log-date');
+                    const progress = parseFloat(p?.value || '')
+                    return {
+                        row: r,
+                        progress: isNaN(progress) ? null : progress,
+                        date: d?.value || ''
+                    };
+                });
+            }
 
+            function recomputeFromLogs() {
+                const rows = parseRows();
+                let total = 0;
+                let finishedDate = null; // date when cumulative reaches 100%
+                let error = '';
+                let hasInvalid = false;
+
+                for (const item of rows) {
+                    const pInput = item.row.querySelector('.log-progress');
+                    const dInput = item.row.querySelector('.log-date');
+                    const hasP = item.progress !== null;
+                    const hasD = !!item.date;
+
+                    // reset row validation
+                    pInput?.classList.remove('is-invalid');
+                    dInput?.classList.remove('is-invalid');
+
+                    if (!hasP && !hasD) continue; // ignore empty row
+
+                    if (!hasD) {
+                        hasInvalid = true;
+                        dInput?.classList.add('is-invalid');
+                    }
+                    if (!hasP) {
+                        hasInvalid = true;
+                        pInput?.classList.add('is-invalid');
+                    }
+
+                    if (hasP) {
+                        if (item.progress < 0 || item.progress > 100) {
+                            hasInvalid = true;
+                            pInput?.classList.add('is-invalid');
+                        } else {
+                            total += item.progress;
+                            if (!finishedDate && hasD && total >= 100) {
+                                finishedDate = item.date; // cumulative threshold reached here
+                            }
+                        }
+                    }
+                }
+
+                if (total > 100) {
+                    hasInvalid = true;
+                    error = 'خطأ: مجموع نسب السجل (' + fmtPercent(total) + '%) يتجاوز 100%.';
+                }
+
+                if (els.logsTotalSpan) els.logsTotalSpan.textContent = fmtPercent(Math.min(total, 100));
+
+                // Update DoneRatio display (disabled)
+                if (els.doneRatioInput) {
+                    els.doneRatioInput.value = (Math.min(total, 100)).toFixed(2);
+                }
+
+                // Attachment visibility based on total
+                const show = total >= 100;
                 if (els.attachmentContainer) {
                     els.attachmentContainer.style.display = show ? 'block' : 'none';
                     if (!show && els.attachmentInput) {
                         els.attachmentInput.value = '';
-                      }
+                    }
                     if (!show && els.attachmentError) {
                         els.attachmentError.textContent = '';
-                      }
+                    }
                 }
 
-                if (els.actualEndDateContainer && els.actualEndDateInput) {
-                    els.actualEndDateContainer.style.display = show ? 'block' : 'none';
-                    if (show) {
-                        els.actualEndDateInput.setAttribute('required', 'required');
-                        els.actualEndDateInput.setCustomValidity('');
+                // Actual end date from cumulative reaching 100% (always visible, dimmed)
+                if (els.actualEndDateInput) {
+                    if (finishedDate) {
+                        els.actualEndDateInput.value = finishedDate;
                     } else {
-                        els.actualEndDateInput.removeAttribute('required');
                         els.actualEndDateInput.value = '';
-                        els.actualEndDateInput.setCustomValidity('');
                     }
                 }
 
-                let actualOk = true;
-                let attachOk = true;
+                // Attachment requirement when 100%
                 if (show) {
-                    actualOk = !!(els.actualEndDateInput && els.actualEndDateInput.value);
-                    attachOk = state.hasExistingAttachment || (els.attachmentInput && els.attachmentInput.files && els.attachmentInput.files.length > 0);
-
-                    if (els.actualEndDateInput) {
-                        if (!actualOk) {
-                            els.actualEndDateInput.classList.add('is-invalid');
-                            els.actualEndDateInput.setCustomValidity('مطلوب عند اكتمال المهمة');
-                        } else {
-                            els.actualEndDateInput.classList.remove('is-invalid');
-                            els.actualEndDateInput.setCustomValidity('');
-                        }
-                    }
+                    const attachOk = state.hasExistingAttachment || (els.attachmentInput && els.attachmentInput.files && els.attachmentInput.files.length > 0);
                     if (els.attachmentError) {
                         els.attachmentError.textContent = attachOk ? '' : 'المرفق مطلوب عند اكتمال المهمة بنسبة 100%.';
                     }
+                    state.completionInvalid = !attachOk;
                 } else {
-                    if (els.actualEndDateInput) {
-                        els.actualEndDateInput.classList.remove('is-invalid');
-                        els.actualEndDateInput.setCustomValidity('');
-                    }
-                    if (els.attachmentError) {
-                        els.attachmentError.textContent = '';
-                    }
+                    state.completionInvalid = false;
                 }
 
-                state.completionInvalid = !(actualOk && attachOk);
+                // Logs error display
+                state.logsInvalid = hasInvalid;
+                if (els.logsError) {
+                    els.logsError.textContent = hasInvalid ? (error || 'يرجى إدخال تاريخ ونسبة صحيحة لكل صف.') : '';
+                }
+
                 applySaveState();
             }
 
-            // Bind once
-            els.weightInput?.addEventListener('input', validateWeight);
-            els.costInput?.addEventListener('input', updateCostWarning);
-            els.doneRatioInput?.addEventListener('input', toggleCompletion);
-            els.attachmentInput?.addEventListener('change', toggleCompletion);
-            els.actualEndDateInput?.addEventListener('input', toggleCompletion);
+            function attachRowHandlers(tr) {
+                tr.querySelector('.log-progress')?.addEventListener('input', recomputeFromLogs);
+                tr.querySelector('.log-date')?.addEventListener('input', recomputeFromLogs);
+                tr.querySelector('.remove-log')?.addEventListener('click', function () {
+                    tr.remove();
+                    recomputeFromLogs();
+                });
+            }
+
+            // Bind dynamic rows
+            Array.from(els.logsTableBody?.querySelectorAll('tr') || []).forEach(attachRowHandlers);
+
+            // Add new row
+            els.addLogRowBtn?.addEventListener('click', function () {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td><input type="date" name="LogDate[]" class="form-control log-date" /></td>' +
+                    '<td><input type="number" name="LogProgress[]" class="form-control log-progress" min="0" max="100" step="0.01" /></td>' +
+                    '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-log">حذف</button></td>';
+                els.logsTableBody?.appendChild(tr);
+                attachRowHandlers(tr);
+                // default date to today for the new row
+                const dateInput = tr.querySelector('.log-date');
+                if (dateInput && !dateInput.value) {
+                    dateInput.valueAsDate = new Date();
+                    // trigger input so totals/actual date recompute
+                    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                recomputeFromLogs();
+            });
+
+            // Default empty dates to today on load and recompute
+            document.querySelectorAll('.log-date').forEach(function (input) {
+                if (!input.value) {
+                    input.valueAsDate = new Date();
+                }
+            });
+
+            // Recompute when attachment selection changes (fix save button staying disabled)
+            els.attachmentInput?.addEventListener('change', recomputeFromLogs);
 
             // Initial state
             validateWeight();
             updateCostWarning();
-            toggleCompletion();
+            recomputeFromLogs();
         })();
     </script>
 }

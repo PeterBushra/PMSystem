@@ -72,4 +72,7 @@ public partial class Task
         get => AttachementFilePath;
         set => AttachementFilePath = value;
     }
+
+    public virtual ICollection<TaskLog> TaskLogs { get; set; } = new List<TaskLog>();
+
 }
