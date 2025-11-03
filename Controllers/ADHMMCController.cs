@@ -66,7 +66,8 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
 
     /// <summary>
     /// Displays the dashboard with aggregate KPIs.
-    /// KPIs include project status distribution, counts per year, budgets for not fully done projects,
+    /// KPIs include project status distribution, counts per year, budgets for not fully 
+    /// projects,
     /// budgets by year, and overdue projects with incomplete tasks.
     /// Results are filtered by ResponsibleForImplementing or StrategicGoal when provided.
     /// Only one filter type can be active at a time.
