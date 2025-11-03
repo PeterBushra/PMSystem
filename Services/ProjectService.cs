@@ -87,20 +87,32 @@ public class ProjectService : IProjectService
     }
 
     /// <summary>
-    /// Deletes a project and its tasks asynchronously to maintain referential integrity.
+    /// Deletes a project and all its dependent data asynchronously.
+    /// Relies on configured cascade deletes for TaskLogs and Tasks, but also handles
+    /// pre-EF or mismatched DB schemas by explicitly removing dependents when needed.
     /// </summary>
     public async System.Threading.Tasks.Task DeleteProjectAsync(int id)
     {
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
         var project = await _context.Projects
             .Include(p => p.Tasks)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (project != null)
         {
-            // Remove all linked tasks first
-            _context.Tasks.RemoveRange(project.Tasks);
+            // Ensure TaskLogs are removed if database FK is not cascade
+            var taskIds = project.Tasks.Select(t => t.Id).ToList();
+            if (taskIds.Count > 0)
+            {
+                var logs = _context.TaskLogs.Where(l => taskIds.Contains(l.TaskId));
+                _context.TaskLogs.RemoveRange(logs);
+            }
+
+            // Removing project will cascade Tasks in EF when configured; still safe if DB schema is older
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
+            await tx.CommitAsync();
         }
     }
 
@@ -109,16 +121,24 @@ public class ProjectService : IProjectService
     /// </summary>
     public void DeleteProject(int id)
     {
+        using var tx = _context.Database.BeginTransaction();
+
         var project = _context.Projects
             .Include(p => p.Tasks)
             .FirstOrDefault(p => p.Id == id);
 
         if (project != null)
         {
-            // Remove all linked tasks first
-            _context.Tasks.RemoveRange(project.Tasks);
+            var taskIds = project.Tasks.Select(t => t.Id).ToList();
+            if (taskIds.Count > 0)
+            {
+                var logs = _context.TaskLogs.Where(l => taskIds.Contains(l.TaskId));
+                _context.TaskLogs.RemoveRange(logs);
+            }
+
             _context.Projects.Remove(project);
             _context.SaveChanges();
+            tx.Commit();
         }
     }
 

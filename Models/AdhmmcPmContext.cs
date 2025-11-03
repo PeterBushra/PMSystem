@@ -86,7 +86,7 @@ public partial class AdhmmcPmContext : DbContext
 
             entity.HasOne(d => d.Project).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.ProjectId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_Task_Project");
         });
 
@@ -99,7 +99,7 @@ public partial class AdhmmcPmContext : DbContext
 
             entity.HasOne(d => d.Task).WithMany(p => p.TaskLogs)
                 .HasForeignKey(d => d.TaskId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_TaskLog_Task");
         });
 
