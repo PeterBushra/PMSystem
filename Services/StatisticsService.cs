@@ -134,7 +134,7 @@ public class StatisticsService : IStatisticsService
                 if (quarterTargeted > 0 || quarterActualAvg > 0)
                 {
                     targetedProgressByQuarter[quarterKey] = quarterTargeted;
-                    actualProgressByQuarter[quarterKey] = actualProgressYearly;
+                    actualProgressByQuarter[quarterKey] = quarterActualAvg;
                 }
             }
         }
