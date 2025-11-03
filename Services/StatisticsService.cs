@@ -110,7 +110,18 @@ public class StatisticsService : IStatisticsService
             return val.HasValue ? NormalizeProgress(val.Value) : 0m;
         }
 
+        // Helper: sum of normalized log entries within [start, end] inclusive, clamped to [0,1]
+        static decimal SumTaskLogsInRange(Jobick.Models.Task task, DateOnly start, DateOnly end)
+        {
+            if (task.TaskLogs == null) return 0m;
+            var sum = task.TaskLogs
+                .Where(l => l.Date >= start && l.Date <= end)
+                .Sum(l => NormalizeProgress(l.Progress));
+            return Clamp01(sum);
+        }
+
         // Helper: logs-only delta within a quarter (P(end) - P(before start)) clamped to [0,1]
+        // Note: kept for reference, but quarterly actuals will use SumTaskLogsInRange per requirements.
         static decimal GetTaskQuarterDeltaFromLogs(Jobick.Models.Task task, DateOnly quarterStart, DateOnly quarterEnd)
         {
             var pBeforeStart = GetTaskProgressFromLogsAt(task, quarterStart.AddDays(-1));
@@ -125,13 +136,18 @@ public class StatisticsService : IStatisticsService
             .GroupBy(t => t.ExpectedEndDate.Year)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Compute yearly targeted + actual (existing behavior)
-        foreach (var kv in tasksByYearLookup)
-        {
-            var year = kv.Key;
-            var tasksInYear = kv.Value;
+        // Determine years to consider based on ExpectedEndDate and TaskLog years
+        var logYears = allTasks
+            .Where(t => projectIds.Contains(t.ProjectId) && t.TaskLogs != null && t.TaskLogs.Any())
+            .SelectMany(t => t.TaskLogs.Select(l => l.Date.Year))
+            .ToHashSet();
+        var allYears = tasksByYearLookup.Keys.Union(logYears).OrderBy(y => y).ToList();
 
+        // Compute yearly targeted + actual (actual now sums all logs within the year)
+        foreach (var year in allYears)
+        {
             // Targeted yearly: per-project total weights for tasks ending this year
+            var tasksInYear = tasksByYearLookup.GetValueOrDefault(year, new List<Jobick.Models.Task>());
             var projectTargetSums = tasksInYear
                 .GroupBy(t => t.ProjectId)
                 .ToDictionary(g => g.Key, g => g.Sum(t => (t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)));
@@ -139,26 +155,26 @@ public class StatisticsService : IStatisticsService
             var targetsForAllProjects = projectIds.Select(pid => projectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
             targetedProgressByYear[year] = targetsForAllProjects.Any() ? targetsForAllProjects.Average() : 0m;
 
-            // Actual yearly: latest progress up to end of year for tasks ending this year
+            // Actual yearly: sum of weight * (sum of log increments within the year) for ALL tasks of each project
+            var yearStart = new DateOnly(year, 1, 1);
             var yearEnd = new DateOnly(year, 12, 31);
-            var actualSumsByProjectForYear = tasksInYear
+            var allProjectTasks = allTasks.Where(t => projectIds.Contains(t.ProjectId));
+
+            var actualSumsByProjectForYear = allProjectTasks
                 .GroupBy(t => t.ProjectId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * GetTaskProgressUpTo(t, yearEnd))
+                    g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * SumTaskLogsInRange(t, yearStart, yearEnd))
                 );
+
             var actualsForAllProjectsYear = projectIds.Select(pid => actualSumsByProjectForYear.GetValueOrDefault(pid, 0m)).ToList();
             actualProgressByYear[year] = actualsForAllProjectsYear.Any() ? actualsForAllProjectsYear.Average() : 0m;
         }
 
         // Determine years to compute quarters for: union of ExpectedEndDate years and TaskLog years
-        var logYears = allTasks
-            .Where(t => projectIds.Contains(t.ProjectId) && t.TaskLogs != null && t.TaskLogs.Any())
-            .SelectMany(t => t.TaskLogs.Select(l => l.Date.Year))
-            .ToHashSet();
-        var yearsForQuarters = tasksByYearLookup.Keys.Union(logYears).OrderBy(y => y).ToList();
+        var yearsForQuarters = allYears;
 
-        // Compute quarterly targeted (by ExpectedEndDate) and actual (by logs-only deltas) for each year
+        // Compute quarterly targeted (by ExpectedEndDate) and actual (sum of logs within the quarter) for each year
         foreach (var year in yearsForQuarters)
         {
             var tasksInYear = tasksByYearLookup.GetValueOrDefault(year, new List<Jobick.Models.Task>());
@@ -175,7 +191,7 @@ public class StatisticsService : IStatisticsService
                 var quarterTargetsForAllProjects = projectIds.Select(pid => quarterProjectTargetSums.GetValueOrDefault(pid, 0m)).ToList();
                 var quarterTargeted = quarterTargetsForAllProjects.Any() ? quarterTargetsForAllProjects.Average() : 0m;
 
-                // Actual per quarter: logs-only delta within this quarter across ALL tasks for these projects
+                // Actual per quarter: sum of log increments within this quarter across ALL tasks for these projects
                 var startMonth = (quarter - 1) * 3 + 1;
                 var endMonth = quarter * 3;
                 var quarterStart = new DateOnly(year, startMonth, 1);
@@ -187,7 +203,7 @@ public class StatisticsService : IStatisticsService
                     .GroupBy(t => t.ProjectId)
                     .ToDictionary(
                         g => g.Key,
-                        g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * GetTaskQuarterDeltaFromLogs(t, quarterStart, quarterEnd))
+                        g => g.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * SumTaskLogsInRange(t, quarterStart, quarterEnd))
                     );
                 var quarterActualsForAllProjects = projectIds.Select(pid => quarterActualByProject.GetValueOrDefault(pid, 0m)).ToList();
                 var quarterActualAvg = quarterActualsForAllProjects.Any() ? quarterActualsForAllProjects.Average() : 0m;
@@ -207,15 +223,19 @@ public class StatisticsService : IStatisticsService
 
             var projectName = string.IsNullOrWhiteSpace(project.NameAr) ? project.Name : project.NameAr;
 
-            // Group project tasks by year
-            var projectTasksByYear = projectTasks.GroupBy(t => t.ExpectedEndDate.Year);
+            // Determine years for details: union of ExpectedEndDate years and TaskLog years for this project
+            var expectedYears = projectTasks.Select(t => t.ExpectedEndDate.Year).ToHashSet();
+            var projectLogYears = projectTasks
+                .Where(t => t.TaskLogs != null && t.TaskLogs.Any())
+                .SelectMany(t => t.TaskLogs.Select(l => l.Date.Year))
+                .ToHashSet();
+            var yearsForDetails = expectedYears.Union(projectLogYears).OrderBy(y => y).ToList();
 
-            foreach (var yearGroup in projectTasksByYear)
+            foreach (var year in yearsForDetails)
             {
-                var year = yearGroup.Key;
-                var tasksInYear = yearGroup.ToList();
+                var tasksInYear = projectTasks.Where(t => t.ExpectedEndDate.Year == year).ToList();
 
-                // Calculate annual target for this project
+                // Calculate annual target for this project (by ExpectedEndDate in this year)
                 var annualTarget = tasksInYear.Sum(t => (t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m));
 
                 // Calculate quarterly breakdown
@@ -225,7 +245,17 @@ public class StatisticsService : IStatisticsService
                     var quarterTasks = tasksInYear.Where(t => GetQuarter(t.ExpectedEndDate) == quarter).ToList();
 
                     var quarterTarget = quarterTasks.Sum(t => (t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m));
-                    var quarterActual = quarterTasks.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * NormalizeProgress(t.DoneRatio ?? 0m));
+
+                    // Actual for details: primary = sum logs within the quarter across ALL project tasks; fallback = weighted DoneRatio for quarter tasks
+                    var startMonth = (quarter - 1) * 3 + 1;
+                    var endMonth = quarter * 3;
+                    var quarterStart = new DateOnly(year, startMonth, 1);
+                    var endDay = DateTime.DaysInMonth(year, endMonth);
+                    var quarterEnd = new DateOnly(year, endMonth, endDay);
+
+                    var quarterActualLogs = projectTasks.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * SumTaskLogsInRange(t, quarterStart, quarterEnd));
+                    var quarterActualFallback = quarterTasks.Sum(t => ((t.Weight ?? 0m) < 0m ? 0m : (t.Weight ?? 0m)) * NormalizeProgress(t.DoneRatio ?? 0m));
+                    var quarterActual = quarterActualLogs > 0m ? quarterActualLogs : quarterActualFallback;
 
                     // Only add if there's data for this quarter
                     if (quarterTarget > 0 || quarterActual > 0)
