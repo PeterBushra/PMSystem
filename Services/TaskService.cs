@@ -57,16 +57,25 @@ public class TaskService : ITaskService
     }
 
     /// <summary>
-    /// Deletes a task by id if it exists.
+    /// Deletes a task by id if it exists. Also deletes its TaskLog rows to satisfy FK_TaskLog_Task.
     /// </summary>
     public async System.Threading.Tasks.Task DeleteTaskAsync(int id)
     {
+        // Use a transaction to ensure FK order safety
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        // Remove dependent TaskLogs first (FK_TaskLog_Task has ClientSetNull/Restrict in DB)
+        var logsQueryable = _context.TaskLogs.Where(l => l.TaskId == id);
+        _context.TaskLogs.RemoveRange(logsQueryable);
+
         var task = await _context.Tasks.FindAsync(id);
         if (task != null)
         {
             _context.Tasks.Remove(task);
-            await _context.SaveChangesAsync();
         }
+
+        await _context.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     /// <summary>

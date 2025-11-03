@@ -178,6 +178,15 @@ public class ImportController(ITaskService taskService, IProjectService projectS
             model.TaskAr = model.Task1!;
 
             await taskService.AddTaskAsync(model);
+
+            // Add a single TaskLog entry reflecting the imported DoneRatio at the ExpectedEndDate
+            var progressPercent = row.DoneRatio ?? 0m; // expected in [0,100]
+            var log = new TaskLog
+            {
+                Progress = progressPercent,
+                Date = DateOnly.FromDateTime(model.ExpectedEndDate)
+            };
+            await taskService.ReplaceTaskLogsAsync(model.Id, new[] { log });
         }
 
         return Ok(new { message = "تم استيراد المهام بنجاح." });
