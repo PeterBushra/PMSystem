@@ -113,19 +113,7 @@
                                         </div>
 
 
-                                        <!-- الهدف الاستراتيجي (الأب) -->
-                                        <div class="mb-3 row">
-                                            <label class="col-lg-4 col-form-label form-label required">الهدف الاستراتيجي</label>
-                                            <div class="col-lg-6">
-                                                <select asp-for="StrategicGoal" class="form-control" id="StrategicGoal"
-                                                        required data-selected-goal="@Model?.StrategicGoal">
-                                                    <option value="">-- اختر الهدف الاستراتيجي --</option>
-                                                </select>
-                                                <div class="invalid-feedback">يرجى إدخال الهدف الاستراتيجي.</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- البرنامج الاستراتيجي -->
+                                                         <!-- البرنامج الاستراتيجي -->
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">البرنامج الاستراتيجي</label>
                                             <div class="col-lg-6">
@@ -137,6 +125,22 @@
                                             </div>
                                         </div>
 
+
+                                        <!-- الهدف الاستراتيجي (الأب) -->
+                                        <div class="mb-3 row">
+                                            <label class="col-lg-4 col-form-label form-label required">الهدف الاستراتيجي</label>
+                                            <div class="col-lg-6">
+                                                <select asp-for="StrategicGoal" class="form-control" id="StrategicGoal"
+                                                        required data-selected-goal="@Model?.StrategicGoal" disabled aria-disabled="true">
+                                                    <option value="">-- اختر الهدف الاستراتيجي --</option>
+                                                </select>
+                                                <!-- الحقل المخفي لإرسال قيمة الهدف الاستراتيجي عند الإرسال -->
+                                                <input type="hidden" id="StrategicGoalHidden" name="@Html.NameFor(m => m.StrategicGoal)" value="@Model?.StrategicGoal" />
+                                                <div class="invalid-feedback">يرجى إدخال الهدف الاستراتيجي.</div>
+                                            </div>
+                                        </div>
+
+                       
                                         @if (Model.Id != 0)
                                         {
                                             <div class="mb-3 row">
@@ -240,6 +244,7 @@
             const dataUrl = '@Url.Content("~/data/strategic-data.json")';
             const goalSelect = document.getElementById('StrategicGoal');
             const programmeSelect = document.getElementById('StrategicProgramme');
+            const goalHidden = document.getElementById('StrategicGoalHidden');
 
             if (!goalSelect || !programmeSelect) return;
 
@@ -263,6 +268,7 @@
                 });
                 if (selectedValue) {
                     goalSelect.value = selectedValue;
+                    if (goalHidden) goalHidden.value = selectedValue;
                 }
             }
 
@@ -308,9 +314,7 @@
 
             function onGoalChanged() {
                 // عند تغيير الهدف يدوياً من المستخدم، نبقي قائمة البرامج كاملة لكن نعيد تعيين الاختيار
-                if (goalSelect.getAttribute('data-user-change') === '1') {
-                    programmeSelect.value = '';
-                }
+                // أصبح الهدف الاستراتيجي للعرض فقط، لذا لا حاجة لاتخاذ إجراء هنا.
             }
 
             // تحميل البيانات ثم التهيئة
@@ -332,6 +336,7 @@
                         const prog = allProgrammes.find(p => p.name === preSelectedProgramme);
                         if (prog && prog.goalName) {
                             goalSelect.value = prog.goalName; // لا نطلق حدث تغيير حتى لا نفلتر
+                            if (goalHidden) goalHidden.value = prog.goalName;
                         }
                     }
 
@@ -340,6 +345,7 @@
                         goalSelect.setAttribute('data-user-change', '1');
                         onGoalChanged();
                         goalSelect.removeAttribute('data-user-change');
+                        if (goalHidden) goalHidden.value = goalSelect.value;
                     });
 
                     programmeSelect.addEventListener('change', function () {
@@ -349,8 +355,17 @@
                         if (parentGoalName) {
                             // عند اختيار برنامج، حدّد الهدف الأب تلقائياً
                             goalSelect.value = parentGoalName; // لا نطلق change لتجنب تعديل قائمة البرامج
+                            if (goalHidden) goalHidden.value = parentGoalName;
+                        } else {
+                            // لا توجد بيانات هدف للبرنامج الحالي (قيمة قديمة)
+                            // لا نغيّر الهدف تلقائياً، لكن نُبقي القيمة الحالية كما هي.
                         }
                     });
+
+                    // تأكد من تزامن الحقل المخفي مع القيمة الحالية للعرض
+                    if (goalHidden && !goalHidden.value) {
+                        goalHidden.value = goalSelect.value || '';
+                    }
                 })
                 .catch(err => {
                     console.error('فشل تحميل بيانات الاستراتيجيات:', err);
