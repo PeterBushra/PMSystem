@@ -20,3 +20,12 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* Ensure disabled "Complete Today" button remains readable */
+#completeTodayBtn:disabled,
+#completeTodayBtn.disabled {
+  color: #000f !important; /* matches .btn-outline-secondary text */
+  background-color: transparent !important;
+  border-color: #6c757d !important;
+  opacity: .65; /* keep disabled look */
+}

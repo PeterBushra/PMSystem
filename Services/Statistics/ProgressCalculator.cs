@@ -122,9 +122,9 @@ internal static class ProgressCalculator
 
                     var (quarterStart, quarterEnd) = GetQuarterRange(year, quarter);
 
+                    // Use only TaskLog-based actuals for the quarter (no fallback)
                     var quarterActualLogs = projectTasks.Sum(t => SafeWeight(t.Weight) * SumTaskLogsInRange(t, quarterStart, quarterEnd));
-                    var quarterActualFallback = quarterTasks.Sum(t => SafeWeight(t.Weight) * NormalizeProgress(t.DoneRatio ?? 0m));
-                    var quarterActual = quarterActualLogs > 0m ? quarterActualLogs : quarterActualFallback;
+                    var quarterActual = quarterActualLogs;
 
                     if (quarterTarget > 0 || quarterActual > 0)
                     {

@@ -88,6 +88,11 @@
                                 <option value="Q4">الربع الرابع</option>
                             }
                         </select>
+
+                        <div class="form-check form-check-inline ms-3">
+                            <input class="form-check-input" type="checkbox" id="detailedAnnualView">
+                            <label class="form-check-label mb-0" for="detailedAnnualView">عرض سنوي</label>
+                        </div>
                         
                         <label for="detailedProjectFilter" class="me-2 mb-0 ms-3">المشروع:</label>
                         <select id="detailedProjectFilter" class="form-select form-select-sm d-inline-block w-auto" style="min-width: 200px;">
@@ -123,7 +128,7 @@
                             <strong>النسبة المستهدفة السنوية:</strong> مجموع أوزان جميع المهام للسنة المحددة<br />
                             <strong>النسبة المستهدفة حسب الربع:</strong> مجموع أوزان مهام الربع المحدد<br />
                             <strong>النسبة الفعلية:</strong> مجموع (وزن المهمة × نسبة الإنجاز الفعلية) للمهام داخل الربع المحدد<br />
-                            <span class="d-inline-block mt-2">
+                            <span class="د-inline-block mt-2">
                                 <span class="badge bg-success me-2">أخضر</span> الإنجاز الفعلي أعلى من المستهدف - حقق المستهدف
                                 <span class="badge bg-warning text-dark me-2 ms-3">أصفر</span> الإنجاز أقل من المستهدف بـ 1-4%
                                 <span class="badge bg-danger me-2 ms-3">أحمر</span> الإنجاز أقل من المستهدف بـ 5% أو أكثر
@@ -153,9 +158,12 @@
                 const detailedYearFilter = document.getElementById('detailedYearFilter');
                 const detailedQuarterFilter = document.getElementById('detailedQuarterFilter');
                 const detailedProjectFilter = document.getElementById('detailedProjectFilter');
+                const detailedAnnualView = document.getElementById('detailedAnnualView');
+                const quarterLabel = document.querySelector('label[for="detailedQuarterFilter"]');
                 const chartEl = document.querySelector("#detailedProgressChart");
                 
                 let detailedProgressChart = null;
+                let aggregatedData = null; // used in annual view tooltips
                 
                 // Function to determine color based on performance
                 function getProgressColor(actual, target) {
@@ -177,7 +185,7 @@
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
+                        .replace(/\"/g, '&quot;')
                         .replace(/'/g, '&#039;');
                 }
                 
@@ -194,60 +202,133 @@
                     if (items.length === 0) return '';
 
                     const badges = items.map(r => `
-                        <span class="badge rounded-pill bg-light text-dark border"
-                              style="display:inline-block; white-space: normal; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
-                            ${escapeHtml(r)}
-                        </span>
+                        <span class=\"badge rounded-pill bg-light text-dark border\"
+                              style=\"display:inline-block; white-space: normal; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;\">\n                            ${escapeHtml(r)}\n                        </span>
                     `).join('');
 
                     return `
-                        <div class="mt-2" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word;">
-                            <small class="text-muted d-block mb-1">أسباب التأخير:</small>
-                            <div class="d-flex flex-wrap gap-1">${badges}</div>
-                        </div>`;
+                        <div class=\"mt-2\" style=\"white-space: normal; overflow-wrap: anywhere; word-break: break-word;\">\n                            <small class=\"text-muted d-block mb-1\">أسباب التأخير:</small>\n                            <div class=\"d-flex flex-wrap gap-1\">${badges}</div>\n                        </div>`;
+                }
+                
+                function updateQuarterVisibility(isAnnual) {
+                    if (quarterLabel) quarterLabel.style.display = isAnnual ? 'none' : '';
+                    if (detailedQuarterFilter) {
+                        detailedQuarterFilter.style.display = isAnnual ? 'none' : '';
+                        detailedQuarterFilter.disabled = !!isAnnual;
+                    }
                 }
                 
                 function renderDetailedChart() {
                     const selectedYear = detailedYearFilter.value;
                     const selectedQuarter = detailedQuarterFilter.value;
                     const selectedProject = detailedProjectFilter.value;
+                    const isAnnual = detailedAnnualView && detailedAnnualView.checked;
+
+                    updateQuarterVisibility(isAnnual);
                     
-                    // Validation: Year and Quarter are required
-                    if (!selectedYear || !selectedQuarter) {
+                    // Validation: Year is required, Quarter is required only if not annual
+                    if (!selectedYear || (!isAnnual && !selectedQuarter)) {
                         if (chartEl) {
-                            chartEl.innerHTML = '<div class="alert alert-info text-center">الرجاء اختيار السنة والربع السنوي</div>';
+                            chartEl.innerHTML = '<div class="alert alert-info text-center">الرجاء اختيار السنة' + (isAnnual ? '' : ' والربع السنوي') + '</div>';
                         }
                         return;
                     }
                     
-                    // Filter data based on selections (year/quarter for targets and actual; optional project filter)
-                    let filteredData = projectProgressData.filter(item => {
-                        let match = item.Year.toString() === selectedYear && item.Quarter === selectedQuarter;
-                        
+                    let categories = [];
+                    let annualTargets = [];
+                    let quarterTargets = [];
+                    let actualProgress = [];
+                    let actualColors = [];
+                    aggregatedData = null;
+
+                    if (isAnnual) {
+                        // Filter by year (and project optionally), then aggregate by project over all quarters
+                        let yearData = projectProgressData.filter(item => item.Year.toString() === selectedYear);
                         if (selectedProject) {
-                            match = match && item.ProjectId.toString() === selectedProject;
+                            yearData = yearData.filter(item => item.ProjectId.toString() === selectedProject);
+                        }
+
+                        if (yearData.length === 0) {
+                            if (chartEl) {
+                                chartEl.innerHTML = '<div class="alert alert-warning text-center">لا توجد بيانات للمعايير المحددة</div>';
+                            }
+                            return;
+                        }
+
+                        // Group by ProjectId and accumulate quarterly values; compute a reliable annual target
+                        const map = new Map();
+                        for (const item of yearData) {
+                            const key = String(item.ProjectId);
+                            const annualTarget = Number(item.AnnualTargetProgress) || 0;
+                            const quarterTarget = Number(item.QuarterTargetProgress) || 0;
+                            const actual = Number(item.ActualProgress) || 0;
+                            if (!map.has(key)) {
+                                map.set(key, {
+                                    ProjectId: item.ProjectId,
+                                    ProjectName: item.ProjectName,
+                                    AnnualTargetProgress: annualTarget, // from data; may be 0
+                                    SumQuarterTarget: 0,
+                                    ActualSumRaw: 0,
+                                    DelayReasons: []
+                                });
+                            }
+                            const g = map.get(key);
+                            // Prefer a non-zero annual target; keep the max seen
+                            if (annualTarget > g.AnnualTargetProgress) g.AnnualTargetProgress = annualTarget;
+                            g.SumQuarterTarget += quarterTarget;
+                            // Only count actual based on TaskLog presence (actual > 0), independent of targets
+                            if (actual > 0) {
+                                g.ActualSumRaw += actual;
+                                if (item.DelayReasons) g.DelayReasons.push(item.DelayReasons);
+                            }
+                        }
+
+                        // Finalize: choose target (annual if present, else sum of quarters). Do NOT cap actual; rely solely on TaskLogs
+                        aggregatedData = Array.from(map.values()).map(g => {
+                            const target = g.AnnualTargetProgress > 0 ? g.AnnualTargetProgress : g.SumQuarterTarget;
+                            return {
+                                ...g,
+                                TargetFinal: target,
+                                ActualFinal: g.ActualSumRaw
+                            };
+                        }).sort((a, b) => (a.ProjectName || '').localeCompare(b.ProjectName || ''));
+
+                        categories = aggregatedData.map(g => g.ProjectName);
+                        annualTargets = aggregatedData.map(g => g.TargetFinal);
+                        actualProgress = aggregatedData.map(g => g.ActualFinal);
+                        actualColors = aggregatedData.map(g => getProgressColor(g.ActualFinal, g.TargetFinal));
+
+                    } else {
+                        // Quarterly view (original behavior)
+                        // Filter data based on selections (year/quarter for targets and actual; optional project filter)
+                        let filteredData = projectProgressData.filter(item => {
+                            let match = item.Year.toString() === selectedYear && item.Quarter === selectedQuarter;
+                            if (selectedProject) {
+                                match = match && item.ProjectId.toString() === selectedProject;
+                            }
+                            return match;
+                        });
+                        
+                        if (filteredData.length === 0) {
+                            if (chartEl) {
+                                chartEl.innerHTML = '<div class="alert alert-warning text-center">لا توجد بيانات للمعايير المحددة</div>';
+                            }
+                            return;
                         }
                         
-                        return match;
-                    });
-                    
-                    if (filteredData.length === 0) {
-                        if (chartEl) {
-                            chartEl.innerHTML = '<div class="alert alert-warning text-center">لا توجد بيانات للمعايير المحددة</div>';
-                        }
-                        return;
+                        // Prepare chart data
+                        categories = filteredData.map(item => item.ProjectName);
+                        annualTargets = filteredData.map(item => item.AnnualTargetProgress);
+                        quarterTargets = filteredData.map(item => item.QuarterTargetProgress);
+                        actualProgress = filteredData.map(item => Number(item.ActualProgress) || 0);
+                        
+                        // Calculate colors for actual progress bars (compare actual vs selected quarter target)
+                        actualColors = filteredData.map(item => 
+                            getProgressColor(Number(item.ActualProgress) || 0, item.QuarterTargetProgress)
+                        );
                     }
                     
-                    // Prepare chart data
-                    const categories = filteredData.map(item => item.ProjectName);
-                    const annualTargets = filteredData.map(item => item.AnnualTargetProgress);
-                    const quarterTargets = filteredData.map(item => item.QuarterTargetProgress);
-                    const actualProgress = filteredData.map(item => Number(item.ActualProgress) || 0);
-                    
-                    // Calculate colors for actual progress bars (compare actual vs selected quarter target)
-                    const actualColors = filteredData.map(item => 
-                        getProgressColor(Number(item.ActualProgress) || 0, item.QuarterTargetProgress)
-                    );
+                    const isAnnualNow = (detailedAnnualView && detailedAnnualView.checked);
                     
                     const options = {
                         chart: { 
@@ -256,27 +337,25 @@
                             toolbar: { show: false }, 
                             fontFamily: 'inherit' 
                         },
-                        series: [
-                            { 
-                                name: 'النسبة المستهدفة السنوية', 
-                                data: annualTargets
-                            },
-                            { 
-                                name: 'النسبة المستهدفة حسب الربع', 
-                                data: quarterTargets
-                            },
-                            { 
-                                name: 'النسبة الفعلية', 
-                                data: actualProgress
-                            }
-                        ],
-                        colors: ['#17a2b8', '#6c757d', function({ value, seriesIndex, dataPointIndex, w }) {
-                            // Return dynamic color for actual progress (3rd series, index 2)
-                            if (seriesIndex === 2) {
-                                return actualColors[dataPointIndex];
-                            }
-                            return '#28a745';
-                        }],
+                        series: isAnnualNow
+                            ? [
+                                { name: 'النسبة المستهدفة السنوية', data: annualTargets },
+                                { name: 'النسبة الفعلية', data: actualProgress }
+                              ]
+                            : [
+                                { name: 'النسبة المستهدفة السنوية', data: annualTargets },
+                                { name: 'النسبة المستهدفة حسب الربع', data: quarterTargets },
+                                { name: 'النسبة الفعلية', data: actualProgress }
+                              ],
+                        colors: isAnnualNow
+                            ? ['#17a2b8', function({ value, seriesIndex, dataPointIndex }) {
+                                  if (seriesIndex === 1) { return actualColors[dataPointIndex]; }
+                                  return '#28a745';
+                              }]
+                            : ['#17a2b8', '#6c757d', function({ value, seriesIndex, dataPointIndex }) {
+                                  if (seriesIndex === 2) { return actualColors[dataPointIndex]; }
+                                  return '#28a745';
+                              }],
                         xaxis: { 
                             categories: categories,
                             labels: { 
@@ -348,49 +427,114 @@
                             y: { 
                                 formatter: (v) => v ? v.toFixed(2) + '%' : '0%'
                             },
-                            custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                                const data = filteredData[dataPointIndex];
-                                const actual = Number(data.ActualProgress) || 0;
-                                const diff = data.QuarterTargetProgress - actual;
-                                const diffPercent = diff.toFixed(2);
-                                
-                                let statusText = '';
-                                let statusClass = '';
-                                
-                                if (actual > data.QuarterTargetProgress) {
-                                    statusText = `متفوق على المستهدف بـ ${(actual - data.QuarterTargetProgress).toFixed(2)}%`;
-                                    statusClass = 'text-success';
-                                } else if (actual === data.QuarterTargetProgress) {
-                                   statusText = 'حقق المستهدف';
-                                   statusClass = 'text-success';
-                                }
-                                else if (diff >= 1 && diff <= 4) {
-                                    statusText = `أقل من المستهدف بـ ${diffPercent}%`;
-                                    statusClass = 'text-warning';
-                                } else if (diff > 4) {
-                                    statusText = `أقل من المستهدف بـ ${diffPercent}%`;
-                                    statusClass = 'text-danger';
-                                } else {
-                                    statusText = `أقل من المستهدف بـ ${diffPercent}%`;
-                                    statusClass = 'text-warning';
-                                }
+                            custom: function({ series, seriesIndex, dataPointIndex }) {
+                                if (isAnnualNow) {
+                                    const data = aggregatedData[dataPointIndex];
+                                    const actual = Number(data.ActualFinal) || 0;
+                                    const target = Number(data.TargetFinal) || 0;
+                                    const diff = target - actual;
+                                    const diffPercent = diff.toFixed(2);
 
-                                const reasonsHtml = (diff > 0) ? renderDelayReasons(data.DelayReasons) : '';
-                                
-                                return `
-                                    <div class="apexcharts-tooltip-custom p-2"
-                                         style="background:#fff; border:1px solid #e3e3e3; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); width:min(90vw, 600px); max-width:600px; padding:10px 12px; direction: rtl; text-align: start;">
-                                        <div class="d-flex justify-content-between align-items-center" style="gap:8px; flex-wrap:wrap;">
-                                            <div style="font-weight:600; word-break: break-word; overflow-wrap:anywhere;">${escapeHtml(data.ProjectName)}</div>
-                                            <span class="badge ${statusClass.replace('text-','bg-')}">${escapeHtml(data.Quarter)}</span>
+                                    let statusText = '';
+                                    let statusClass = '';
+
+                                    if (actual > target) {
+                                        statusText = `متفوق على المستهدف بـ ${(actual - target).toFixed(2)}%`;
+                                        statusClass = 'text-success';
+                                    } else if (actual === target) {
+                                       statusText = 'حققت المستهدف';
+                                       statusClass = 'text-success';
+                                    } else if (diff >= 1 && diff <= 4) {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-warning';
+                                    } else if (diff > 4) {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-danger';
+                                    } else {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-warning';
+                                    }
+
+                                    // Aggregate delay reasons across quarters that had TaskLog data
+                                    let allReasons = '';
+                                    if (Array.isArray(data.DelayReasons) && data.DelayReasons.length) {
+                                        const joined = data.DelayReasons.join(',');
+                                        const parts = joined.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+                                        const uniq = Array.from(new Set(parts));
+                                        allReasons = uniq.join(', ');
+                                    }
+                                    const reasonsHtml = (diff > 0) ? renderDelayReasons(allReasons) : '';
+                                    
+                                    return `
+                                        <div class="apexcharts-tooltip-custom p-2"
+                                             style="background:#fff; border:1px solid #e3e3e3; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); width:min(90vw, 600px); max-width:600px; padding:10px 12px; direction: rtl; text-align: start;">
+                                            <div class="d-flex justify-content-between align-items-center" style="gap:8px; flex-wrap:wrap;">
+                                                <div style="font-weight:600; word-break: break-word; overflow-wrap:anywhere;">${escapeHtml(data.ProjectName)}</div>
+                                                <span class="badge ${statusClass.replace('text-','bg-')}">عرض سنوي</span>
+                                            </div>
+                                            <div class="mt-2">النسبة السنوية المستهدفة: <strong>${target.toFixed(1)}%</strong></div>
+                                            <div>الإنجاز الفعلي (سنة ${escapeHtml(selectedYear)}): <strong>${actual.toFixed(1)}%</strong></div>
+                                            <div class="mt-1 ${statusClass}"><strong>${statusText}</strong></div>
+                                            ${reasonsHtml}
                                         </div>
-                                        <div class="mt-2">النسبة السنوية: <strong>${Number(data.AnnualTargetProgress).toFixed(1)}%</strong></div>
-                                        <div>المستهدف (الربع): <strong>${Number(data.QuarterTargetProgress).toFixed(1)}%</strong></div>
-                                        <div>الإنجاز الفعلي: <strong>${Number(actual).toFixed(1)}%</strong></div>
-                                        <div class="mt-1 ${statusClass}"><strong>${statusText}</strong></div>
-                                        ${reasonsHtml}
-                                    </div>
-                                `;
+                                    `;
+                                } else {
+                                    // Quarterly tooltip (original)
+                                    const data = (function() {
+                                        // Reconstruct the filtered set used above to keep scope simple
+                                        const selectedYearL = detailedYearFilter.value;
+                                        const selectedQuarterL = detailedQuarterFilter.value;
+                                        const selectedProjectL = detailedProjectFilter.value;
+                                        let filtered = projectProgressData.filter(item => {
+                                            let match = item.Year.toString() === selectedYearL && item.Quarter === selectedQuarterL;
+                                            if (selectedProjectL) match = match && item.ProjectId.toString() === selectedProjectL;
+                                            return match;
+                                        });
+                                        return filtered[dataPointIndex];
+                                    })();
+
+                                    const actual = Number(data.ActualProgress) || 0;
+                                    const diff = data.QuarterTargetProgress - actual;
+                                    const diffPercent = diff.toFixed(2);
+                                    
+                                    let statusText = '';
+                                    let statusClass = '';
+                                    
+                                    if (actual > data.QuarterTargetProgress) {
+                                        statusText = `متفوق على المستهدف بـ ${(actual - data.QuarterTargetProgress).toFixed(2)}%`;
+                                        statusClass = 'text-success';
+                                    } else if (actual === data.QuarterTargetProgress) {
+                                       statusText = 'حقق المستهدف';
+                                       statusClass = 'text-success';
+                                    }
+                                    else if (diff >= 1 && diff <= 4) {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-warning';
+                                    } else if (diff > 4) {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-danger';
+                                    } else {
+                                        statusText = `أقل من المستهدف بـ ${diffPercent}%`;
+                                        statusClass = 'text-warning';
+                                    }
+
+                                    const reasonsHtml = (diff > 0) ? renderDelayReasons(data.DelayReasons) : '';
+                                    
+                                    return `
+                                        <div class="apexcharts-tooltip-custom p-2"
+                                             style="background:#fff; border:1px solid #e3e3e3; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); width:min(90vw, 600px); max-width:600px; padding:10px 12px; direction: rtl; text-align: start;">
+                                            <div class="d-flex justify-content-between align-items-center" style="gap:8px; flex-wrap:wrap;">
+                                                <div style="font-weight:600; word-break: break-word; overflow-wrap:anywhere;">${escapeHtml(data.ProjectName)}</div>
+                                                <span class="badge ${statusClass.replace('text-','bg-')}">${escapeHtml(data.Quarter)}</span>
+                                            </div>
+                                            <div class="mt-2">النسبة السنوية: <strong>${Number(data.AnnualTargetProgress).toFixed(1)}%</strong></div>
+                                            <div>المستهدف (الربع): <strong>${Number(data.QuarterTargetProgress).toFixed(1)}%</strong></div>
+                                            <div>الإنجاز الفعلي: <strong>${Number(actual).toFixed(1)}%</strong></div>
+                                            <div class="mt-1 ${statusClass}"><strong>${statusText}</strong></div>
+                                            ${reasonsHtml}
+                                        </div>
+                                    `;
+                                }
                             }
                         }
                     };
@@ -419,6 +563,10 @@
                 
                 if (detailedProjectFilter) {
                     detailedProjectFilter.addEventListener('change', renderDetailedChart);
+                }
+
+                if (detailedAnnualView) {
+                    detailedAnnualView.addEventListener('change', renderDetailedChart);
                 }
                 
                 // Initial render with default values (current year, current quarter, first project)
