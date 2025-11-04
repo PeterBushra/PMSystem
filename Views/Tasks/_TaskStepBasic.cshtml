@@ -27,6 +27,7 @@
                 <label asp-for="DefinationOfDone" class="form-label fw-bold">المخرجات (DOD)</label>
                 <textarea asp-for="DefinationOfDone" class="form-control" required maxlength="2000" rows="5" placeholder="صف بوضوح ما يعتبر إتماماً للمهمة..."></textarea>
                 <span asp-validation-for="DefinationOfDone" class="text-danger"></span>
+                <small class="text-muted d-block">الحد الأقصى لطول الحقول النصية: اسم المهمة/المرحلة/الأقسام 50 حرفًا، المخرجات 2000 حرف.</small>
             </div>
         </div>
         <div class="col-md-6">

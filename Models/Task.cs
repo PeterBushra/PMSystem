@@ -8,29 +8,36 @@ namespace Jobick.Models;
 /// <summary>
 /// EF Core entity representing a project task, including scheduling, progress, and costing.
 /// </summary>
-public partial class Task
+public partial class Task : IValidatableObject
 {
     public int Id { get; set; }
 
     public int ProjectId { get; set; }
 
     [Required(ErrorMessage = "اسم المرحلة مطلوب")]
+    [StringLength(500, ErrorMessage = "الحد الأقصى لطول اسم المرحلة هو 500 حرفًا")]
     public string? StageName { get; set; }
 
+    [StringLength(500)]
     public string StageNameAr { get; set; } = null!;
 
     [Required(ErrorMessage = "المهمة مطلوبة")]
+    [StringLength(500, ErrorMessage = "الحد الأقصى لطول اسم المهمة هو 500 حرفًا")]
     public string? Task1 { get; set; }
 
+    [StringLength(500)]
     public string TaskAr { get; set; } = null!;
 
     [Required(ErrorMessage = "القسم المنفذ مطلوب")]
+    [StringLength(500, ErrorMessage = "الحد الأقصى لطول اسم القسم المنفذ هو 500 حرفًا")]
     public string ImplementorDepartment { get; set; } = null!;
 
     [Required(ErrorMessage = "القسم المسؤول مطلوب")]
+    [StringLength(500, ErrorMessage = "الحد الأقصى لطول الإدارة المسؤولة هو 500 حرفًا")]
     public string? DepartmentResponsible { get; set; }
 
     [Required(ErrorMessage = "تعريف الإنجاز مطلوب")]
+    [StringLength(2000, ErrorMessage = "الحد الأقصى لطول خانة المخرجات هو 2000 حرف")]
     public string? DefinationOfDone { get; set; }
 
     [Required(ErrorMessage = "عدد الأيام لإكمال المهمة مطلوب")]
@@ -75,4 +82,15 @@ public partial class Task
 
     public virtual ICollection<TaskLog> TaskLogs { get; set; } = new List<TaskLog>();
 
+    // Cross-field validation
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (ExpectedEndDate <= ExpectedStartDate)
+        {
+            yield return new ValidationResult(
+                "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء",
+                new[] { nameof(ExpectedEndDate) }
+            );
+        }
+    }
 }

@@ -51,6 +51,7 @@
                 <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء </label>
                 <input asp-for="ExpectedEndDate" type="date" class="form-control js-date date-rtl" required id="expectedEnd" />
                 <span asp-validation-for="ExpectedEndDate" class="text-danger"></span>
+                <small class="text-muted d-block">يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.</small>
             </div>
             <div class="mb-3">
                 <div class="d-flex align-items-center justify-content-between">

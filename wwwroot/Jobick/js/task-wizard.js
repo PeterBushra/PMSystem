@@ -105,6 +105,8 @@
 
     // Dates helpers
     function parseDate(value) { if (!value) return null; const d = new Date(value + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
+    function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+    function toYMD(date) { const yyyy = date.getFullYear(); const mm = String(date.getMonth() + 1).padStart(2, '0'); const dd = String(date.getDate()).padStart(2, '0'); return `${yyyy}-${mm}-${dd}`; }
     function workingDaysBetween(startStr, endStr) {
         const s = parseDate(startStr); const e = parseDate(endStr);
         if (!s || !e || e < s) return 0;
@@ -296,7 +298,25 @@
     });
 
     // Dates interaction
-    function syncEndMin() { if (els.expectedStart && els.expectedEnd) { if (els.expectedStart.value) { els.expectedEnd.min = els.expectedStart.value; } else { els.expectedEnd.removeAttribute('min'); } } }
+    function syncEndMin() {
+        if (els.expectedStart && els.expectedEnd) {
+            if (els.expectedStart.value) {
+                // End date must be strictly greater than start date
+                const s = parseDate(els.expectedStart.value);
+                if (s) {
+                    const minEnd = addDays(s, 1);
+                    els.expectedEnd.min = toYMD(minEnd);
+                    // Auto-correct if invalid
+                    const e = parseDate(els.expectedEnd.value);
+                    if (e && e < minEnd) {
+                        els.expectedEnd.value = toYMD(minEnd);
+                    }
+                }
+            } else {
+                els.expectedEnd.removeAttribute('min');
+            }
+        }
+    }
     els.expectedStart?.addEventListener('input', function () { syncEndMin(); syncDaysFromDates(); });
     els.expectedEnd?.addEventListener('input', function () { syncDaysFromDates(); });
     els.autoDaysChk?.addEventListener('change', function () { syncDaysFromDates(); updateDaysEditing(); });
