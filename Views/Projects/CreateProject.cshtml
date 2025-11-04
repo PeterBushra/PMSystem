@@ -117,12 +117,12 @@
                                             </div>
                                         </div>
 
-                                        <!-- البرنامج الاستراتيجي (الابن) -->
+                                        <!-- البرنامج الاستراتيجي -->
                                         <div class="mb-3 row">
                                             <label class="col-lg-4 col-form-label form-label required">البرنامج الاستراتيجي</label>
                                             <div class="col-lg-6">
                                                 <select asp-for="StrategicProgramme" class="form-control" id="StrategicProgramme"
-                                                        required data-selected-programme="@Model?.StrategicProgramme" disabled>
+                                                        required data-selected-programme="@Model?.StrategicProgramme">
                                                     <option value="">-- اختر البرنامج الاستراتيجي --</option>
                                                 </select>
                                                 <div class="invalid-feedback">يرجى إدخال البرنامج الاستراتيجي.</div>
@@ -192,7 +192,8 @@
     </script>
 
     <script>
-        // تعبئة القوائم المنسدلة للهدف/البرنامج الاستراتيجي من ملف JSON وعلاقة أب/ابن
+        // تعبئة القوائم المنسدلة للهدف/البرنامج الاستراتيجي من ملف JSON
+        // المطلوب: جعل البرنامج قابل للاختيار دائماً وعرض جميع البرامج، وعند اختيار أي برنامج يتم تحديد الهدف الأب تلقائياً
         (function () {
             const dataUrl = '@Url.Content("~/data/strategic-data.json")';
             const goalSelect = document.getElementById('StrategicGoal');
@@ -201,6 +202,7 @@
             if (!goalSelect || !programmeSelect) return;
 
             let strategicData = null;
+            let allProgrammes = [];
 
             function clearOptions(select, keepPlaceholder) {
                 while (select.options.length > (keepPlaceholder ? 1 : 0)) {
@@ -208,15 +210,10 @@
                 }
             }
 
-            function enable(select, enabled) {
-                select.disabled = !enabled;
-            }
-
             function populateGoals(goals, selectedValue) {
                 clearOptions(goalSelect, true);
                 goals.forEach(g => {
                     const opt = document.createElement('option');
-                    // نخزن الاسم كقيمة لربطها مع خاصية السجل النصية
                     opt.value = g.name;
                     opt.textContent = g.name;
                     opt.setAttribute('data-id', g.id);
@@ -227,39 +224,50 @@
                 }
             }
 
-            function populateProgrammes(programmes, selectedValue) {
+            function buildAllProgrammes(goals) {
+                const list = [];
+                (goals || []).forEach(g => {
+                    (g.programmes || []).forEach(p => {
+                        list.push({
+                            id: p.id,
+                            name: p.name,
+                            goalId: g.id,
+                            goalName: g.name
+                        });
+                    });
+                });
+                return list;
+            }
+
+            function populateAllProgrammes(programmes, selectedValue) {
                 clearOptions(programmeSelect, true);
                 programmes.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p.name; // القيمة النصية للحفظ في قاعدة البيانات
+                    opt.value = p.name;
                     opt.textContent = p.name;
                     opt.setAttribute('data-id', p.id);
+                    opt.setAttribute('data-goal-id', p.goalId);
+                    opt.setAttribute('data-goal-name', p.goalName);
                     programmeSelect.appendChild(opt);
                 });
+
                 if (selectedValue) {
-                    // إذا لم يوجد في القائمة (بيانات قديمة)، أضفه كخيار مخصص
                     const found = Array.from(programmeSelect.options).some(o => o.value === selectedValue);
                     if (!found) {
                         const custom = document.createElement('option');
                         custom.value = selectedValue;
                         custom.textContent = selectedValue + ' (قيمة قديمة)';
+                        // قيم قديمة: بدون بيانات هدف، لن نغيّر الهدف تلقائياً
                         programmeSelect.appendChild(custom);
                     }
                     programmeSelect.value = selectedValue;
                 }
-                enable(programmeSelect, true);
             }
 
             function onGoalChanged() {
-                const selectedGoalName = goalSelect.value;
-                clearOptions(programmeSelect, true);
-                enable(programmeSelect, false);
-
-                if (!selectedGoalName) return;
-
-                const goal = strategicData?.goals?.find(g => g.name === selectedGoalName);
-                if (goal) {
-                    populateProgrammes(goal.programmes || [], programmeSelect.getAttribute('data-selected-programme'));
+                // عند تغيير الهدف يدوياً من المستخدم، نبقي قائمة البرامج كاملة لكن نعيد تعيين الاختيار
+                if (goalSelect.getAttribute('data-user-change') === '1') {
+                    programmeSelect.value = '';
                 }
             }
 
@@ -274,22 +282,35 @@
 
                     populateGoals(json.goals || [], preSelectedGoal);
 
-                    if (preSelectedGoal) {
-                        const g = (json.goals || []).find(x => x.name === preSelectedGoal);
-                        if (g) {
-                            populateProgrammes(g.programmes || [], preSelectedProgramme);
+                    allProgrammes = buildAllProgrammes(json.goals || []);
+                    populateAllProgrammes(allProgrammes, preSelectedProgramme);
+
+                    // إذا كان هناك برنامج محدد مسبقاً، اختر الهدف الأب له
+                    if (preSelectedProgramme) {
+                        const prog = allProgrammes.find(p => p.name === preSelectedProgramme);
+                        if (prog && prog.goalName) {
+                            goalSelect.value = prog.goalName; // لا نطلق حدث تغيير حتى لا نفلتر
                         }
                     }
 
+                    // أحداث التغيير
                     goalSelect.addEventListener('change', function () {
-                        // عند تغيير الهدف، نفرغ قيمة البرنامج حتى يُعاد الاختيار
-                        programmeSelect.value = '';
-                        programmeSelect.setAttribute('data-selected-programme', '');
+                        goalSelect.setAttribute('data-user-change', '1');
                         onGoalChanged();
+                        goalSelect.removeAttribute('data-user-change');
+                    });
+
+                    programmeSelect.addEventListener('change', function () {
+                        const selected = programmeSelect.options[programmeSelect.selectedIndex];
+                        if (!selected) return;
+                        const parentGoalName = selected.getAttribute('data-goal-name');
+                        if (parentGoalName) {
+                            // عند اختيار برنامج، حدّد الهدف الأب تلقائياً
+                            goalSelect.value = parentGoalName; // لا نطلق change لتجنب تعديل قائمة البرامج
+                        }
                     });
                 })
                 .catch(err => {
-                    // في حال فشل التحميل، نبقي الحقول نصية كخطة بديلة
                     console.error('فشل تحميل بيانات الاستراتيجيات:', err);
                 });
         })();
