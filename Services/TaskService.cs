@@ -161,7 +161,8 @@ public class TaskService : ITaskService
                 Id = ++maxId,
                 TaskId = taskId,
                 Progress = Math.Clamp(l.Progress, 0m, 100m),
-                Date = l.Date
+                Date = l.Date,
+                Notes = l.Notes
             };
             _context.TaskLogs.Add(newLog);
         }

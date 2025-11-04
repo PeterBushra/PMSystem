@@ -147,7 +147,7 @@
             const exceededBy = total - state.weightLimit;
             els.weightInput.classList.add('is-invalid');
             els.weightInput.setCustomValidity('إجمالي الأوزان يتجاوز 100%');
-            if (els.weightError) els.weightError.textContent = 'خطأ: مجموع الأوزان (' + fmtPercent(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + fmtPercent(exceededBy) + '%.';
+            if (els.weightError) els.weightError.textContent = 'خطأ: مجموع الأوزان (' + fmtPercent(total) + '%) يتجاوز الحد الأقصى 100%. مقدار التجاوز: ' + fmtPercent(exceededBy) + '%. ';
             state.weightInvalid = true;
         } else {
             els.weightInput.classList.remove('is-invalid');
@@ -190,8 +190,9 @@
         return rows.map(r => {
             const p = r.querySelector('.log-progress');
             const d = r.querySelector('.log-date');
+            const n = r.querySelector('.log-notes');
             const progress = parseFloat(p?.value || '');
-            return { row: r, progress: isNaN(progress) ? null : progress, date: d?.value || '' };
+            return { row: r, progress: isNaN(progress) ? null : progress, date: d?.value || '', notes: n?.value || '' };
         });
     }
     function recomputeFromLogs() {
@@ -207,7 +208,7 @@
             const hasD = !!item.date;
             pInput?.classList.remove('is-invalid');
             dInput?.classList.remove('is-invalid');
-            if (!hasP && !hasD) continue;
+            if (!hasP && !hasD && !(item.notes && item.notes.trim().length > 0)) continue;
             if (!hasD) { hasInvalid = true; dInput?.classList.add('is-invalid'); }
             if (!hasP) { hasInvalid = true; pInput?.classList.add('is-invalid'); }
             if (hasP) {
@@ -249,6 +250,7 @@
             recomputeFromLogs();
         });
         tr.querySelector('.log-date')?.addEventListener('input', recomputeFromLogs);
+        tr.querySelector('.log-notes')?.addEventListener('input', () => { /* notes do not affect totals */ });
         tr.querySelector('.remove-log')?.addEventListener('click', function () { tr.remove(); recomputeFromLogs(); });
     }
     Array.from(els.logsTableBody?.querySelectorAll('tr') || []).forEach(attachRowHandlers);
@@ -258,6 +260,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = '<td><input type="date" name="LogDate[]" class="form-control log-date" /></td>' +
             '<td><input type="number" name="LogProgress[]" class="form-control log-progress" min="0" max="100" step="0.01" /></td>' +
+            '<td><input type="text" name="LogNotes[]" class="form-control log-notes" /></td>' +
             '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-log">حذف</button></td>';
         els.logsTableBody?.appendChild(tr);
         attachRowHandlers(tr);
@@ -281,6 +284,7 @@
         const totalNow = currentFilledTotal(); let remaining = Math.max(0, 100 - totalNow); remaining = Math.max(0, Math.min(remaining, 100)); const remainingStr = remaining.toFixed(2);
         tr.innerHTML = `<td><input type="date" name="LogDate[]" class="form-control log-date" value="${yyyy}-${mm}-${dd}" /></td>` +
             `<td><input type="number" name="LogProgress[]" class="form-control log-progress" min="0" max="100" step="0.01" value="${remainingStr}" /></td>` +
+            '<td><input type="text" name="LogNotes[]" class="form-control log-notes" /></td>' +
             '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-log">حذف</button></td>';
         els.logsTableBody?.appendChild(tr); attachRowHandlers(tr); recomputeFromLogs();
     });
@@ -338,8 +342,9 @@
         for (const item of rows) {
             const pInput = item.row.querySelector('.log-progress');
             const dInput = item.row.querySelector('.log-date');
-            const progressRaw = pInput?.value ?? ''; const dateRaw = dInput?.value ?? '';
-            const isEmpty = (!progressRaw || progressRaw.trim() === '') && (!dateRaw || dateRaw.trim() === '');
+            const nInput = item.row.querySelector('.log-notes');
+            const progressRaw = pInput?.value ?? ''; const dateRaw = dInput?.value ?? ''; const notesRaw = nInput?.value ?? '';
+            const isEmpty = (!progressRaw || progressRaw.trim() === '') && (!dateRaw || dateRaw.trim() === '') && (!notesRaw || notesRaw.trim() === '');
             if (isEmpty) { item.row.remove(); removedAny = true; }
         }
         if (removedAny) { recomputeFromLogs(); }

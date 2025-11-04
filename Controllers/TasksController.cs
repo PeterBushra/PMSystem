@@ -74,15 +74,18 @@ public class TasksController(ITaskService _taskService, IProjectService _project
     {
         var progresses = form["LogProgress[]"].Count > 0 ? form["LogProgress[]"] : form["LogProgress"]; // support both
         var dates = form["LogDate[]"].Count > 0 ? form["LogDate[]"] : form["LogDate"]; // support both
+        var notes = form["LogNotes[]"].Count > 0 ? form["LogNotes[]"] : form["LogNotes"]; // support both
 
         var logs = new List<TaskLog>();
 
-        int count = Math.Max(progresses.Count, dates.Count);
+        int count = new[] { progresses.Count, dates.Count, notes.Count }.Max();
         for (int i = 0; i < count; i++)
         {
             var pStr = i < progresses.Count ? progresses[i] : null;
             var dStr = i < dates.Count ? dates[i] : null;
-            if (string.IsNullOrWhiteSpace(pStr) && string.IsNullOrWhiteSpace(dStr))
+            var nStr = i < notes.Count ? notes[i] : null;
+            var hasAny = !string.IsNullOrWhiteSpace(pStr) || !string.IsNullOrWhiteSpace(dStr) || !string.IsNullOrWhiteSpace(nStr);
+            if (!hasAny)
                 continue;
 
             if (!decimal.TryParse(pStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var progress))
@@ -104,7 +107,7 @@ public class TasksController(ITaskService _taskService, IProjectService _project
                 continue;
             }
 
-            logs.Add(new TaskLog { Progress = progress, Date = dateOnly });
+            logs.Add(new TaskLog { Progress = progress, Date = dateOnly, Notes = string.IsNullOrWhiteSpace(nStr) ? null : nStr });
         }
 
         // Normalize: order by date
