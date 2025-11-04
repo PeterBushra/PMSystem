@@ -1,34 +1,57 @@
-/* Accessible theme overrides: improves contrast and unifies palette without changing existing SCSS build. */
+/* Accessible theme overrides: aligns site with client color guidelines without changing SCSS build. */
 :root {
-  /* Theme palette (Jobick custom) */
-  --primary: #0b5ed7; /* Blue 600 */
-  --secondary: #495057; /* Gray 600 */
-  /* Bootstrap palette */
-  --bs-primary: #0b5ed7;
-  --bs-primary-rgb: 11, 94, 215;
-  --bs-secondary: #495057;
-  --bs-secondary-rgb: 73, 80, 87;
-  --bs-success: #198754;
-  --bs-success-rgb: 25, 135, 84;
-  --bs-info: #0dcaf0;
-  --bs-info-rgb: 13, 202, 240;
-  --bs-warning: #ffc107;
-  --bs-warning-rgb: 255, 193, 7;
-  --bs-danger: #dc3545;
-  --bs-danger-rgb: 220, 53, 69;
-  --bs-light: #f8f9fa;
-  --bs-light-rgb: 248, 249, 250;
-  --bs-dark: #212529;
-  --bs-dark-rgb: 33, 37, 41;
+  /* Design system tokens */
+  --color-primary: #ed935e;
+  --color-primary-light: #f1f0eb;
+  --color-secondary: #a5c6d9;
+  --color-neutral-dark: #4d4d4f;
+  --color-highlight: #ffd662;
+  --color-soft-neutral: #ebe4d9;
 
-  /* Links */
+  /* Jobick custom palette */
+  --primary: var(--color-primary);
+  --secondary: var(--color-secondary);
+
+  /* Bootstrap palette */
+  --bs-primary: var(--color-primary);
+  --bs-primary-rgb: 237, 147, 94;
+  --bs-secondary: var(--color-secondary);
+  --bs-secondary-rgb: 165, 198, 217;
+  --bs-success: #198754; /* keep default */
+  --bs-success-rgb: 25, 135, 84;
+  --bs-info: #0dcaf0; /* keep default */
+  --bs-info-rgb: 13, 202, 240;
+  --bs-warning: var(--color-highlight);
+  --bs-warning-rgb: 255, 214, 98;
+  --bs-danger: #dc3545; /* keep default */
+  --bs-danger-rgb: 220, 53, 69;
+  --bs-light: var(--color-primary-light);
+  --bs-light-rgb: 241, 240, 235;
+  --bs-dark: var(--color-neutral-dark);
+  --bs-dark-rgb: 77, 77, 79;
+
+  /* App body + links */
+  --bs-body-bg: var(--color-soft-neutral);
+  --bs-body-bg-rgb: 235, 228, 217;
+  --bs-body-color: var(--color-neutral-dark);
+  --bs-body-color-rgb: 77, 77, 79;
   --bs-link-color: var(--bs-primary);
   --bs-link-color-rgb: var(--bs-primary-rgb);
-  --bs-link-hover-color: #0a58ca; /* slightly darker primary */
-  --bs-link-hover-color-rgb: 10, 88, 202;
+  --bs-link-hover-color: #d87f4a; /* ~10% darker primary */
+  --bs-link-hover-color-rgb: 216, 127, 74;
 
   /* Focus ring */
   --bs-focus-ring-color: rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Jobick custom variables override */
+:root {
+  --card: #fff;
+  --text-dark: var(--color-neutral-dark);
+  --text: var(--color-neutral-dark);
+  --body-bg: var(--color-soft-neutral);
+  --light: var(--color-primary-light);
+  --border: #d9d4cc;
 }
 
 /* Buttons - align to palette and ensure text contrast */
@@ -37,25 +60,26 @@
   --bs-btn-bg: var(--bs-primary);
   --bs-btn-border-color: var(--bs-primary);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #0a58ca;
-  --bs-btn-hover-border-color: #0a58ca;
+  --bs-btn-hover-bg: #d87f4a; /* darken primary */
+  --bs-btn-hover-border-color: #d87f4a;
   --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #094db2;
-  --bs-btn-active-border-color: #094db2;
+  --bs-btn-active-bg: #c8703f; /* darker */
+  --bs-btn-active-border-color: #c8703f;
 }
 
+/* Secondary is light -> use dark text for contrast */
 .btn-secondary {
-  --bs-btn-color: #fff;
+  --bs-btn-color: #000;
   --bs-btn-bg: var(--bs-secondary);
   --bs-btn-border-color: var(--bs-secondary);
-  --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #3f464c;
-  --bs-btn-hover-border-color: #3b4147;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #91b6ce; /* darker */
+  --bs-btn-hover-border-color: #91b6ce;
   --bs-btn-focus-shadow-rgb: var(--bs-secondary-rgb);
-  --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #3b4147;
-  --bs-btn-active-border-color: #373d42;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #82aac6; /* even darker */
+  --bs-btn-active-border-color: #82aac6;
 }
 
 .btn-success {
@@ -91,12 +115,12 @@
   --bs-btn-bg: var(--bs-warning);
   --bs-btn-border-color: var(--bs-warning);
   --bs-btn-hover-color: #000;
-  --bs-btn-hover-bg: #ffca2c;
-  --bs-btn-hover-border-color: #ffc720;
+  --bs-btn-hover-bg: #ffcd78;
+  --bs-btn-hover-border-color: #ffcd78;
   --bs-btn-focus-shadow-rgb: var(--bs-warning-rgb);
   --bs-btn-active-color: #000;
-  --bs-btn-active-bg: #ffcd39;
-  --bs-btn-active-border-color: #ffc720;
+  --bs-btn-active-bg: #ffbf4e;
+  --bs-btn-active-border-color: #ffbf4e;
 }
 
 .btn-danger {
@@ -117,12 +141,12 @@
   --bs-btn-bg: var(--bs-dark);
   --bs-btn-border-color: var(--bs-dark);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #1c1f23;
-  --bs-btn-hover-border-color: #1a1e21;
+  --bs-btn-hover-bg: #3c3c3e;
+  --bs-btn-hover-border-color: #38383a;
   --bs-btn-focus-shadow-rgb: var(--bs-dark-rgb);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #1a1e21;
-  --bs-btn-active-border-color: #191c1f;
+  --bs-btn-active-bg: #38383a;
+  --bs-btn-active-border-color: #343437;
 }
 
 .btn-light {
@@ -130,22 +154,18 @@
   --bs-btn-bg: var(--bs-light);
   --bs-btn-border-color: var(--bs-light);
   --bs-btn-hover-color: #000;
-  --bs-btn-hover-bg: #e2e6ea;
-  --bs-btn-hover-border-color: #dae0e5;
+  --bs-btn-hover-bg: #ecebe4;
+  --bs-btn-hover-border-color: #e7e6df;
   --bs-btn-active-color: #000;
-  --bs-btn-active-bg: #d3d9df;
-  --bs-btn-active-border-color: #c6ccd2;
+  --bs-btn-active-bg: #e2e0d8;
+  --bs-btn-active-border-color: #dedcd3;
 }
 
 /* Nav pills active bg */
-.nav-pills {
-  --bs-nav-pills-link-active-bg: var(--bs-primary);
-}
+.nav-pills { --bs-nav-pills-link-active-bg: var(--bs-primary); }
 
 /* Dropdown active background */
-.dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--bs-primary);
-}
+.dropdown-menu { --bs-dropdown-link-active-bg: var(--bs-primary); }
 
 /* Focus styles */
 .nav-link:focus-visible { box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), .25); }
@@ -188,4 +208,19 @@
     background-color: #e9ecef !important;
     border-color: #dee2e6 !important;
     cursor: not-allowed;
+}
+
+/* Derived tokens from primary for components using Jobick variables */
+:root {
+  --primary-hover: #d87f4a;
+  --primary-dark: #a46035;
+  --rgba-primary-1: rgba(237, 147, 94, 0.1);
+  --rgba-primary-2: rgba(237, 147, 94, 0.2);
+  --rgba-primary-3: rgba(237, 147, 94, 0.3);
+  --rgba-primary-4: rgba(237, 147, 94, 0.4);
+  --rgba-primary-5: rgba(237, 147, 94, 0.5);
+  --rgba-primary-6: rgba(237, 147, 94, 0.6);
+  --rgba-primary-7: rgba(237, 147, 94, 0.7);
+  --rgba-primary-8: rgba(237, 147, 94, 0.8);
+  --rgba-primary-9: rgba(237, 147, 94, 0.9);
 }
