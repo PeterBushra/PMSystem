@@ -31,6 +31,13 @@
                             <form asp-action="PostProject" method="post" class="needs-validation" novalidate>
                                 <div class="row">
 
+                                    <!-- حقل موجز للأخطاء العامة والنموذج -->
+                                    <div class="col-12">
+                                        <div class="text-danger mb-3">
+                                            <div asp-validation-summary="ModelOnly"></div>
+                                        </div>
+                                    </div>
+
                                     <!-- حقول مخفية للسمات غير القابلة للتحرير -->
                                     <input type="hidden" asp-for="Id" />
                                     <input type="hidden" asp-for="CreatedDate" />
@@ -93,6 +100,7 @@
                                             <label class="col-lg-4 col-form-label form-label required">تاريخ الانتهاء</label>
                                             <div class="col-lg-6">
                                                 <input asp-for="EndDate" type="date" class="form-control date-rtl" required />
+                                                <span asp-validation-for="EndDate" class="text-danger"></span>
                                                 <div class="invalid-feedback">يرجى اختيار تاريخ الانتهاء.</div>
                                             </div>
                                         </div>
@@ -181,12 +189,46 @@
             Array.prototype.slice.call(forms)
                 .forEach(function (form) {
                     form.addEventListener('submit', function (event) {
+                        // تحقق عميلّي بأن تاريخ الانتهاء أكبر من تاريخ البدء
+                        var start = form.querySelector('[name="StartSate"]').value;
+                        var end = form.querySelector('[name="EndDate"]').value;
+                        if (start && end && new Date(end) <= new Date(start)) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            // إظهار رسالة خطأ تحت تاريخ الانتهاء
+                            var endField = form.querySelector('[name="EndDate"]');
+                            var msg = form.querySelector('[data-enddate-error]');
+                            if (!msg) {
+                                msg = document.createElement('div');
+                                msg.className = 'text-danger mt-1';
+                                msg.setAttribute('data-enddate-error', '1');
+                                endField.closest('.col-lg-6').appendChild(msg);
+                            }
+                            msg.textContent = 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء.';
+                        }
+
                         if (!form.checkValidity()) {
                             event.preventDefault()
                             event.stopPropagation()
                         }
                         form.classList.add('was-validated')
                     }, false)
+
+                    // حدّث خاصية min لتاريخ الانتهاء عند تغيير البدء
+                    var startEl = form.querySelector('[name="StartSate"]');
+                    var endEl = form.querySelector('[name="EndDate"]');
+                    function syncMin() {
+                        if (startEl && endEl && startEl.value) {
+                            endEl.min = startEl.value;
+                        } else if (endEl) {
+                            endEl.removeAttribute('min');
+                        }
+                    }
+                    if (startEl && endEl) {
+                        startEl.addEventListener('change', syncMin);
+                        // التهيئة الأولى
+                        syncMin();
+                    }
                 })
         })()
     </script>
