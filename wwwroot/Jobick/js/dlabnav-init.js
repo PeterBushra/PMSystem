@@ -1,4 +1,3 @@
-
 "use strict"
 
 var dlabSettingsOptions = {};
@@ -51,6 +50,11 @@ function getUrlParams(dParam)
 	
 	new dlabSettings(dlabSettingsOptions); 
 
+    // Ensure Bootstrap theme matches our version on init
+    var initVersion = (window.getCookie ? getCookie('version') : null) || dlabSettingsOptions.version || 'light';
+    document.documentElement.setAttribute('data-bs-theme', initVersion);
+    $('body').attr('data-theme-version', initVersion);
+
 	jQuery(window).on('resize',function(){
         /*Check container layout on resize */
 		///alert(dlabSettingsOptions.primary);
@@ -58,6 +62,9 @@ function getUrlParams(dParam)
         /*Check container layout on resize END */
         
 		new dlabSettings(dlabSettingsOptions); 
+        // Keep Bootstrap theme in sync after any reset
+        var currentVersion = $('body').attr('data-theme-version') || (window.getCookie ? getCookie('version') : null) || dlabSettingsOptions.version || 'light';
+        document.documentElement.setAttribute('data-bs-theme', currentVersion);
 	});
 	
 })(jQuery);
@@ -108,4 +115,4 @@ function deleteAllCookie(reload = true)
 		}
 	}
  	
-/* Cookies Function END */	
+/* Cookies Function END */

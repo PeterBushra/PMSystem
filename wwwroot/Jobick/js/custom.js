@@ -384,20 +384,25 @@ var Jobick = function(){
                 jQuery(this).toggleClass('active');
                 if(jQuery(this).hasClass('active')){
                     jQuery('body').attr('data-theme-version','dark');
+                    // Sync Bootstrap theme attribute
+                    document.documentElement.setAttribute('data-bs-theme','dark');
                     setCookie('version', 'dark');
                     jQuery('#theme_version').val('dark');
                     
                 }else{
                     jQuery('body').attr('data-theme-version','light');
+                    document.documentElement.setAttribute('data-bs-theme','light');
                     setCookie('version', 'light');
                     jQuery('#theme_version').val('light');	
                     		
                 }
                 $('.default-select').selectpicker('refresh');
             });
-            var version = getCookie('version');
+            var version = getCookie('version') || 'light';
             
             jQuery('body').attr('data-theme-version', version);
+            // Ensure Bootstrap theme sync on init
+            document.documentElement.setAttribute('data-bs-theme', version);
             jQuery('.dlab-theme-mode').removeClass('active');
             setTimeout(function(){
                 if(jQuery('body').attr('data-theme-version') === "dark")

@@ -3,9 +3,13 @@
 ***********************************-->
 <div class="footer" dir="rtl" style="text-align:right;">
     <div class="copyright">
-        <p>جميع الحقوق محفوظة &copy; تم التصميم والتطوير بواسطة <a href="https://www.hmmc.gov.ae/" target="_blank">مركز أبو ظبي لإدارة المواد الخطرة - الإدارة الاستراتيجية</a> ٢٠٢٥</p>
+        <p>جميع الحقوق محفوظة &copy; تم التصميم والتطوير بواسطة <a href="https://www.hmmc.gov.ae/" target="_blank">مركز أبو ظبي لإدارة المواد الخطرة - الإدارة الاستراتيجية</a> <span id="year"></span></p>
     </div>
 </div>
 <!--**********************************
     نهاية التذييل
 ***********************************-->
+
+<script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+</script>
