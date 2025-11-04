@@ -13,6 +13,45 @@
     const saveBtnTop = document.getElementById('saveBtn');
     let currentStep = 0;
 
+    // Localization for HTML5 validation messages (Arabic)
+    function setupArabicValidation() {
+        function setMessage(input) {
+            // Clear any previous custom message first
+            input.setCustomValidity('');
+            const v = input.validity;
+            if (v.valueMissing) {
+                input.setCustomValidity('يرجى تعبئة هذا الحقل.');
+            } else if (v.typeMismatch) {
+                if (input.type === 'email') input.setCustomValidity('يرجى إدخال بريد إلكتروني صالح.');
+                else if (input.type === 'url') input.setCustomValidity('يرجى إدخال رابط صالح.');
+                else input.setCustomValidity('القيمة المدخلة غير صالحة.');
+            } else if (v.tooShort && input.minLength > -1) {
+                input.setCustomValidity(`يجب إدخال ${input.minLength} أحرف على الأقل.`);
+            } else if (v.tooLong && input.maxLength > -1) {
+                input.setCustomValidity(`يجب ألا يتجاوز الإدخال ${input.maxLength} حرفًا.`);
+            } else if (v.rangeUnderflow && input.min !== '') {
+                input.setCustomValidity(`الحد الأدنى المسموح هو ${input.min}.`);
+            } else if (v.rangeOverflow && input.max !== '') {
+                input.setCustomValidity(`الحد الأقصى المسموح هو ${input.max}.`);
+            } else if (v.stepMismatch) {
+                input.setCustomValidity('القيمة غير مسموحة لهذه الخطوة.');
+            } else if (v.patternMismatch) {
+                input.setCustomValidity('القيمة لا تطابق النمط المطلوب.');
+            }
+        }
+
+        const allInputs = form.querySelectorAll('input, select, textarea');
+        allInputs.forEach((el) => {
+            // When the browser detects invalid, set our Arabic message
+            el.addEventListener('invalid', () => setMessage(el));
+            // Clear the message on user edits
+            el.addEventListener('input', () => { el.setCustomValidity(''); el.classList.remove('is-invalid'); });
+            el.addEventListener('change', () => { el.setCustomValidity(''); el.classList.remove('is-invalid'); });
+        });
+    }
+
+    setupArabicValidation();
+
     function showStep(index) {
         if (index < 0 || index >= steps.length) return;
         steps.forEach((s, i) => s.classList.toggle('d-none', i !== index));
@@ -40,7 +79,10 @@
         const inputs = Array.from(pane.querySelectorAll('input[required], textarea[required], select[required]'));
         let ok = true;
         for (const i of inputs) {
+            // Reset to allow browser to recompute validity and use our localized messages
+            i.setCustomValidity('');
             if (!i.checkValidity()) {
+                // Trigger showing the message (will use our custom message set in invalid handler)
                 i.reportValidity?.();
                 i.classList.add('is-invalid');
                 ok = false;
