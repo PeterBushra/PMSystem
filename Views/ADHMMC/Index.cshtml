@@ -191,9 +191,10 @@
             let currentFilterType = urlParams.get('filterType') || 'responsible';
             let currentResponsible = urlParams.get('responsible') || 'الكل';
             let currentGoal = urlParams.get('goal');
+            let currentProgramme = urlParams.get('programme');
             
             // If no URL parameters at all, redirect to set defaults
-            if (!urlParams.has('filterType') && !urlParams.has('responsible') && !urlParams.has('goal')) {
+            if (!urlParams.has('filterType') && !urlParams.has('responsible') && !urlParams.has('goal') && !urlParams.has('programme')) {
                 const url = new URL(window.location.href);
                 url.searchParams.set('filterType', 'responsible');
                 url.searchParams.set('responsible', 'الكل');
@@ -207,13 +208,20 @@
                     const selectedType = this.value;
                     const responsibleContainer = document.getElementById('responsibleFilterContainer');
                     const goalContainer = document.getElementById('strategicGoalFilterContainer');
+                    const programmeContainer = document.getElementById('strategicProgrammeFilterContainer');
                     
                     if (selectedType === 'responsible') {
                         responsibleContainer.style.display = 'flex';
                         goalContainer.style.display = 'none';
-                    } else {
+                        if(programmeContainer) programmeContainer.style.display = 'none';
+                    } else if (selectedType === 'goal') {
                         responsibleContainer.style.display = 'none';
                         goalContainer.style.display = 'flex';
+                        if(programmeContainer) programmeContainer.style.display = 'none';
+                    } else {
+                        responsibleContainer.style.display = 'none';
+                        goalContainer.style.display = 'none';
+                        if(programmeContainer) programmeContainer.style.display = 'flex';
                     }
                     
                     // Navigate to clear the inactive filter and set filter type
@@ -222,15 +230,24 @@
                     
                     if (selectedType === 'responsible') {
                         url.searchParams.delete('goal');
+                        url.searchParams.delete('programme');
                         // Set to "الكل" if no responsible filter exists
                         if (!currentResponsible) {
                             url.searchParams.set('responsible', 'الكل');
                         }
-                    } else {
+                    } else if (selectedType === 'goal') {
                         url.searchParams.delete('responsible');
+                        url.searchParams.delete('programme');
                         // Set to "الكل" if no goal filter exists
                         if (!currentGoal) {
                             url.searchParams.set('goal', 'الكل');
+                        }
+                    } else {
+                        url.searchParams.delete('responsible');
+                        url.searchParams.delete('goal');
+                        // Set to "الكل" if no programme filter exists
+                        if (!currentProgramme) {
+                            url.searchParams.set('programme', 'الكل');
                         }
                     }
                     
@@ -244,6 +261,7 @@
                 const v = this.value;
                 const url = new URL(window.location.href);
                 url.searchParams.delete('goal');
+                url.searchParams.delete('programme');
                 url.searchParams.set('responsible', v);
                 url.searchParams.set('filterType', 'responsible');
                 showFilterLoading();
@@ -255,8 +273,21 @@
                 const v = this.value;
                 const url = new URL(window.location.href);
                 url.searchParams.delete('responsible');
+                url.searchParams.delete('programme');
                 url.searchParams.set('goal', v);
                 url.searchParams.set('filterType', 'goal');
+                showFilterLoading();
+                window.location.href = url.toString();
+            });
+
+            // Strategic programme filter change handler
+            document.getElementById('strategicProgrammeFilter')?.addEventListener('change', function(){
+                const v = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.delete('responsible');
+                url.searchParams.delete('goal');
+                url.searchParams.set('programme', v);
+                url.searchParams.set('filterType', 'programme');
                 showFilterLoading();
                 window.location.href = url.toString();
             });

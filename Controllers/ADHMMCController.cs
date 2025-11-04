@@ -73,13 +73,14 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
     /// Only one filter type can be active at a time.
     /// </summary>
     [Authorize]
-    public async Task<IActionResult> Index(string? responsible = null, string? goal = null, string? filterType = null)
+    public async Task<IActionResult> Index(string? responsible = null, string? goal = null, string? programme = null, string? filterType = null)
     {
         const string AllOption = "الكل";
 
         // Check if this is a first-time load (no parameters at all)
         bool isFirstLoad = string.IsNullOrWhiteSpace(responsible) 
                           && string.IsNullOrWhiteSpace(goal) 
+                          && string.IsNullOrWhiteSpace(programme)
                           && string.IsNullOrWhiteSpace(filterType);
 
         // If first load, redirect with default parameters to ensure consistent behavior
@@ -97,6 +98,8 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
         {
             if (!string.IsNullOrWhiteSpace(goal))
                 filterType = "goal";
+            else if (!string.IsNullOrWhiteSpace(programme))
+                filterType = "programme";
             else
                 filterType = "responsible"; // default
         }
@@ -129,9 +132,23 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
             strategicGoalList.Insert(0, AllOption);
         }
 
+        // Build distinct list of StrategicProgramme values (non-empty)
+        var strategicProgrammeList = projects
+            .Select(p => p.StrategicProgramme)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+
+        if (!strategicProgrammeList.Contains(AllOption))
+        {
+            strategicProgrammeList.Insert(0, AllOption);
+        }
+
         // Default selections - if no filter parameter provided, default to "الكل"
         string selectedResponsible = string.IsNullOrWhiteSpace(responsible) ? AllOption : responsible;
         string selectedStrategicGoal = string.IsNullOrWhiteSpace(goal) ? AllOption : goal;
+        string selectedStrategicProgramme = string.IsNullOrWhiteSpace(programme) ? AllOption : programme;
 
         // Filter projects based on active filter type
         List<Project> filteredProjects;
@@ -142,6 +159,13 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
             filteredProjects = string.Equals(selectedStrategicGoal, AllOption, StringComparison.Ordinal)
                 ? projects
                 : projects.Where(p => string.Equals(p.StrategicGoal, selectedStrategicGoal, StringComparison.Ordinal)).ToList();
+        }
+        else if (filterType == "programme")
+        {
+            // Filter by Strategic Programme
+            filteredProjects = string.Equals(selectedStrategicProgramme, AllOption, StringComparison.Ordinal)
+                ? projects
+                : projects.Where(p => string.Equals(p.StrategicProgramme, selectedStrategicProgramme, StringComparison.Ordinal)).ToList();
         }
         else
         {
@@ -164,6 +188,10 @@ public class ADHMMCController(IUserService _userService, IProjectService _projec
         ViewBag.StrategicGoalList = strategicGoalList;
         ViewBag.SelectedStrategicGoal = selectedStrategicGoal;
         ViewBag.HasStrategicGoalOptions = strategicGoalList.Count > 0;
+
+        ViewBag.StrategicProgrammeList = strategicProgrammeList;
+        ViewBag.SelectedStrategicProgramme = selectedStrategicProgramme;
+        ViewBag.HasStrategicProgrammeOptions = strategicProgrammeList.Count > 0;
         
         ViewBag.FilterType = filterType;
 
