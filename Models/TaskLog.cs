@@ -13,5 +13,7 @@ public partial class TaskLog
 
     public DateOnly Date { get; set; }
 
+    public string? Notes { get; set; }
+
     public virtual Task Task { get; set; } = null!;
 }

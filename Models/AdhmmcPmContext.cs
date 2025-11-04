@@ -35,7 +35,6 @@ public partial class AdhmmcPmContext : DbContext
                 );
         }
     }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>(entity =>
@@ -46,13 +45,13 @@ public partial class AdhmmcPmContext : DbContext
             entity.Property(e => e.DelayReasons).HasMaxLength(4000);
             entity.Property(e => e.Description).HasMaxLength(4000);
             entity.Property(e => e.DescriptionAr).HasMaxLength(4000);
-            entity.Property(e => e.Name).HasMaxLength(250);
-            entity.Property(e => e.NameAr).HasMaxLength(250);
+            entity.Property(e => e.Name).HasMaxLength(500);
+            entity.Property(e => e.NameAr).HasMaxLength(500);
             entity.Property(e => e.ProjectGoal).HasMaxLength(2500);
-            entity.Property(e => e.ResponsibleForImplementing).HasMaxLength(150);
+            entity.Property(e => e.ResponsibleForImplementing).HasMaxLength(500);
             entity.Property(e => e.StrategicGoal).HasMaxLength(250);
             entity.Property(e => e.StrategicProgramme).HasMaxLength(250);
-            entity.Property(e => e.SystemOwner).HasMaxLength(150);
+            entity.Property(e => e.SystemOwner).HasMaxLength(500);
             entity.Property(e => e.TotalCost).HasColumnType("decimal(18, 4)");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Projects)
@@ -69,15 +68,15 @@ public partial class AdhmmcPmContext : DbContext
             entity.Property(e => e.Cost).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.DefinationOfDone).HasMaxLength(4000);
-            entity.Property(e => e.DepartmentResponsible).HasMaxLength(50);
+            entity.Property(e => e.DepartmentResponsible).HasMaxLength(500);
             entity.Property(e => e.DoneRatio).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.ImplementorDepartment).HasMaxLength(50);
-            entity.Property(e => e.StageName).HasMaxLength(50);
-            entity.Property(e => e.StageNameAr).HasMaxLength(50);
+            entity.Property(e => e.ImplementorDepartment).HasMaxLength(500);
+            entity.Property(e => e.StageName).HasMaxLength(500);
+            entity.Property(e => e.StageNameAr).HasMaxLength(500);
             entity.Property(e => e.Task1)
-                .HasMaxLength(50)
+                .HasMaxLength(500)
                 .HasColumnName("Task");
-            entity.Property(e => e.TaskAr).HasMaxLength(50);
+            entity.Property(e => e.TaskAr).HasMaxLength(500);
             entity.Property(e => e.Weight).HasColumnType("decimal(18, 2)");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Tasks)
@@ -86,7 +85,6 @@ public partial class AdhmmcPmContext : DbContext
 
             entity.HasOne(d => d.Project).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_Task_Project");
         });
 
@@ -95,11 +93,11 @@ public partial class AdhmmcPmContext : DbContext
             entity.ToTable("TaskLog");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.Progress).HasColumnType("decimal(18, 2)");
 
             entity.HasOne(d => d.Task).WithMany(p => p.TaskLogs)
                 .HasForeignKey(d => d.TaskId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_TaskLog_Task");
         });
 
