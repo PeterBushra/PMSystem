@@ -181,3 +181,11 @@
 /* Badges and backgrounds via vars already pick up, but ensure text utilities */
 .bg-warning { color: #000 !important; }
 .bg-info { color: #000 !important; }
+
+#completeTodayBtn:disabled,
+#completeTodayBtn[disabled] {
+    color: #495057 !important;
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+    cursor: not-allowed;
+}
