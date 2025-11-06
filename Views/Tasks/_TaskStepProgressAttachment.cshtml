@@ -65,7 +65,16 @@
                     <div class="mt-2">
                         إجمالي النسبة من السجل: <strong><span id="logsTotalSpan">0</span>%</strong>
                     </div>
+
                     <div id="logsError" class="invalid-feedback d-block"></div>
+
+                    @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
+                    {
+                        <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
+                            <strong>تحذير !</strong>
+                            سيتم حذف المرفق اذا تم تغيير نسبة الانجاز - اذا تم التعديل بالخطأ اضغط الغاء
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -86,9 +95,11 @@
                 }
                 else
                 {
-                    <input type="file" name="Attachment" id="Attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
-                    <div class="small text-muted mt-1" id="attachmentInfo"></div>
-                    <span class="text-danger" id="attachmentError"></span>
+                    <div class="bg-body-tertiary rounded-3 p-3 p-md-4">
+                        <input type="file" name="Attachment" id="Attachment" class="form-control border-0 bg-transparent shadow-none" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
+                        <div class="small text-muted mt-2" id="attachmentInfo"></div>
+                        <span class="text-danger" id="attachmentError"></span>
+                    </div>
                 }
             </div>
         </div>

@@ -22483,7 +22483,6 @@ div, span, ol, ul {
 
 .form-control.is-invalid {
   border-color: #f72b50 !important;
-  border-left: 0rem !important;
 }
 
 .form-control.is-invalid:focus {
