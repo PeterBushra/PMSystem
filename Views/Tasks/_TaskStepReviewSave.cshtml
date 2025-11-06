@@ -19,13 +19,13 @@
                 </div>
                 <span asp-validation-for="DoneRatio" class="text-danger"></span>
                 <small class="form-text text-muted">يتم حسابها تلقائياً من سجل التقدم الفعلي.</small>
-                @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
+              @*   @if (Model.Id != 0 && (Model.DoneRatio ?? 0) >= 100m)
                 {
                     <div class="alert alert-warning py-2 px-3 small mt-2 mb-0" role="alert">
                         <strong>تحذير !</strong>
                         سيتم حذف المرفق اذا تم تغيير نسبة الانجاز - اذا تم التعديل بالخطأ اضغط الغاء
                     </div>
-                }
+                } *@
             </div>
         </div>
     </div>

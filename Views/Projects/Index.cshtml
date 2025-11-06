@@ -6,6 +6,16 @@
     var today = DateTime.Today;
 }
 
+@functions {
+    // Safely trims text and appends "..." when it exceeds max characters.
+    private static string TrimWithDots(string? value, int max)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "";
+        var s = value.Trim();
+        return s.Length <= max ? s : s[..max].TrimEnd() + "...";
+    }
+}
+
 <div class="content-body">
     <div class="container-fluid">
 
@@ -47,7 +57,7 @@
                                         <th class="text-center">تاريخ البدء</th>
                                         <th class="text-center">تاريخ الانتهاء</th>
                                         <th class="text-center">التكلفة الإجمالية</th>
-                                        <th class="text-center" style="text-align: center !important;"></th>
+                                        <th class="text-center"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -84,16 +94,16 @@
                                         <tr onclick="window.location='@Url.Action("ProjectDetails", "Projects", new { id = project.Id })'"
                                             class="row-clickable">
                                             <td class="text-center"><span class="@badgeClass">@statusText</span></td>
-                                            <td>@project.Name</td>
-                                            <td>@project.Description</td>
-                                            <td>@project.ResponsibleForImplementing</td>
-                                            <td>@project.SystemOwner</td>
-                                            <td>@project.ProjectGoal</td>
-                                            <td data-order="@project.StartSate.ToString("yyyy-MM-dd")">@project.StartSate.ToString("d")</td>
-                                            <td data-order="@project.EndDate.ToString("yyyy-MM-dd")">@project.EndDate.ToString("d")</td>
-                                            <td data-order="@project.TotalCost.GetValueOrDefault(0).ToString(System.Globalization.CultureInfo.InvariantCulture)">@project.TotalCost?.ToString("N0")</td>
+                                            <td style="text-align: center !important;" title="@project.Name">@TrimWithDots(project.Name, 30)</td>
+                                            <td style="text-align: center !important;" title="@project.Description">@TrimWithDots(project.Description, 80)</td>
+                                            <td style="text-align: center !important;" title="@project.ResponsibleForImplementing">@TrimWithDots(project.ResponsibleForImplementing, 30)</td>
+                                            <td style="text-align: center !important;" title="@project.SystemOwner">@TrimWithDots(project.SystemOwner, 30)</td>
+                                            <td style="text-align: center !important;" title="@project.ProjectGoal">@TrimWithDots(project.ProjectGoal, 60)</td>
+                                            <td  style="text-align: center !important;" data-order="@project.StartSate.ToString("yyyy-MM-dd")">@project.StartSate.ToString("d")</td>
+                                            <td  style="text-align: center !important;" data-order="@project.EndDate.ToString("yyyy-MM-dd")">@project.EndDate.ToString("d")</td>
+                                            <td  style="text-align: center !important;" data-order="@project.TotalCost.GetValueOrDefault(0).ToString(System.Globalization.CultureInfo.InvariantCulture)">@project.TotalCost?.ToString("N0")</td>
                                             <td>
-                                                <div class="d-flex">
+                                                <div class="d-flex" style="text-align: center !important;">
                                                     <a asp-controller="Projects" asp-action="Edit" asp-route-id="@project.Id"
                                                        class="btn btn-primary shadow btn-xs sharp me-1">
                                                         <i class="fas fa-pencil-alt"></i>

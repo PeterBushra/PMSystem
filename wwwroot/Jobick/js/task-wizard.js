@@ -265,10 +265,7 @@
         const show = total >= 100;
         if (els.attachmentContainer) {
             els.attachmentContainer.style.display = show ? 'block' : 'none';
-            els.attachmentContainer.classList.toggle('border', show);
-            els.attachmentContainer.classList.toggle('border-2', show);
             els.attachmentContainer.classList.toggle('border-success', show);
-            els.attachmentContainer.classList.toggle('shadow-sm', show);
             if (!show && els.attachmentInput) { els.attachmentInput.value = ''; if (els.attachmentInfo) els.attachmentInfo.textContent = ''; }
             if (!show && els.attachmentError) { els.attachmentError.textContent = ''; }
         }
