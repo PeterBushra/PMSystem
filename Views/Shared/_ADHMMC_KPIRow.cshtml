@@ -1,17 +1,35 @@
 ﻿@model Jobick.ViewModels.ProjectStatisticsVM
 @using System.Globalization
+@using System.Text.Json
 @{
     var total = Model.InProgressProjects + Model.NotStartedProjects + Model.DoneProjects;
-    // Arabic compact display (no decimals): ألف / مليون / مليار / تريليون, with Arabic number formatting.
     var ar = new CultureInfo("ar-EG");
     var totalBudget = Model.AllProjectsBudgetsExceptFullyDone.Sum(b => b.Value);
     var totalBudgetCompact = totalBudget.ToString("N0", ar);
     var totalBudgetExact   = totalBudget.ToString("N2", ar);
+
+    // Serialize project status lists for JS popup usage
+    var doneJson = JsonSerializer.Serialize(Model.DoneProjectsList.Select(p => new { p.ProjectId, p.Name }));
+    var inProgressJson = JsonSerializer.Serialize(Model.InProgressProjectsList.Select(p => new { p.ProjectId, p.Name }));
+    var notStartedJson = JsonSerializer.Serialize(Model.NotStartedProjectsList.Select(p => new { p.ProjectId, p.Name }));
+    var topBudgetJson = JsonSerializer.Serialize(
+        Model.AllProjectsBudgetsExceptFullyDone
+            .OrderByDescending(x => x.Value)
+            .Take(25)
+            .Select(kv => new {
+                ProjectId = kv.Key,
+                Name = Model.ProjectNames.TryGetValue(kv.Key, out var n) && !string.IsNullOrWhiteSpace(n) ? n : $"مشروع {kv.Key}",
+                Budget = kv.Value
+            })
+    );
 }
-<!-- Modern KPI row -->
-<div class="row kpi-row g-3 mt-2">
+<div class="row kpi-row g-3 mt-2" id="kpiCardsRow"
+     data-done='@doneJson'
+     data-inprogress='@inProgressJson'
+     data-notstarted='@notStartedJson'
+     data-budgets='@topBudgetJson'>
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="card kpi-card kpi-bg-success">
+        <div class="card kpi-card kpi-bg-success" data-kpi="done" data-title="المشاريع المكتملة">
             <div class="card-body">
                 <div class="kpi-top">
                     <div class="kpi-label" style="font-weight: bold;">المشاريع المكتملة</div>
@@ -23,8 +41,7 @@
         </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-        <!-- In-progress uses #e16b16 -->
-        <div class="card kpi-card kpi-inprogress">
+        <div class="card kpi-card kpi-inprogress" data-kpi="inprogress" data-title="المشاريع الجارية">
             <div class="card-body">
                 <div class="kpi-top">
                     <div class="kpi-label" style="font-weight: bold;">جاري التنفيذ</div>
@@ -36,8 +53,7 @@
         </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-        <!-- Not started uses #b5b5b5 -->
-        <div class="card kpi-card kpi-notstarted">
+        <div class="card kpi-card kpi-notstarted" data-kpi="notstarted" data-title="مشاريع لم تبدأ">
             <div class="card-body">
                 <div class="kpi-top">
                     <div class="kpi-label" style="font-weight: bold;">لم تبدأ</div>
@@ -49,19 +65,138 @@
         </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="card kpi-card kpi-bg-primary">
+        <div class="card kpi-card kpi-bg-primary" data-kpi="budgets" data-title="أعلى الميزانيات">
             <div class="card-body">
                 <div class="kpi-top">
                     <div class="kpi-label" style="font-weight: bold;">الميزانية الإجمالية</div>
                     <i class="kpi-icon fas fa-coins"></i>
                 </div>
-                <!-- Compact Arabic text; tooltip shows exact Arabic-formatted amount -->
-                <div class="kpi-value"
-                     id="totalBudgetDisplay"
-                     title="@totalBudgetExact">
-                    @totalBudgetCompact
-                </div>
+                <div class="kpi-value" id="totalBudgetDisplay" title="@totalBudgetExact">@totalBudgetCompact</div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Reusable KPI popup -->
+<div id="kpiProjectsPopup" class="kpi-popup" style="display:none;" role="dialog" aria-hidden="true">
+    <div class="kpi-popup-inner">
+        <div class="kpi-popup-header">
+            <span id="kpiPopupTitle"></span>
+            <button type="button" class="btn-close" aria-label="إغلاق" id="kpiPopupClose"></button>
+        </div>
+        <div class="kpi-popup-content custom-scroll">
+            <ul id="kpiPopupList" class="kpi-popup-list"></ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.kpi-card{cursor:pointer;transition:box-shadow .15s ease;}
+.kpi-card:hover{box-shadow:0 0 0 0.15rem rgba(13,110,253,.25);}
+.kpi-popup{position:absolute;min-width:320px;max-width:420px;background:var(--bs-body-bg,#fff);border:1px solid var(--border,#e5e5e5);box-shadow:0 12px 34px rgba(0,0,0,.15);border-radius:14px;padding:0;z-index:2000;font-size:.9rem;direction:rtl;}
+.kpi-popup-inner{display:flex;flex-direction:column;max-height:380px;}
+.kpi-popup-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border,#e5e5e5);font-weight:700;font-size:.95rem;}
+.kpi-popup-content{padding:8px 0;overflow:auto;}
+.kpi-popup-list{list-style:none;margin:0;padding:0;}
+.kpi-popup-list li a{display:flex;align-items:center;gap:.6rem;padding:8px 14px;text-decoration:none;color:inherit;transition:background .12s ease;border-bottom:1px solid rgba(0,0,0,.04);}
+.kpi-popup-list li a:hover{background:rgba(13,110,253,.06);} 
+.kpi-popup-list .dot{width:10px;height:10px;border-radius:50%;background:#999;flex-shrink:0;}
+.kpi-popup-list .dot-success{background:#198754;}
+.kpi-popup-list .dot-inprogress{background:#e16b16;}
+.kpi-popup-list .dot-notstarted{background:#b5b5b5;}
+.kpi-popup-list .dot-budget{background:#0d6efd;}
+.kpi-popup-list .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kpi-popup-list .badge-val{background:#0d6efd;color:#fff;border-radius:8px;padding:2px 6px;font-size:.7rem;font-weight:600;}
+.btn-close{background:none;border:0;cursor:pointer;font-size:0;position:relative;width:20px;height:20px;}
+.btn-close:before, .btn-close:after{content:"";position:absolute;top:9px;left:4px;width:12px;height:2px;background:#666;}
+.btn-close:before{transform:rotate(45deg);} .btn-close:after{transform:rotate(-45deg);} .btn-close:hover:before,.btn-close:hover:after{background:#dc3545;}
+@@media (max-width:575.98px){.kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}}
+.custom-scroll::-webkit-scrollbar{width:8px;} .custom-scroll::-webkit-scrollbar-track{background:transparent;} .custom-scroll::-webkit-scrollbar-thumb{background:#c7c7c7;border-radius:10px;} .custom-scroll::-webkit-scrollbar-thumb:hover{background:#a8a8a8;}
+</style>
+
+<script>
+(function(){
+  const row = document.getElementById('kpiCardsRow');
+  if(!row) return;
+  const popup = document.getElementById('kpiProjectsPopup');
+  const titleEl = document.getElementById('kpiPopupTitle');
+  const listEl = document.getElementById('kpiPopupList');
+  const closeBtn = document.getElementById('kpiPopupClose');
+  const data = {
+    done: JSON.parse(row.getAttribute('data-done')||'[]'),
+    inprogress: JSON.parse(row.getAttribute('data-inprogress')||'[]'),
+    notstarted: JSON.parse(row.getAttribute('data-notstarted')||'[]'),
+    budgets: JSON.parse(row.getAttribute('data-budgets')||'[]')
+  };
+
+  function buildList(kind){
+     listEl.innerHTML='';
+     let items = data[kind]||[];
+     if(!items.length){
+        listEl.innerHTML='<li><div style="padding:10px 16px;color:#6c757d">لا توجد بيانات</div></li>';
+        return;
+     }
+     items.forEach(obj=>{
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '/Projects/ProjectDetails/'+ obj.ProjectId;
+        a.title = 'فتح تفاصيل المشروع';
+        const dot = document.createElement('span');
+        dot.className = 'dot dot-'+(kind==='done'?'success':kind==='inprogress'?'inprogress':kind==='notstarted'?'notstarted':'budget');
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = obj.Name || obj.name;
+        a.appendChild(dot);
+        a.appendChild(name);
+        if(kind==='budgets'){
+           const badge = document.createElement('span');
+           badge.className='badge-val';
+           badge.textContent = Intl.NumberFormat('ar-EG',{notation:'compact',maximumFractionDigits:1}).format(obj.Budget);
+           a.appendChild(badge);
+        }
+        const icon = document.createElement('span');
+        icon.innerHTML='<i class="fas fa-external-link-alt" style="color:#6c757d;font-size:.75rem"></i>';
+        a.appendChild(icon);
+        li.appendChild(a);
+        listEl.appendChild(li);
+     });
+  }
+
+  function showPopup(card){
+     const kind = card.getAttribute('data-kpi');
+     const ttl = card.getAttribute('data-title');
+     titleEl.textContent = ttl || '';
+     buildList(kind);
+     popup.style.display='block';
+     // Position under card (desktop)
+     const rect = card.getBoundingClientRect();
+     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+     const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+     popup.style.top = (rect.bottom + scrollTop + 6)+'px';
+     // Align start (RTL aware)
+     popup.style.left = (rect.right - popup.offsetWidth) + scrollLeft + 'px';
+     // Ensure fully visible horizontally
+     const vpWidth = document.documentElement.clientWidth;
+     const popupRect = popup.getBoundingClientRect();
+     if(popupRect.left < 8){ popup.style.left = scrollLeft + 8 + 'px'; }
+     if(popupRect.right > vpWidth - 8){ popup.style.left = (vpWidth - popupRect.width - 8 + scrollLeft)+'px'; }
+  }
+
+  function hidePopup(){ popup.style.display='none'; }
+
+  // Hover show
+  row.querySelectorAll('.kpi-card').forEach(card => {
+     card.addEventListener('mouseenter', ()=> showPopup(card));
+  });
+  // Hide when mouse leaves both card area and popup
+  let hideTimeout;
+  function scheduleHide(){ hideTimeout = setTimeout(()=> hidePopup(), 250); }
+  function clearHide(){ clearTimeout(hideTimeout); }
+  row.addEventListener('mouseleave', scheduleHide);
+  popup.addEventListener('mouseenter', clearHide);
+  popup.addEventListener('mouseleave', scheduleHide);
+  closeBtn.addEventListener('click', hidePopup);
+  window.addEventListener('scroll', ()=> hidePopup());
+  window.addEventListener('resize', ()=> hidePopup());
+})();
+</script>
