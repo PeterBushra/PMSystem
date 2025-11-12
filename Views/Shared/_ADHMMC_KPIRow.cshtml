@@ -117,8 +117,28 @@
 </div>
 
 <style>
-.kpi-row{display:flex;flex-wrap:nowrap;gap:1rem;overflow-x:auto;padding:.25rem .5rem .5rem;}
-.kpi-col{flex:0 0 20%;min-width:200px;}
+/* Adjusted layout so all KPI cards shrink proportionally and fit in a single row without horizontal scroll.
+   Uses calc((100% - total-gaps)/count) so cards together never exceed available width. */
+.kpi-row{
+  display:flex;
+  flex-wrap:nowrap;
+  gap:1rem;
+  overflow-x:hidden;
+  padding:.25rem .5rem .5rem;
+  box-sizing:border-box;
+}
+
+/* Each of the 5 KPI columns gets an equal share of the row width minus gaps.
+   max-width ensures the calc is enforced; min-width prevents extremely tiny cards on large zoom but
+   we allow wrapping at smaller viewports via media queries below. */
+.kpi-col{
+  flex:1 1 calc((100% - 4rem) / 5);
+  max-width: calc((100% - 4rem) / 5);
+  min-width:120px;
+  box-sizing:border-box;
+}
+
+/* Card visuals unchanged */
 .kpi-card{cursor:pointer;transition:box-shadow .15s ease;background:#fff;border:1px solid #e1e5ec;border-radius:12px;}
 .kpi-card:hover{box-shadow:0 0 0 0.15rem rgba(13,110,253,.25);} 
 .kpi-card .kpi-top{display:flex;align-items:center;justify-content:space-between;}
@@ -157,7 +177,21 @@
 .btn-close{background:none;border:0;cursor:pointer;font-size:0;position:relative;width:20px;height:20px;}
 .btn-close:before, .btn-close:after{content:"";position:absolute;top:9px;left:4px;width:12px;height:2px;background:#666;}
 .btn-close:before{transform:rotate(45deg);} .btn-close:after{transform:rotate(-45deg);} .btn-close:hover:before,.btn-close:hover:after{background:#dc3545;}
-@@media (max-width:575.98px){.kpi-row{flex-wrap:wrap;}.kpi-col{flex:1 1 calc(50% - .5rem);min-width:160px;} .kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}}
+
+/* At medium/smaller widths allow wrapping so cards remain readable instead of becoming tiny */
+@@media (max-width:900px){
+  .kpi-row{flex-wrap:wrap;overflow-x:auto;}
+  .kpi-col{flex:1 1 calc(50% - .5rem);max-width:none;min-width:160px;}
+  .kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}
+}
+
+/* Preserve original small-screen rules (kept but adjusted to be consistent) */
+@@media (max-width:575.98px){
+  .kpi-row{flex-wrap:wrap;overflow-x:auto;}
+  .kpi-col{flex:1 1 calc(50% - .5rem);min-width:160px;}
+  .kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}
+}
+
 .custom-scroll::-webkit-scrollbar{width:8px;} .custom-scroll::-webkit-scrollbar-track{background:transparent;} .custom-scroll::-webkit-scrollbar-thumb{background:#c7c7c7;border-radius:10px;} .custom-scroll::-webkit-scrollbar-thumb:hover{background:#a8a8a8;}
 </style>
 
@@ -203,8 +237,8 @@
            a.appendChild(badge);
         }
         const icon = document.createElement('span');
-        icon.innerHTML='<i class="fas fa-external-link-alt" style="color:#6c757d;font-size:.75rem"></i>';
-        a.appendChild(icon);
+        // icon.innerHTML='<i class="fas fa-external-link-alt" style="color:#6c757d;font-size:.75rem"></i>';
+        // a.appendChild(icon);
         li.appendChild(a);
         listEl.appendChild(li);
      });
