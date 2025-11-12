@@ -22,17 +22,43 @@
                 Budget = kv.Value
             })
     );
+
+    // Build combined list for all projects (union of statuses)
+    var allJson = JsonSerializer.Serialize(
+        Model.DoneProjectsList.Select(p => new { p.ProjectId, p.Name })
+            .Concat(Model.InProgressProjectsList.Select(p => new { p.ProjectId, p.Name }))
+            .Concat(Model.NotStartedProjectsList.Select(p => new { p.ProjectId, p.Name }))
+            .GroupBy(x => x.ProjectId)
+            .Select(g => new {
+                ProjectId = g.Key,
+                Name = (string.IsNullOrWhiteSpace(g.First().Name) && Model.ProjectNames.TryGetValue(g.Key, out var nn) ? nn : g.First().Name) ?? $"مشروع {g.Key}"
+            })
+            .OrderBy(x => x.Name)
+    );
 }
-<div class="row kpi-row g-3 mt-2" id="kpiCardsRow"
+<div class="kpi-row mt-2" id="kpiCardsRow"
      data-done='@doneJson'
      data-inprogress='@inProgressJson'
      data-notstarted='@notStartedJson'
-     data-budgets='@topBudgetJson'>
-    <div class="col-12 col-md-6 col-xl-3">
+     data-budgets='@topBudgetJson'
+     data-all='@allJson'>
+    <div class="kpi-col">
+        <div class="card kpi-card kpi-all" data-kpi="all" data-title="جميع المشاريع">
+            <div class="card-body">
+                <div class="kpi-top">
+                    <div class="kpi-label">جميع المشاريع</div>
+                    <i class="kpi-icon fas fa-list"></i>
+                </div>
+                <div class="kpi-value" data-countup>@total</div>
+                <div class="kpi-sub">إجمالي عدد المشاريع</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-col">
         <div class="card kpi-card kpi-bg-success" data-kpi="done" data-title="المشاريع المكتملة">
             <div class="card-body">
                 <div class="kpi-top">
-                    <div class="kpi-label" style="font-weight: bold;">المشاريع المكتملة</div>
+                    <div class="kpi-label">المشاريع المكتملة</div>
                     <i class="kpi-icon fas fa-check-circle"></i>
                 </div>
                 <div class="kpi-value" data-countup>@Model.DoneProjects</div>
@@ -40,11 +66,11 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-col">
         <div class="card kpi-card kpi-inprogress" data-kpi="inprogress" data-title="المشاريع الجارية">
             <div class="card-body">
                 <div class="kpi-top">
-                    <div class="kpi-label" style="font-weight: bold;">جاري التنفيذ</div>
+                    <div class="kpi-label">جاري التنفيذ</div>
                     <i class="kpi-icon fas fa-tasks"></i>
                 </div>
                 <div class="kpi-value" data-countup>@Model.InProgressProjects</div>
@@ -52,11 +78,11 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-col">
         <div class="card kpi-card kpi-notstarted" data-kpi="notstarted" data-title="مشاريع لم تبدأ">
             <div class="card-body">
                 <div class="kpi-top">
-                    <div class="kpi-label" style="font-weight: bold;">لم تبدأ</div>
+                    <div class="kpi-label">لم تبدأ</div>
                     <i class="kpi-icon fas fa-hourglass-start"></i>
                 </div>
                 <div class="kpi-value" data-countup>@Model.NotStartedProjects</div>
@@ -64,11 +90,11 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-        <div class="card kpi-card kpi-bg-primary" data-kpi="budgets" data-title="أعلى الميزانيات">
+    <div class="kpi-col">
+        <div class="card kpi-card kpi-bg-primary" data-kpi="budgets" data-title="الميزانيات">
             <div class="card-body">
                 <div class="kpi-top">
-                    <div class="kpi-label" style="font-weight: bold;">الميزانية الإجمالية</div>
+                    <div class="kpi-label">الميزانية الإجمالية</div>
                     <i class="kpi-icon fas fa-coins"></i>
                 </div>
                 <div class="kpi-value" id="totalBudgetDisplay" title="@totalBudgetExact">@totalBudgetCompact</div>
@@ -91,26 +117,47 @@
 </div>
 
 <style>
-.kpi-card{cursor:pointer;transition:box-shadow .15s ease;}
-.kpi-card:hover{box-shadow:0 0 0 0.15rem rgba(13,110,253,.25);}
-.kpi-popup{position:absolute;min-width:320px;max-width:420px;background:var(--bs-body-bg,#fff);border:1px solid var(--border,#e5e5e5);box-shadow:0 12px 34px rgba(0,0,0,.15);border-radius:14px;padding:0;z-index:2000;font-size:.9rem;direction:rtl;}
+.kpi-row{display:flex;flex-wrap:nowrap;gap:1rem;overflow-x:auto;padding:.25rem .5rem .5rem;}
+.kpi-col{flex:0 0 20%;min-width:200px;}
+.kpi-card{cursor:pointer;transition:box-shadow .15s ease;background:#fff;border:1px solid #e1e5ec;border-radius:12px;}
+.kpi-card:hover{box-shadow:0 0 0 0.15rem rgba(13,110,253,.25);} 
+.kpi-card .kpi-top{display:flex;align-items:center;justify-content:space-between;}
+.kpi-card .kpi-label{font-weight:700;font-size:.95rem;}
+.kpi-card .kpi-value{font-size:1.35rem;font-weight:800;}
+.kpi-card .kpi-sub{opacity:.8;}
+
+/* Colored variants */
+.kpi-card.kpi-bg-success{background:#198754;color:#fff;border-color:#198754;}
+.kpi-card.kpi-inprogress{background:#e16b16;color:#fff;border-color:#e16b16;}
+.kpi-card.kpi-notstarted{background:#6c757d;color:#fff;border-color:#6c757d;}
+.kpi-card.kpi-bg-primary{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+.kpi-card.kpi-all{background:#0dcaf0;color:#084c61;border-color:#0dcaf0;}
+
+.kpi-card.kpi-bg-success .kpi-sub,
+.kpi-card.kpi-inprogress .kpi-sub,
+.kpi-card.kpi-notstarted .kpi-sub,
+.kpi-card.kpi-bg-primary .kpi-sub{color:rgba(255,255,255,.85);} 
+.kpi-card.kpi-all .kpi-sub{color:#073642;opacity:.85;}
+
+.kpi-popup{position:absolute;min-width:320px;max-width:420px;background:#fff;border:1px solid var(--border,#e5e5e5);box-shadow:0 12px 34px rgba(0,0,0,.15);border-radius:14px;padding:0;z-index:2000;font-size:.9rem;direction:rtl;}
 .kpi-popup-inner{display:flex;flex-direction:column;max-height:380px;}
 .kpi-popup-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border,#e5e5e5);font-weight:700;font-size:.95rem;}
 .kpi-popup-content{padding:8px 0;overflow:auto;}
 .kpi-popup-list{list-style:none;margin:0;padding:0;}
-.kpi-popup-list li a{display:flex;align-items:center;gap:.6rem;padding:8px 14px;text-decoration:none;color:inherit;transition:background .12s ease;border-bottom:1px solid rgba(0,0,0,.04);}
+.kpi-popup-list li a{display:flex;align-items:center;gap:.6rem;padding:8px 14px;text-decoration:none;color:inherit;transition:background .12s ease;border-bottom:1px solid rgba(0,0,0,.04);} 
 .kpi-popup-list li a:hover{background:rgba(13,110,253,.06);} 
 .kpi-popup-list .dot{width:10px;height:10px;border-radius:50%;background:#999;flex-shrink:0;}
 .kpi-popup-list .dot-success{background:#198754;}
 .kpi-popup-list .dot-inprogress{background:#e16b16;}
 .kpi-popup-list .dot-notstarted{background:#b5b5b5;}
 .kpi-popup-list .dot-budget{background:#0d6efd;}
+.kpi-popup-list .dot-all{background:#0dcaf0;}
 .kpi-popup-list .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .kpi-popup-list .badge-val{background:#0d6efd;color:#fff;border-radius:8px;padding:2px 6px;font-size:.7rem;font-weight:600;}
 .btn-close{background:none;border:0;cursor:pointer;font-size:0;position:relative;width:20px;height:20px;}
 .btn-close:before, .btn-close:after{content:"";position:absolute;top:9px;left:4px;width:12px;height:2px;background:#666;}
 .btn-close:before{transform:rotate(45deg);} .btn-close:after{transform:rotate(-45deg);} .btn-close:hover:before,.btn-close:hover:after{background:#dc3545;}
-@@media (max-width:575.98px){.kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}}
+@@media (max-width:575.98px){.kpi-row{flex-wrap:wrap;}.kpi-col{flex:1 1 calc(50% - .5rem);min-width:160px;} .kpi-popup{position:fixed;left:12px;right:12px;top:80px;width:auto;}}
 .custom-scroll::-webkit-scrollbar{width:8px;} .custom-scroll::-webkit-scrollbar-track{background:transparent;} .custom-scroll::-webkit-scrollbar-thumb{background:#c7c7c7;border-radius:10px;} .custom-scroll::-webkit-scrollbar-thumb:hover{background:#a8a8a8;}
 </style>
 
@@ -126,7 +173,8 @@
     done: JSON.parse(row.getAttribute('data-done')||'[]'),
     inprogress: JSON.parse(row.getAttribute('data-inprogress')||'[]'),
     notstarted: JSON.parse(row.getAttribute('data-notstarted')||'[]'),
-    budgets: JSON.parse(row.getAttribute('data-budgets')||'[]')
+    budgets: JSON.parse(row.getAttribute('data-budgets')||'[]'),
+    all: JSON.parse(row.getAttribute('data-all')||'[]')
   };
 
   function buildList(kind){
@@ -142,7 +190,7 @@
         a.href = '/Projects/ProjectDetails/'+ obj.ProjectId;
         a.title = 'فتح تفاصيل المشروع';
         const dot = document.createElement('span');
-        dot.className = 'dot dot-'+(kind==='done'?'success':kind==='inprogress'?'inprogress':kind==='notstarted'?'notstarted':'budget');
+        dot.className = 'dot dot-'+(kind==='done'?'success':kind==='inprogress'?'inprogress':kind==='notstarted'?'notstarted':kind==='budgets'?'budget':'all');
         const name = document.createElement('span');
         name.className = 'name';
         name.textContent = obj.Name || obj.name;
